@@ -20,9 +20,10 @@ import {
 import { Textarea } // Assuming you might want a description field later
 from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Trash2, PlusCircle, Save } from "lucide-react";
+import { Trash2, PlusCircle, Save, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation"; // For redirecting after save
+import Image from "next/image";
 
 const productIngredientSchema = z.object({
   rawMaterialId: z.string().min(1, "Bahan baku harus dipilih"),
@@ -35,7 +36,7 @@ const productFormSchema = z.object({
   hpp: z.coerce.number().min(0, "HPP tidak boleh negatif").optional(),
   price: z.coerce.number().min(0, "Harga jual tidak boleh negatif"),
   stock: z.coerce.number().min(0, "Stok tidak boleh negatif").int("Stok harus angka bulat"),
-  image: z.string().url("URL gambar tidak valid").optional().or(z.literal("")),
+  image: z.string().optional(), // Will store public URL or Data URI
   ingredients: z.array(productIngredientSchema).optional(),
 });
 
@@ -56,6 +57,8 @@ export default function ProductForm({
 }: ProductFormProps) {
   const { toast } = useToast();
   const router = useRouter();
+  const [imagePreview, setImagePreview] = React.useState<string | null>(initialData?.image || null);
+  
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -73,6 +76,33 @@ export default function ProductForm({
     control: form.control,
     name: "ingredients",
   });
+
+  React.useEffect(() => {
+    // Cleanup object URLs to prevent memory leaks
+    const currentPreview = imagePreview;
+    if (currentPreview && currentPreview.startsWith("blob:")) {
+      return () => {
+        URL.revokeObjectURL(currentPreview);
+      };
+    }
+  }, [imagePreview]);
+
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        form.setValue("image", reader.result as string); // Set Data URI to form
+      };
+      reader.readAsDataURL(file);
+      setImagePreview(URL.createObjectURL(file)); // Set blob URL for preview
+    } else {
+      // If no file is selected (e.g., user cancels file dialog), revert to initial image or clear
+      const initialImage = initialData?.image || "";
+      form.setValue("image", initialImage);
+      setImagePreview(initialImage || null);
+    }
+  };
 
   const onSubmit = async (data: ProductFormData) => {
     try {
@@ -135,14 +165,38 @@ export default function ProductForm({
                 <p className="text-sm text-destructive mt-1">{form.formState.errors.category.message}</p>
               )}
             </div>
-
+            
             <div>
-              <Label htmlFor="image">URL Gambar Produk (Opsional)</Label>
-              <Input id="image" type="url" placeholder="https://example.com/image.jpg" {...form.register("image")} />
+              <Label htmlFor="productImage">Gambar Produk (Opsional)</Label>
+              <div className="mt-1 flex items-center gap-4">
+                {imagePreview ? (
+                  <Image
+                    src={imagePreview}
+                    alt="Pratinjau Gambar Produk"
+                    width={80}
+                    height={80}
+                    className="rounded-md object-cover aspect-square border"
+                    data-ai-hint="product image"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-md border flex items-center justify-center bg-muted">
+                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                <Input
+                  id="productImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+              </div>
               {form.formState.errors.image && (
                 <p className="text-sm text-destructive mt-1">{form.formState.errors.image.message}</p>
               )}
             </div>
+
+
           </CardContent>
         </Card>
 
