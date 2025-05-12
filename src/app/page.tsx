@@ -24,7 +24,7 @@ export default function LoginPage() {
     // Mock authentication
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    if (email === "user@tokolite.com" && password === "password") {
+    if (email === "demo@tokolite.com" && password === "demo") {
       toast({
         title: "Login Successful",
         description: "Welcome back!",
@@ -33,7 +33,7 @@ export default function LoginPage() {
     } else {
       toast({
         title: "Login Failed",
-        description: "Invalid email or password. (Hint: user@tokolite.com / password)",
+        description: "Invalid email or password. (Hint: demo@tokolite.com / demo)",
         variant: "destructive",
       });
     }
@@ -99,6 +99,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex-col text-center text-sm">
           <p>Belum punya akun? <a href="#" className="text-accent underline hover:text-accent/80">Hubungi Admin</a></p>
+          <p className="mt-2 text-xs text-muted-foreground">Demo Account: demo@tokolite.com / demo</p>
           <p className="mt-2 text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} TokoLite POS. All rights reserved.
           </p>
