@@ -2,6 +2,8 @@
 "use client";
 
 import * as React from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 // Mock Data
 const mockSalesData = [
@@ -19,19 +23,92 @@ const mockSalesData = [
   { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20 14:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000 },
 ];
 
+// Extend jsPDF with autoTable
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
 
 export default function SalesReportPage() {
   const { toast } = useToast();
 
   const handleDownloadReport = () => {
-    toast({
-      title: "Unduh Laporan (Dalam Pengembangan)",
-      description: "Fitur unduh laporan PDF sedang dalam pengembangan dan akan segera tersedia.",
-      duration: 5000,
-    });
-    // Placeholder for actual PDF generation logic
-    // e.g., using jsPDF or react-pdf
-    console.log("Attempting to download sales report PDF...");
+    try {
+      const doc = new jsPDF() as jsPDFWithAutoTable;
+      const currentDate = format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale });
+      const reportTitle = "Laporan Penjualan";
+      const fileName = `Laporan_Penjualan_${format(new Date(), "yyyyMMddHHmmss")}.pdf`;
+
+      // Header
+      doc.setFontSize(18);
+      doc.text(reportTitle, 14, 22);
+      doc.setFontSize(11);
+      doc.text(`Tanggal Laporan: ${currentDate}`, 14, 30);
+      // TODO: Add filters information here if applied
+
+      // Table
+      const tableColumn = ["Outlet", "Waktu", "Pengguna", "Produk", "Harga", "Jumlah", "Total"];
+      const tableRows: any[][] = [];
+
+      mockSalesData.forEach(sale => {
+        const saleData = [
+          sale.outlet,
+          new Date(sale.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
+          sale.user,
+          sale.productName,
+          `Rp ${sale.price.toLocaleString('id-ID')}`,
+          sale.quantity.toString(),
+          `Rp ${sale.total.toLocaleString('id-ID')}`
+        ];
+        tableRows.push(saleData);
+      });
+
+      // Footer row for total
+      const totalOverall = mockSalesData.reduce((sum, item) => sum + item.total, 0);
+      tableRows.push([
+        { content: "Total Keseluruhan", colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: `Rp ${totalOverall.toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } }
+      ]);
+      
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 36,
+        theme: 'grid',
+        headStyles: { fillColor: [60, 56, 91] }, // #F5F5DC in RGB (approx)
+        styles: { font: "helvetica", fontSize: 9 },
+        columnStyles: {
+          4: { halign: 'right' },
+          5: { halign: 'right' },
+          6: { halign: 'right' },
+        }
+      });
+      
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.text(
+          `Halaman ${i} dari ${pageCount}`,
+          doc.internal.pageSize.width - 28,
+          doc.internal.pageSize.height - 10
+        );
+      }
+
+      doc.save(fileName);
+      toast({
+        title: "Unduh Berhasil",
+        description: `Laporan penjualan telah berhasil diunduh sebagai ${fileName}.`,
+      });
+
+    } catch (error) {
+      console.error("Gagal membuat PDF:", error);
+      toast({
+        title: "Unduh Gagal",
+        description: "Terjadi kesalahan saat membuat laporan PDF.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

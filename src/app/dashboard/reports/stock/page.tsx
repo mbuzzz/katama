@@ -1,7 +1,9 @@
 
-"use client"; // For useState, useEffect
+"use client"; 
 
 import * as React from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,33 +13,40 @@ import { Download, Search, Package, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getMockProducts } from "@/data/products";
 import { getMockRawMaterials } from "@/data/raw-materials";
-import { getMockUnits } from "@/data/units"; // To get unit names/abbreviations
+import { getMockUnits } from "@/data/units"; 
 import type { Product } from "@/types/product";
 import type { RawMaterial } from "@/types/raw-material";
 import type { Unit } from "@/types/unit";
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useToast } from "@/hooks/use-toast"; 
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+
 
 interface StockItem {
   id: string;
   name: string;
   type: "Produk Jadi" | "Bahan Baku";
-  categoryOrType: string; // Category for Product, Type/Name for Raw Material
+  categoryOrType: string; 
   quantity: number;
-  unit: string; // Unit abbreviation
+  unit: string; 
   status: "Stok Aman" | "Stok Menipis" | "Stok Habis";
   icon: React.ElementType;
 }
 
-// Define thresholds for stock status
+
 const LOW_STOCK_THRESHOLD_PRODUCT = 5;
-const LOW_STOCK_THRESHOLD_RAWMATERIAL = 10; // Example, can be per material
+const LOW_STOCK_THRESHOLD_RAWMATERIAL = 10; 
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
 
 export default function StockReportPage() {
   const [allStockItems, setAllStockItems] = React.useState<StockItem[]>([]);
   const [filteredStockItems, setFilteredStockItems] = React.useState<StockItem[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [units, setUnits] = React.useState<Unit[]>([]);
-  const { toast } = useToast(); // Initialize useToast
+  const { toast } = useToast(); 
 
   React.useEffect(() => {
     const fetchedUnits = getMockUnits();
@@ -97,13 +106,71 @@ export default function StockReportPage() {
   }, [searchTerm, allStockItems]);
 
   const handleDownloadReport = () => {
-    toast({
-      title: "Unduh Laporan (Dalam Pengembangan)",
-      description: "Fitur unduh laporan PDF sedang dalam pengembangan dan akan segera tersedia.",
-      duration: 5000,
-    });
-    // Placeholder for actual PDF generation logic
-    console.log("Attempting to download stock report PDF...");
+     try {
+      const doc = new jsPDF() as jsPDFWithAutoTable;
+      const currentDate = format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale });
+      const reportTitle = "Laporan Stok";
+      const fileName = `Laporan_Stok_${format(new Date(), "yyyyMMddHHmmss")}.pdf`;
+
+      doc.setFontSize(18);
+      doc.text(reportTitle, 14, 22);
+      doc.setFontSize(11);
+      doc.text(`Tanggal Laporan: ${currentDate}`, 14, 30);
+      doc.text(`Filter Pencarian: ${searchTerm || "Tidak ada"}`, 14, 36);
+
+
+      const tableColumn = ["Tipe", "Nama Barang", "Kategori/Jenis", "Jumlah", "Satuan", "Status"];
+      const tableRows: any[][] = [];
+
+      filteredStockItems.forEach(item => {
+        const itemData = [
+          item.type,
+          item.name,
+          item.categoryOrType,
+          item.quantity.toLocaleString('id-ID'),
+          item.unit,
+          item.status
+        ];
+        tableRows.push(itemData);
+      });
+      
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 42, // Adjusted startY
+        theme: 'grid',
+        headStyles: { fillColor: [60, 56, 91] }, 
+        styles: { font: "helvetica", fontSize: 9 },
+        columnStyles: {
+          3: { halign: 'right' },
+        }
+      });
+
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.text(
+          `Halaman ${i} dari ${pageCount}`,
+          doc.internal.pageSize.width - 28,
+          doc.internal.pageSize.height - 10
+        );
+      }
+
+      doc.save(fileName);
+      toast({
+        title: "Unduh Berhasil",
+        description: `Laporan stok telah berhasil diunduh sebagai ${fileName}.`,
+      });
+
+    } catch (error) {
+      console.error("Gagal membuat PDF:", error);
+      toast({
+        title: "Unduh Gagal",
+        description: "Terjadi kesalahan saat membuat laporan PDF.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
