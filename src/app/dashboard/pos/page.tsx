@@ -1,7 +1,6 @@
-
 "use client";
 
-import type { Product as ProductType } from "@/types/product"; // Assuming types are defined elsewhere or should be
+import type { Product as ProductType } from "@/types/product";
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,8 @@ import {
 } from "@/components/ui/dialog";
 
 interface Product extends ProductType {
-  image: string; // ensure image is part of Product
-  variants?: { name: string; price: number }[]; // keep variants if used
+  image: string;
+  variants?: { name: string; price: number }[];
 }
 
 interface CartItem extends Product {
@@ -37,7 +36,6 @@ interface POSSession {
   startTime: Date;
 }
 
-// Expanded Mock data for better scroll testing
 const mockProducts: Product[] = [
   { id: "1", name: "Kopi Susu Aren", price: 18000, image: "https://picsum.photos/150/150?random=1", category: "Minuman", stock: 100, variants: [{name: "Less Sugar", price: 0}, {name: "Extra Shot", price: 5000}] },
   { id: "2", name: "Croissant Coklat", price: 22000, image: "https://picsum.photos/150/150?random=2", category: "Makanan", stock: 50 },
@@ -137,7 +135,7 @@ export default function POSPage() {
 
   if (!posSession) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--header-height,4rem)-2rem)] md:h-[calc(100vh-var(--header-height,5rem)-2rem)]">
+      <div className="flex flex-col items-center justify-center h-full">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
             <CardTitle className="text-center text-2xl">Buka Sesi POS</CardTitle>
@@ -188,11 +186,11 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-var(--header-height,4rem)-2rem)] md:h-[calc(100vh-var(--header-height,5rem)-2rem)]">
+    <div className="flex flex-col h-full">
       <PageHeader title="Point of Sale" description={`Sesi dimulai pukul ${posSession.startTime.toLocaleTimeString()} dengan modal awal Rp ${posSession.initialCash.toLocaleString()}`} />
-      <div className="grid md:grid-cols-3 gap-6 flex-1 overflow-hidden">
+      <div className="flex flex-col md:grid md:grid-cols-3 gap-6 flex-1 overflow-hidden">
         {/* Product Selection */}
-        <Card className="md:col-span-2 shadow-lg flex flex-col">
+        <Card className="md:col-span-2 shadow-lg flex flex-col flex-1 min-h-0">
           <CardHeader>
             <CardTitle>Pilih Produk</CardTitle>
             <Input 
@@ -240,7 +238,7 @@ export default function POSPage() {
         </Card>
 
         {/* Order Summary & Payment */}
-        <Card className="shadow-lg flex flex-col">
+        <Card className="shadow-lg flex flex-col flex-1 min-h-0">
           <CardHeader>
             <CardTitle>Detail Pesanan</CardTitle>
           </CardHeader>
@@ -295,7 +293,7 @@ export default function POSPage() {
                 <Button variant="outline"><QrCode className="mr-1 h-4 w-4 sm:mr-2" /> QRIS</Button>
             </div>
             <Button size="lg" className="w-full mt-2" onClick={handlePayment} disabled={cartItems.length === 0}>
-              <Printer className="mr-2 h-4 w-4" /> Bayar & Cetak Struk
+              <Printer className="mr-2 h-4 w-4" /> Bayar &amp; Cetak Struk
             </Button>
             <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => {
               setPosSession(null);
