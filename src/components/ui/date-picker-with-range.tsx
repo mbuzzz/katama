@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { addDays, format } from "date-fns"
+import { id as idLocale } from "date-fns/locale"; // Import Indonesian locale
 import type { DateRange } from "react-day-picker"
 import { Calendar as CalendarIcon } from "lucide-react"
 
@@ -51,14 +52,14 @@ export function DatePickerWithRange({
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
+                  {format(date.from, "LLL dd, y", { locale: idLocale })} -{" "}
+                  {format(date.to, "LLL dd, y", { locale: idLocale })}
                 </>
               ) : (
-                format(date.from, "LLL dd, y")
+                format(date.from, "LLL dd, y", { locale: idLocale })
               )
             ) : (
-              <span>Pick a date</span>
+              <span>Pilih tanggal</span>
             )}
           </Button>
         </PopoverTrigger>
@@ -70,6 +71,7 @@ export function DatePickerWithRange({
             selected={date}
             onSelect={setDate}
             numberOfMonths={2}
+            locale={idLocale} // Pass Indonesian locale to Calendar
           />
         </PopoverContent>
       </Popover>

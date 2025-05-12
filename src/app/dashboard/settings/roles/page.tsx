@@ -41,7 +41,7 @@ export default function RolesPage() {
                 <TableHead>Deskripsi</TableHead>
                 <TableHead className="text-center hidden md:table-cell">Jumlah Pengguna</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Aksi</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -59,11 +59,11 @@ export default function RolesPage() {
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
+                          <span className="sr-only">Alihkan menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> Edit Peran & Hak Akses</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" /> Hapus Peran</DropdownMenuItem>
                       </DropdownMenuContent>

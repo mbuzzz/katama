@@ -7,8 +7,8 @@ let mockCategoriesStore: Category[] = [
   { id: "2", name: "Minuman Panas", description: "Minuman hangat untuk menemani." },
   { id: "3", name: "Makanan Berat", description: "Pilihan makanan utama yang mengenyangkan." },
   { id: "4", name: "Makanan Ringan", description: "Camilan lezat untuk setiap saat." },
-  { id: "5", name: "Dessert", description: "Hidangan penutup yang manis dan nikmat." },
-  { id: "6", name: "Roti & Pastry", description: "Produk bakery segar setiap hari." },
+  { id: "5", name: "Hidangan Penutup", description: "Hidangan penutup yang manis dan nikmat." },
+  { id: "6", name: "Roti & Pastri", description: "Produk bakery segar setiap hari." },
   { id: "7", name: "Tambahan", description: "Ekstra topping atau item pelengkap." },
 ];
 
@@ -48,4 +48,3 @@ export const deleteMockCategory = (id: string): boolean => {
 // We can adapt ProductForm later or provide a getter for names only.
 // For now, let's keep ProductForm as is, and this can be used for display purposes.
 export const mockCategoryNames: string[] = mockCategoriesStore.map(c => c.name);
-

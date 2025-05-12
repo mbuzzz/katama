@@ -94,7 +94,7 @@ export default function UnitsPage() {
                 <TableHead>Nama Satuan</TableHead>
                 <TableHead>Singkatan</TableHead>
                 <TableHead className="text-right">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Aksi</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -108,11 +108,11 @@ export default function UnitsPage() {
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
+                          <span className="sr-only">Alihkan menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem disabled> {/* Editing also needs a form */}
                             <Edit className="mr-2 h-4 w-4" /> Edit (Segera Hadir)
                         </DropdownMenuItem>

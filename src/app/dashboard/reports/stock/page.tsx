@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 
 // Mock Data
 const mockStockData = [
-  { id: "1", itemName: "Biji Kopi Arabika", category: "Bahan Baku", quantity: 45, unit: "kg", status: "In Stock" },
-  { id: "2", itemName: "Susu UHT Full Cream", category: "Bahan Baku", quantity: 12, unit: "karton", status: "Low Stock" },
-  { id: "3", itemName: "Gula Aren Cair", category: "Bahan Baku", quantity: 80, unit: "liter", status: "In Stock" },
-  { id: "4", itemName: "Croissant Coklat (Frozen)", category: "Produk Jadi", quantity: 5, unit: "pcs", status: "Out of Stock" },
-  { id: "5", itemName: "Cup Plastik 16oz", category: "Perlengkapan", quantity: 500, unit: "pcs", status: "In Stock" },
+  { id: "1", itemName: "Biji Kopi Arabika", category: "Bahan Baku", quantity: 45, unit: "kg", status: "Stok Aman" },
+  { id: "2", itemName: "Susu UHT Full Cream", category: "Bahan Baku", quantity: 12, unit: "karton", status: "Stok Menipis" },
+  { id: "3", itemName: "Gula Aren Cair", category: "Bahan Baku", quantity: 80, unit: "liter", status: "Stok Aman" },
+  { id: "4", itemName: "Croissant Coklat (Beku)", category: "Produk Jadi", quantity: 5, unit: "pcs", status: "Stok Habis" },
+  { id: "5", itemName: "Cup Plastik 16oz", category: "Perlengkapan", quantity: 500, unit: "pcs", status: "Stok Aman" },
 ];
 
 export default function StockReportPage() {
@@ -63,12 +63,12 @@ export default function StockReportPage() {
                   <TableCell>
                     <Badge 
                       variant={
-                        item.status === "In Stock" ? "default" :
-                        item.status === "Low Stock" ? "secondary" : // Using secondary for yellow-ish, or create custom variant
-                        "destructive" // For Out of Stock
+                        item.status === "Stok Aman" ? "default" :
+                        item.status === "Stok Menipis" ? "secondary" : 
+                        "destructive" 
                       }
                       className={
-                        item.status === "Low Stock" ? "bg-yellow-500/20 text-yellow-700 border-yellow-500/50" : ""
+                        item.status === "Stok Menipis" ? "bg-yellow-500/20 text-yellow-700 border-yellow-500/50" : ""
                       }
                     >
                       {item.status}

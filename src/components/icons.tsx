@@ -2,7 +2,7 @@ import { Warehouse } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 
 export const Logo = (props: LucideProps) => (
-  <div className="flex items-center gap-2" aria-label="TokoLite POS Logo">
+  <div className="flex items-center gap-2" aria-label="Logo TokoLite POS">
     <Warehouse className="h-6 w-6 text-primary-foreground" {...props} />
     <span className="font-semibold text-lg text-primary-foreground">TokoLite</span>
   </div>

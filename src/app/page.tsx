@@ -26,14 +26,14 @@ export default function LoginPage() {
 
     if (email === "demo@tokolite.com" && password === "demo") {
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: "Login Berhasil",
+        description: "Selamat datang kembali!",
       });
       router.push('/dashboard');
     } else {
       toast({
-        title: "Login Failed",
-        description: "Invalid email or password. (Hint: demo@tokolite.com / demo)",
+        title: "Login Gagal",
+        description: "Email atau password salah. (Petunjuk: demo@tokolite.com / demo)",
         variant: "destructive",
       });
     }
@@ -80,7 +80,7 @@ export default function LoginPage() {
                   size="icon" 
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -99,9 +99,9 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex-col text-center text-sm">
           <p>Belum punya akun? <a href="#" className="text-accent underline hover:text-accent/80">Hubungi Admin</a></p>
-          <p className="mt-2 text-xs text-muted-foreground">Demo Account: demo@tokolite.com / demo</p>
+          <p className="mt-2 text-xs text-muted-foreground">Akun Demo: demo@tokolite.com / demo</p>
           <p className="mt-2 text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} TokoLite POS. All rights reserved.
+            &copy; {new Date().getFullYear()} TokoLite POS. Hak cipta dilindungi.
           </p>
         </CardFooter>
       </Card>

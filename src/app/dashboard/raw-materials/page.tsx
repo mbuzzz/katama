@@ -111,7 +111,7 @@ export default function RawMaterialsPage() {
                 <TableHead>Satuan</TableHead>
                 <TableHead className="text-right hidden md:table-cell">Biaya/Unit (Rp)</TableHead>
                 <TableHead className="text-right">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Aksi</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -126,21 +126,21 @@ export default function RawMaterialsPage() {
               {rawMaterials.map((material) => (
                 <TableRow key={material.id}>
                   <TableCell className="font-medium">{material.name}</TableCell>
-                  <TableCell className="text-right">{material.stock.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{material.stock.toLocaleString('id-ID')}</TableCell>
                   <TableCell>{material.unitAbbreviation}</TableCell>
                   <TableCell className="text-right hidden md:table-cell">
-                    {material.costPerUnit ? material.costPerUnit.toLocaleString() : "-"}
+                    {material.costPerUnit ? material.costPerUnit.toLocaleString('id-ID') : "-"}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
+                          <span className="sr-only">Alihkan menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/raw-materials/edit/${material.id}`}>
                             <Edit className="mr-2 h-4 w-4" /> Edit

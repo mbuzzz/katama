@@ -42,34 +42,34 @@ export default function PurchasesPage() {
                 <TableHead>Satuan</TableHead>
                 <TableHead className="hidden md:table-cell">Harga Satuan</TableHead>
                 <TableHead>Total Harga</TableHead>
-                <TableHead className="hidden md:table-cell">Supplier</TableHead>
+                <TableHead className="hidden md:table-cell">Pemasok</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Aksi</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {mockPurchases.map((purchase) => (
                 <TableRow key={purchase.id}>
-                  <TableCell>{purchase.date}</TableCell>
+                  <TableCell>{new Date(purchase.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
                   <TableCell className="font-medium">{purchase.itemName}</TableCell>
                   <TableCell>{purchase.quantity}</TableCell>
                   <TableCell>{purchase.unit}</TableCell>
-                  <TableCell className="hidden md:table-cell">Rp {purchase.unitPrice.toLocaleString()}</TableCell>
-                  <TableCell>Rp {purchase.totalPrice.toLocaleString()}</TableCell>
+                  <TableCell className="hidden md:table-cell">Rp {purchase.unitPrice.toLocaleString('id-ID')}</TableCell>
+                  <TableCell>Rp {purchase.totalPrice.toLocaleString('id-ID')}</TableCell>
                   <TableCell className="hidden md:table-cell">{purchase.supplier}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
+                          <span className="sr-only">Alihkan menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" /> Hapus</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

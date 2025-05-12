@@ -13,10 +13,10 @@ export default async function AddRawMaterialPage() {
     "use server";
     try {
       const newRawMaterial = addMockRawMaterial(data);
-      // console.log("Raw material added:", newRawMaterial);
+      // console.log("Bahan baku ditambahkan:", newRawMaterial);
       return newRawMaterial;
     } catch (error) {
-      console.error("Failed to add raw material:", error);
+      console.error("Gagal menambahkan bahan baku:", error);
       throw error; 
     }
   };

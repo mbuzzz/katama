@@ -75,7 +75,7 @@ export default function StrukSettingsPage() {
               value={footerText}
               onChange={(e) => setFooterText(e.target.value)}
               className="md:col-span-2" 
-              placeholder="Contoh: Follow kami @tokolitepos"
+              placeholder="Contoh: Ikuti kami @tokolitepos"
               rows={2}
             />
           </div>

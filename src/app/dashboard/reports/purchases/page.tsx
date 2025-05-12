@@ -50,8 +50,8 @@ export default function PurchaseReportPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Outlet</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>User</TableHead>
+                <TableHead>Waktu</TableHead>
+                <TableHead>Pengguna</TableHead>
                 <TableHead>Nama Barang</TableHead>
                 <TableHead className="text-right">Harga Satuan</TableHead>
                 <TableHead className="text-right">Jumlah</TableHead>
@@ -63,18 +63,18 @@ export default function PurchaseReportPage() {
               {mockPurchaseReportData.map((purchase) => (
                 <TableRow key={purchase.id}>
                   <TableCell>{purchase.outlet}</TableCell>
-                  <TableCell>{purchase.timestamp}</TableCell>
+                  <TableCell>{new Date(purchase.timestamp).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
                   <TableCell>{purchase.user}</TableCell>
                   <TableCell className="font-medium">{purchase.itemName}</TableCell>
-                  <TableCell className="text-right">Rp {purchase.price.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">Rp {purchase.price.toLocaleString('id-ID')}</TableCell>
                   <TableCell className="text-right">{purchase.quantity}</TableCell>
                   <TableCell>{purchase.unit}</TableCell>
-                  <TableCell className="text-right">Rp {purchase.total.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">Rp {purchase.total.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               ))}
                <TableRow className="font-bold">
-                <TableCell colSpan={7} className="text-right">Grand Total Pembelanjaan</TableCell>
-                <TableCell className="text-right">Rp {mockPurchaseReportData.reduce((sum, item) => sum + item.total, 0).toLocaleString()}</TableCell>
+                <TableCell colSpan={7} className="text-right">Total Keseluruhan Pembelanjaan</TableCell>
+                <TableCell className="text-right">Rp {mockPurchaseReportData.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</TableCell>
               </TableRow>
             </TableBody>
           </Table>

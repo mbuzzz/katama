@@ -12,11 +12,11 @@ export default function AddCategoryPage() {
     // For now, we use our mock function.
     try {
       const newCategory = addMockCategory(data);
-      console.log("Category added:", newCategory);
+      console.log("Kategori ditambahkan:", newCategory);
       // Redirect or toast is handled in CategoryForm
       return newCategory;
     } catch (error) {
-      console.error("Failed to add category:", error);
+      console.error("Gagal menambahkan kategori:", error);
       throw error; // Re-throw to be caught by form's error handler
     }
   };

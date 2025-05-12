@@ -4,9 +4,9 @@ import type { Unit } from "@/types/unit";
 let mockUnitsStore: Unit[] = [
   { id: "1", name: "Kilogram", abbreviation: "kg" },
   { id: "2", name: "Liter", abbreviation: "L" },
-  { id: "3", name: "Pcs", abbreviation: "pcs" },
-  { id: "4", name: "Pack", abbreviation: "pack" },
-  { id: "5", name: "Box", abbreviation: "box" },
+  { id: "3", name: "Buah", abbreviation: "pcs" }, // Pcs translated to Buah
+  { id: "4", name: "Pak", abbreviation: "pak" },
+  { id: "5", name: "Kotak", abbreviation: "box" },
   { id: "6", name: "Gram", abbreviation: "g" },
   { id: "7", name: "Mililiter", abbreviation: "ml" },
   { id: "8", name: "Lembar", abbreviation: "lbr" },

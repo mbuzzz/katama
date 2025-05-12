@@ -59,7 +59,7 @@ export default function CategoryForm({
         description: "Terjadi kesalahan saat menyimpan kategori.",
         variant: "destructive",
       });
-      console.error("Save error:", error);
+      console.error("Kesalahan penyimpanan:", error);
     }
   };
 

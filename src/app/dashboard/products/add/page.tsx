@@ -26,10 +26,10 @@ export default async function AddProductPage() {
 
   const handleSaveProduct = async (data: ProductFormData) => {
     "use server"; 
-    console.log("Product data to save:", {
+    console.log("Data produk untuk disimpan:", {
       ...data,
-      image: data.image ? `${data.image.substring(0, 60)}... (truncated if Data URI)` : undefined,
-      // HPP could be recalculated here based on ingredients if desired
+      image: data.image ? `${data.image.substring(0, 60)}... (terpotong jika Data URI)` : undefined,
+      // HPP bisa dihitung ulang di sini berdasarkan bahan baku jika diinginkan
     });
 
     // Here you would typically:
@@ -41,11 +41,11 @@ export default async function AddProductPage() {
     
     // Example of logging image type
     if (data.image && data.image.startsWith("data:")) {
-      console.log("An image Data URI was provided. Needs server-side processing.");
+      console.log("Sebuah Data URI gambar disediakan. Perlu diproses di sisi server.");
     } else if (data.image) {
-      console.log("Image is likely an existing URL or was not changed:", data.image);
+      console.log("Gambar kemungkinan adalah URL yang sudah ada atau tidak diubah:", data.image);
     } else {
-      console.log("No image provided or image was removed.");
+      console.log("Tidak ada gambar yang disediakan atau gambar dihapus.");
     }
     // Mock save, in a real app this would interact with a database
     // addMockProduct(data); // Assuming you have a mock function like this

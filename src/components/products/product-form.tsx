@@ -44,7 +44,7 @@ const productFormSchema = z.object({
   ingredients: z.array(productIngredientSchema).optional(),
 });
 
-type ProductFormData = z.infer<typeof productFormSchema>;
+export type ProductFormData = z.infer<typeof productFormSchema>;
 
 interface ProductFormProps {
   initialData?: Product;
@@ -124,7 +124,7 @@ export default function ProductForm({
         description: "Terjadi kesalahan saat menyimpan produk.",
         variant: "destructive",
       });
-      console.error("Save error:", error);
+      console.error("Kesalahan penyimpanan:", error);
     }
   };
 
@@ -147,7 +147,7 @@ export default function ProductForm({
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="name">Nama Produk</Label>
-              <Input id="name" {...form.register("name")} />
+              <Input id="name" {...form.register("name")} placeholder="Contoh: Kopi Susu Enak"/>
               {form.formState.errors.name && (
                 <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>
               )}

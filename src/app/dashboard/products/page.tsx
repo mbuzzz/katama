@@ -53,7 +53,7 @@ export default function ProductsPage() {
                 <TableHead>Stok</TableHead>
                 {/* <TableHead className="hidden md:table-cell">Varian</TableHead> */}
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Aksi</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -69,16 +69,16 @@ export default function ProductsPage() {
                         height="40"
                         src={product.image || "https://picsum.photos/40/40?random=placeholder"}
                         width="40"
-                        data-ai-hint={`${product.category} product`}
+                        data-ai-hint={`${product.category} produk`}
                       />
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{product.category}</Badge>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">Rp {product.hpp?.toLocaleString() || "-"}</TableCell>
-                    <TableCell>Rp {product.price.toLocaleString()}</TableCell>
-                    <TableCell className="hidden md:table-cell">Rp {margin.toLocaleString()}</TableCell>
+                    <TableCell className="hidden md:table-cell">Rp {product.hpp?.toLocaleString('id-ID') || "-"}</TableCell>
+                    <TableCell>Rp {product.price.toLocaleString('id-ID')}</TableCell>
+                    <TableCell className="hidden md:table-cell">Rp {margin.toLocaleString('id-ID')}</TableCell>
                     <TableCell>{product.stock}</TableCell>
                     {/* <TableCell className="hidden md:table-cell">{product.variants?.length || '-'} Varian</TableCell> */}
                     <TableCell>
@@ -86,17 +86,17 @@ export default function ProductsPage() {
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                            <span className="sr-only">Alihkan menu</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                           <DropdownMenuItem>
                             <Edit className="mr-2 h-4 w-4" /> Edit
                             {/* Future: <Link href={`/dashboard/products/edit/${product.id}`}>Edit</Link> */}
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            <Trash2 className="mr-2 h-4 w-4" /> Hapus
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

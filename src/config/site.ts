@@ -54,28 +54,28 @@ const dashboardBaseUrl = "/dashboard";
 
 export const siteConfig: SiteConfig = {
   name: "TokoLite POS",
-  description: "Point of Sale application for small businesses, designed with a warm and inviting feel.",
-  url: "https://tokolite.example.com", // Replace with actual URL
-  ogImage: "https://tokolite.example.com/og.jpg", // Replace with actual OG image
+  description: "Aplikasi Point of Sale untuk usaha kecil dan menengah, dirancang dengan nuansa hangat dan mengundang.",
+  url: "https://tokolite.example.com", // Ganti dengan URL sebenarnya
+  ogImage: "https://tokolite.example.com/og.jpg", // Ganti dengan gambar OG sebenarnya
   links: {
     twitter: "https://twitter.com/example",
     github: "https://github.com/example/tokolite",
   },
   mainNav: [
-    // Main navigation can be added here if needed for a marketing site part
+    // Navigasi utama dapat ditambahkan di sini jika diperlukan untuk bagian situs pemasaran
   ],
   sidebarNav: [
     {
-      title: "Dashboard",
+      title: "Dasbor",
       href: `${dashboardBaseUrl}`,
       icon: LayoutDashboard,
-      description: "Overview of your business.",
+      description: "Gambaran umum bisnis Anda.",
     },
     {
       title: "Point of Sale",
       href: `${dashboardBaseUrl}/pos`,
       icon: ShoppingCart,
-      description: "Process sales and transactions.",
+      description: "Proses penjualan dan transaksi.",
     },
     {
       title: "Produk",
@@ -124,11 +124,11 @@ export const siteConfig: SiteConfig = {
       icon: SettingsIcon,
       description: "Konfigurasi aplikasi dan outlet.",
       items: [
-        { title: "General", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan." },
+        { title: "Umum", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan." },
         { title: "Struk", href: `${dashboardBaseUrl}/settings/struk`, icon: FileCog, description: "Pengaturan struk belanja." },
-        { title: "Users", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna." },
-        { title: "Roles", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola peran pengguna." },
-        { title: "Outlets", href: `${dashboardBaseUrl}/settings/outlets`, icon: Store, description: "Kelola outlet." },
+        { title: "Pengguna", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna." },
+        { title: "Peran", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola peran pengguna." },
+        { title: "Outlet", href: `${dashboardBaseUrl}/settings/outlets`, icon: Store, description: "Kelola outlet." },
       ]
     },
   ],

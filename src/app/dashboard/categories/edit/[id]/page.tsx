@@ -24,13 +24,13 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
     try {
       const updatedCategory = updateMockCategory(categoryId, data);
       if (!updatedCategory) {
-        throw new Error("Category not found for update.");
+        throw new Error("Kategori tidak ditemukan untuk diperbarui.");
       }
-      console.log("Category updated:", updatedCategory);
+      console.log("Kategori diperbarui:", updatedCategory);
       // Redirect or toast is handled in CategoryForm
       return updatedCategory;
     } catch (error) {
-      console.error("Failed to update category:", error);
+      console.error("Gagal memperbarui kategori:", error);
       throw error;
     }
   };

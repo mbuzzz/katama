@@ -44,7 +44,7 @@ export default function UsersPage() {
                 <TableHead>Peran (Role)</TableHead>
                 <TableHead className="hidden md:table-cell">Outlet</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Aksi</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -70,11 +70,11 @@ export default function UsersPage() {
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
+                          <span className="sr-only">Alihkan menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem><UserCircle2 className="mr-2 h-4 w-4" /> Lihat Detail</DropdownMenuItem>
                         <DropdownMenuItem><Edit className="mr-2 h-4 w-4" /> Edit Pengguna</DropdownMenuItem>
                         <DropdownMenuSeparator />

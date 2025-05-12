@@ -79,7 +79,7 @@ function AppSidebar() {
       <SidebarFooter className="p-4 border-t">
         <Button variant="ghost" className="w-full justify-start">
           <LogOut className="mr-2 h-4 w-4" />
-          <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+          <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
         </Button>
       </SidebarFooter>
     </Sidebar>
@@ -163,24 +163,24 @@ function AppHeader() {
       <div className="ml-auto flex items-center gap-2">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
-          <span className="sr-only">Toggle notifications</span>
+          <span className="sr-only">Alihkan notifikasi</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="https://picsum.photos/50/50" alt="User Avatar" data-ai-hint="user avatar" />
+                <AvatarImage src="https://picsum.photos/50/50" alt="Avatar Pengguna" data-ai-hint="user avatar" />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuItem>Pengaturan</DropdownMenuItem>
+            <DropdownMenuItem>Dukungan</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem>Keluar</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -36,13 +36,13 @@ export default function SalesReportPage() {
             <DatePickerWithRange className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="user-filter">User (Kasir)</Label>
+            <Label htmlFor="user-filter">Pengguna (Kasir)</Label>
             <Select>
               <SelectTrigger id="user-filter" className="mt-1">
-                <SelectValue placeholder="Semua User" />
+                <SelectValue placeholder="Semua Pengguna" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua User</SelectItem>
+                <SelectItem value="all">Semua Pengguna</SelectItem>
                 <SelectItem value="ana">Kasir Ana</SelectItem>
                 <SelectItem value="budi">Kasir Budi</SelectItem>
               </SelectContent>
@@ -74,8 +74,8 @@ export default function SalesReportPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Outlet</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>User (Kasir)</TableHead>
+                <TableHead>Waktu</TableHead>
+                <TableHead>Pengguna (Kasir)</TableHead>
                 <TableHead>Nama Produk</TableHead>
                 <TableHead className="text-right">Harga</TableHead>
                 <TableHead className="text-right">Jumlah</TableHead>
@@ -86,17 +86,17 @@ export default function SalesReportPage() {
               {mockSalesData.map((sale) => (
                 <TableRow key={sale.id}>
                   <TableCell>{sale.outlet}</TableCell>
-                  <TableCell>{sale.timestamp}</TableCell>
+                  <TableCell>{new Date(sale.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</TableCell>
                   <TableCell>{sale.user}</TableCell>
                   <TableCell className="font-medium">{sale.productName}</TableCell>
-                  <TableCell className="text-right">Rp {sale.price.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">Rp {sale.price.toLocaleString('id-ID')}</TableCell>
                   <TableCell className="text-right">{sale.quantity}</TableCell>
-                  <TableCell className="text-right">Rp {sale.total.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">Rp {sale.total.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               ))}
               <TableRow className="font-bold">
-                <TableCell colSpan={6} className="text-right">Grand Total</TableCell>
-                <TableCell className="text-right">Rp {mockSalesData.reduce((sum, item) => sum + item.total, 0).toLocaleString()}</TableCell>
+                <TableCell colSpan={6} className="text-right">Total Keseluruhan</TableCell>
+                <TableCell className="text-right">Rp {mockSalesData.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</TableCell>
               </TableRow>
             </TableBody>
           </Table>

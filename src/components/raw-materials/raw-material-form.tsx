@@ -72,7 +72,7 @@ export default function RawMaterialForm({
         description: "Terjadi kesalahan saat menyimpan bahan baku.",
         variant: "destructive",
       });
-      console.error("Save error:", error);
+      console.error("Kesalahan penyimpanan:", error);
     }
   };
 

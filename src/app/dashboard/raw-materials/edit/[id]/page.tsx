@@ -25,7 +25,7 @@ export default async function EditRawMaterialPage({ params }: EditRawMaterialPag
       if (!updatedMaterial) {
         throw new Error("Bahan baku tidak ditemukan untuk diperbarui.");
       }
-      // console.log("Raw material updated:", updatedMaterial);
+      // console.log("Bahan baku diperbarui:", updatedMaterial);
       return updatedMaterial;
     } catch (error) {
       console.error("Gagal memperbarui bahan baku:", error);

@@ -37,7 +37,7 @@ interface POSSession {
 }
 
 const mockProducts: Product[] = [
-  { id: "1", name: "Kopi Susu Aren", price: 18000, image: "https://picsum.photos/150/150?random=1", category: "Minuman", stock: 100, variants: [{name: "Less Sugar", price: 0}, {name: "Extra Shot", price: 5000}] },
+  { id: "1", name: "Kopi Susu Aren", price: 18000, image: "https://picsum.photos/150/150?random=1", category: "Minuman", stock: 100, variants: [{name: "Kurang Gula", price: 0}, {name: "Ekstra Shot", price: 5000}] },
   { id: "2", name: "Croissant Coklat", price: 22000, image: "https://picsum.photos/150/150?random=2", category: "Makanan", stock: 50 },
   { id: "3", name: "Teh Melati", price: 15000, image: "https://picsum.photos/150/150?random=3", category: "Minuman", stock: 100 },
   { id: "4", name: "Nasi Goreng Spesial", price: 35000, image: "https://picsum.photos/150/150?random=4", category: "Makanan", stock: 30 },
@@ -193,7 +193,7 @@ export default function POSPage() {
     <div className="flex flex-col h-full">
       <PageHeader 
         title="Point of Sale" 
-        description={`Sesi dimulai ${posSession.startTime.toLocaleDateString()} pukul ${posSession.startTime.toLocaleTimeString()} dengan modal awal Rp ${posSession.initialCash.toLocaleString()}`} 
+        description={`Sesi dimulai ${posSession.startTime.toLocaleDateString('id-ID')} pukul ${posSession.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} dengan modal awal Rp ${posSession.initialCash.toLocaleString('id-ID')}`} 
       />
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 flex-1 overflow-hidden">
         {/* Product Selection Area */}
@@ -225,12 +225,12 @@ export default function POSPage() {
                         style={{objectFit:"cover"}}
                         className="rounded-t-md"
                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                        data-ai-hint={`${product.category} product`} 
+                        data-ai-hint={`${product.category} produk`} 
                       />
                     </div>
                     <CardContent className="p-2 sm:p-3">
                       <h3 className="font-semibold text-xs sm:text-sm truncate">{product.name}</h3>
-                      <p className="text-xs text-muted-foreground">Rp {product.price.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Rp {product.price.toLocaleString('id-ID')}</p>
                       <Button 
                         size="sm" 
                         className="w-full mt-2 text-xs"
@@ -265,7 +265,7 @@ export default function POSPage() {
                     <li key={item.id} className="flex items-center justify-between text-sm">
                       <div className="flex-1 mr-2">
                         <p className="font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString()} x {item.quantity}</p>
+                        <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString('id-ID')} x {item.quantity}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => handleUpdateQuantity(item.id, -1)}><MinusCircle className="h-3 w-3" /></Button>
@@ -285,15 +285,15 @@ export default function POSPage() {
               <CardContent className="space-y-1 sm:space-y-2 pt-2 sm:pt-4 pb-2 sm:pb-3">
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>Rp {subtotal.toLocaleString()}</span>
+                  <span>Rp {subtotal.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Pajak ({taxRate * 100}%)</span>
-                  <span>Rp {tax.toLocaleString()}</span>
+                  <span>Rp {tax.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-sm sm:text-lg">
                   <span>Total</span>
-                  <span>Rp {total.toLocaleString()}</span>
+                  <span>Rp {total.toLocaleString('id-ID')}</span>
                 </div>
               </CardContent>
             </>
@@ -301,8 +301,8 @@ export default function POSPage() {
           <CardFooter className="flex flex-col gap-2 sm:gap-3 pt-2 sm:pt-4 border-t">
              <Label className="text-xs sm:text-sm self-start">Metode Pembayaran</Label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
-                <Button variant="outline" size="sm"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Cash</span></Button>
-                <Button variant="outline" size="sm"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Card</span></Button>
+                <Button variant="outline" size="sm"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Tunai</span></Button>
+                <Button variant="outline" size="sm"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span></Button>
                 <Button variant="outline" size="sm"><QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS</Button>
             </div>
             <Button size="lg" className="w-full mt-2 text-sm sm:text-base" onClick={handlePayment} disabled={cartItems.length === 0}>

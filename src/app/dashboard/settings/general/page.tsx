@@ -28,7 +28,7 @@ export default function GeneralSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Pengaturan General" description="Kelola informasi umum perusahaan Anda." />
+      <PageHeader title="Pengaturan Umum" description="Kelola informasi umum perusahaan Anda." />
       
       <Card className="shadow-lg">
         <CardHeader>
@@ -73,7 +73,7 @@ export default function GeneralSettingsPage() {
               {logoPreview && (
                 <Image 
                   src={logoPreview} 
-                  alt="Logo Preview" 
+                  alt="Pratinjau Logo" 
                   width={100} 
                   height={100} 
                   className="rounded-md border object-contain"
