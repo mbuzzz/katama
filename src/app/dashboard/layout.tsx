@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; // Added useRouter
+import { usePathname, useRouter } from "next/navigation"; 
 import {
   SidebarProvider,
   Sidebar,
@@ -35,7 +35,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast"; // Added useToast
+import { useToast } from "@/hooks/use-toast";
+
+const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
 
 export default function DashboardLayout({
   children,
@@ -63,21 +65,45 @@ function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+    if (storedLogo) {
+      setCustomLogoUrl(storedLogo);
+    }
+
+    const handleStorageChange = (event: StorageEvent | CustomEvent) => {
+      if (event instanceof StorageEvent && event.key === LOGO_STORAGE_KEY) {
+        setCustomLogoUrl(event.newValue);
+      } else if (event instanceof CustomEvent && event.type === 'logoChanged') {
+        setCustomLogoUrl((event as CustomEvent<string>).detail);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('logoChanged', handleStorageChange as EventListener); // Listen to custom event
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('logoChanged', handleStorageChange as EventListener);
+    };
+  }, []);
+
 
   const handleLogout = () => {
-    // Perform any logout logic here (e.g., clearing session, calling API)
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    router.push("/"); // Redirect to login page
+    router.push("/"); 
   };
 
   return (
     <Sidebar collapsible="icon" className="border-r">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 flex items-center justify-center"> {/* Added flex for centering */}
         <Link href="/dashboard" className="flex items-center gap-2">
-           <Logo />
+           <Logo customLogoUrl={customLogoUrl} />
         </Link>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -121,7 +147,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
         <SidebarMenuButton
           onClick={toggleSubmenu}
           className="justify-between"
-          isActive={isParentActive}
+          isActive={!!isParentActive} // Ensure isActive is boolean
           tooltip={item.title}
         >
           <div className="flex items-center gap-2">
@@ -137,9 +163,9 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
                 <Link href={subItem.href} legacyBehavior passHref>
                   <SidebarMenuSubButton
                     isActive={pathname === subItem.href}
-                    className={cn(pathname === subItem.href && "bg-sidebar-accent text-sidebar-accent-foreground")}
+                     className={cn(pathname === subItem.href && "bg-sidebar-accent text-sidebar-accent-foreground")}
                   >
-                    {/* <subItem.icon className="h-4 w-4" /> */}
+                    {/* <subItem.icon className="h-4 w-4" /> */} {/* Icons in sub-items can be too much */}
                     <span>{subItem.title}</span>
                   </SidebarMenuSubButton>
                 </Link>
@@ -155,7 +181,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     <SidebarMenuItem>
       <Link href={item.href || "#"} legacyBehavior passHref>
         <SidebarMenuButton
-          isActive={isActive}
+          isActive={!!isActive} // Ensure isActive is boolean
           tooltip={item.title}
           className={cn(isActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90")}
         >
@@ -201,7 +227,7 @@ function AppHeader() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Pengaturan</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/settings/general')}>Pengaturan</DropdownMenuItem>
             <DropdownMenuItem>Dukungan</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
@@ -214,4 +240,3 @@ function AppHeader() {
     </header>
   );
 }
-
