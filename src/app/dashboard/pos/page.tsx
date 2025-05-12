@@ -1,6 +1,7 @@
+
 "use client";
 
-import type { Product as ProductType } from "@/types/product";
+import type { Product as ProductType, ProductIngredient } from "@/types/product";
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Trash2, Printer, CreditCard, QrCode, DollarSignIcon, PlayCircle } from "lucide-react";
+import { PlusCircle, MinusCircle, Trash2, Printer, CreditCard, QrCode, DollarSignIcon, PlayCircle, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -21,10 +22,11 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { getMockProducts, processSaleTransaction } from "@/data/products"; // Use new data source
 
 interface Product extends ProductType {
-  image: string;
-  variants?: { name: string; price: number }[];
+  // image field is already in ProductType if it's optional
+  // variants?: { name: string; price: number }[]; // Already in ProductType
 }
 
 interface CartItem extends Product {
@@ -36,36 +38,54 @@ interface POSSession {
   startTime: Date;
 }
 
-const mockProducts: Product[] = [
-  { id: "1", name: "Kopi Susu Aren", price: 18000, image: "https://picsum.photos/150/150?random=1", category: "Minuman", stock: 100, variants: [{name: "Kurang Gula", price: 0}, {name: "Ekstra Shot", price: 5000}] },
-  { id: "2", name: "Croissant Coklat", price: 22000, image: "https://picsum.photos/150/150?random=2", category: "Makanan", stock: 50 },
-  { id: "3", name: "Teh Melati", price: 15000, image: "https://picsum.photos/150/150?random=3", category: "Minuman", stock: 100 },
-  { id: "4", name: "Nasi Goreng Spesial", price: 35000, image: "https://picsum.photos/150/150?random=4", category: "Makanan", stock: 30 },
-  { id: "5", name: "Americano", price: 16000, image: "https://picsum.photos/150/150?random=5", category: "Minuman", stock: 100 },
-  { id: "6", name: "Donat Gula", price: 10000, image: "https://picsum.photos/150/150?random=6", category: "Makanan", stock: 80 },
-  { id: "7", name: "Cappuccino", price: 20000, image: "https://picsum.photos/150/150?random=7", category: "Minuman", stock: 100 },
-  { id: "8", name: "Red Velvet Latte", price: 25000, image: "https://picsum.photos/150/150?random=8", category: "Minuman", stock: 70 },
-  { id: "9", name: "Matcha Latte", price: 25000, image: "https://picsum.photos/150/150?random=9", category: "Minuman", stock: 70 },
-  { id: "10", name: "Kentang Goreng", price: 18000, image: "https://picsum.photos/150/150?random=10", category: "Makanan", stock: 120 },
-  { id: "11", name: "Roti Bakar Coklat Keju", price: 20000, image: "https://picsum.photos/150/150?random=11", category: "Makanan", stock: 60 },
-  { id: "12", name: "Es Teh Lemon", price: 12000, image: "https://picsum.photos/150/150?random=12", category: "Minuman", stock: 150 },
-  { id: "13", name: "Muffin Blueberry", price: 18000, image: "https://picsum.photos/150/150?random=13", category: "Makanan", stock: 40 },
-  { id: "14", name: "Air Mineral", price: 5000, image: "https://picsum.photos/150/150?random=14", category: "Minuman", stock: 200 },
-  { id: "15", name: "Mie Ayam", price: 28000, image: "https://picsum.photos/150/150?random=15", category: "Makanan", stock: 25 },
-];
+// Server action to process the sale
+async function handleProcessSaleAction(cartItems: CartItem[]): Promise<{ success: boolean; message?: string }> {
+  "use server";
+  const itemsToProcess = cartItems.map(item => ({
+    productId: item.id,
+    quantity: item.quantity,
+    ingredients: item.ingredients, // Pass ingredients for raw material stock deduction
+  }));
+  return processSaleTransaction(itemsToProcess);
+}
+
 
 export default function POSPage() {
+  const [products, setProducts] = React.useState<Product[]>([]);
   const [cartItems, setCartItems] = React.useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [posSession, setPosSession] = React.useState<POSSession | null>(null);
   const [showOpenPOSDialog, setShowOpenPOSDialog] = React.useState(false);
   const [initialCashInput, setInitialCashInput] = React.useState("");
   const { toast } = useToast();
+  const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
+
+  React.useEffect(() => {
+    // Fetch products from the centralized data source
+    setProducts(getMockProducts());
+  }, [cartItems]); // Re-fetch products if cartItems change, to reflect stock updates for display
 
   const handleAddProductToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      toast({
+        title: "Stok Habis",
+        description: `Produk "${product.name}" sudah habis.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === product.id);
       if (existingItem) {
+        if (existingItem.quantity >= product.stock) {
+          toast({
+            title: "Stok Tidak Cukup",
+            description: `Jumlah "${product.name}" di keranjang melebihi stok yang tersedia (${product.stock}).`,
+            variant: "destructive",
+          });
+          return prevItems;
+        }
         return prevItems.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
@@ -77,8 +97,25 @@ export default function POSPage() {
 
   const handleUpdateQuantity = (productId: string, change: number) => {
     setCartItems((prevItems) => {
+      const productInCart = prevItems.find((item) => item.id === productId);
+      if (!productInCart) return prevItems;
+
+      const productDetails = products.find(p => p.id === productId);
+      if (!productDetails) return prevItems; // Should not happen
+
+      const newQuantity = Math.max(0, productInCart.quantity + change);
+
+      if (change > 0 && newQuantity > productDetails.stock) {
+         toast({
+            title: "Stok Tidak Cukup",
+            description: `Jumlah "${productDetails.name}" di keranjang melebihi stok yang tersedia (${productDetails.stock}).`,
+            variant: "destructive",
+          });
+        return prevItems.map(item => item.id === productId ? {...item, quantity: productDetails.stock} : item).filter(item => item.quantity > 0);
+      }
+      
       const updatedItems = prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity: Math.max(0, item.quantity + change) } : item
+        item.id === productId ? { ...item, quantity: newQuantity } : item
       );
       return updatedItems.filter(item => item.quantity > 0);
     });
@@ -86,10 +123,10 @@ export default function POSPage() {
 
   const handleRemoveFromCart = (productId: string) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
-    toast({ title: `Item dihapus dari keranjang.`, variant: "destructive" });
+    toast({ title: `Item dihapus dari keranjang.`, variant: "default" });
   };
   
-  const filteredProducts = mockProducts.filter(product => 
+  const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -98,7 +135,7 @@ export default function POSPage() {
   const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (cartItems.length === 0) {
       toast({
         title: "Keranjang Kosong",
@@ -107,13 +144,25 @@ export default function POSPage() {
       });
       return;
     }
-    // In a real app, integrate with payment gateway or record transaction
-    toast({
-      title: "Pembayaran Berhasil (Simulasi)",
-      description: `Total Rp ${total.toLocaleString()} telah dibayar. Struk dicetak.`,
-    });
-    setCartItems([]); 
-    // Potentially clear customer info, etc.
+    setIsProcessingPayment(true);
+    const result = await handleProcessSaleAction(cartItems);
+    setIsProcessingPayment(false);
+
+    if (result.success) {
+      toast({
+        title: "Pembayaran Berhasil",
+        description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
+      });
+      setCartItems([]); 
+      // Re-fetch products to update stock display in POS product list
+      setProducts(getMockProducts()); 
+    } else {
+      toast({
+        title: "Pembayaran Gagal",
+        description: result.message || "Terjadi kesalahan saat memproses penjualan.",
+        variant: "destructive",
+      });
+    }
   }
 
   const handleOpenPOSSession = () => {
@@ -131,14 +180,13 @@ export default function POSPage() {
     setInitialCashInput("");
     toast({
       title: "Sesi POS Dibuka",
-      description: `Modal awal Rp ${cashAmount.toLocaleString()} telah dicatat.`,
+      description: `Modal awal Rp ${cashAmount.toLocaleString('id-ID')} telah dicatat.`,
     });
   };
 
-  // Screen to open POS session
   if (!posSession) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-4">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] p-4"> {/* Adjusted height */}
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
             <CardTitle className="text-center text-2xl">Buka Sesi POS</CardTitle>
@@ -188,15 +236,13 @@ export default function POSPage() {
     );
   }
 
-  // Main POS interface
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100vh-var(--header-height,88px))]"> {/* Adjust for header height */}
       <PageHeader 
         title="Point of Sale" 
-        description={`Sesi dimulai ${posSession.startTime.toLocaleDateString('id-ID')} pukul ${posSession.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} dengan modal awal Rp ${posSession.initialCash.toLocaleString('id-ID')}`} 
+        description={`Sesi dimulai ${posSession.startTime.toLocaleDateString('id-ID')} ${posSession.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} | Modal: Rp ${posSession.initialCash.toLocaleString('id-ID')}`} 
       />
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 flex-1 overflow-hidden">
-        {/* Product Selection Area */}
         <Card className="lg:col-span-2 shadow-lg flex flex-col flex-1 min-h-0">
           <CardHeader>
             <CardTitle>Pilih Produk</CardTitle>
@@ -210,34 +256,41 @@ export default function POSPage() {
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden p-0">
             <ScrollArea className="h-full p-2 md:p-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
                 {filteredProducts.map((product) => (
                   <Card 
                     key={product.id} 
-                    className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => handleAddProductToCart(product)}
+                    className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => product.stock > 0 && handleAddProductToCart(product)}
                   >
-                    <div className="relative w-full aspect-[4/3] sm:aspect-square"> {/* Adjusted aspect ratio for consistency */}
-                      <Image 
-                        src={product.image} 
+                    <div className="relative w-full aspect-[4/3]">
+                       <Image 
+                        src={product.image || "https://picsum.photos/150/150?random=0"} 
                         alt={product.name} 
                         fill={true}
                         style={{objectFit:"cover"}}
                         className="rounded-t-md"
-                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1200px) 25vw, 20vw"
                         data-ai-hint={`${product.category} produk`} 
                       />
+                      {product.stock === 0 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-t-md">
+                          <span className="text-white font-bold text-sm">STOK HABIS</span>
+                        </div>
+                      )}
                     </div>
                     <CardContent className="p-2 sm:p-3">
                       <h3 className="font-semibold text-xs sm:text-sm truncate">{product.name}</h3>
                       <p className="text-xs text-muted-foreground">Rp {product.price.toLocaleString('id-ID')}</p>
+                      <p className="text-xs text-muted-foreground">Stok: {product.stock.toLocaleString('id-ID')}</p>
                       <Button 
                         size="sm" 
                         className="w-full mt-2 text-xs"
                         variant="outline"
-                        onClick={(e) => { e.stopPropagation(); handleAddProductToCart(product); }} // Prevent card click if button is clicked
+                        onClick={(e) => { e.stopPropagation(); product.stock > 0 && handleAddProductToCart(product); }}
+                        disabled={product.stock === 0}
                       >
-                        Tambah
+                        {product.stock > 0 ? 'Tambah' : 'Stok Habis'}
                       </Button>
                     </CardContent>
                   </Card>
@@ -250,12 +303,11 @@ export default function POSPage() {
           </CardContent>
         </Card>
 
-        {/* Order Summary & Payment Area */}
-        <Card className="shadow-lg flex flex-col flex-1 min-h-0"> {/* Ensure this takes available space and scrolls */}
+        <Card className="shadow-lg flex flex-col flex-1 min-h-0">
           <CardHeader>
             <CardTitle>Detail Pesanan</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden"> {/* This enables scrolling for content */}
+          <CardContent className="flex-1 overflow-hidden">
             <ScrollArea className="h-full pr-1 md:pr-2">
               {cartItems.length === 0 ? (
                 <p className="text-muted-foreground text-center py-10">Keranjang kosong.</p>
@@ -305,12 +357,23 @@ export default function POSPage() {
                 <Button variant="outline" size="sm"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span></Button>
                 <Button variant="outline" size="sm"><QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS</Button>
             </div>
-            <Button size="lg" className="w-full mt-2 text-sm sm:text-base" onClick={handlePayment} disabled={cartItems.length === 0}>
-              <Printer className="mr-2 h-4 w-4" /> Bayar &amp; Cetak Struk
+            <Button 
+              size="lg" 
+              className="w-full mt-2 text-sm sm:text-base" 
+              onClick={handlePayment} 
+              disabled={cartItems.length === 0 || isProcessingPayment}
+            >
+              {isProcessingPayment ? (
+                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+              ) : <Printer className="mr-2 h-4 w-4" />}
+              {isProcessingPayment ? "Memproses..." : "Bayar & Cetak Struk"}
             </Button>
             <Button size="sm" variant="outline" className="w-full mt-1" onClick={() => {
               setPosSession(null);
-              setCartItems([]); // Clear cart when closing session
+              setCartItems([]); 
               toast({title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset."})
             }}>
               Tutup Sesi POS

@@ -1,3 +1,7 @@
+
+"use client"; // For useState, useEffect, and event handlers for delete dialog
+
+import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,20 +15,61 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Product } from "@/types/product";
-
-// Mock data - Updated to be compatible with the new Product type
-const mockProducts: Product[] = [
-  { id: "1", name: "Kopi Susu Aren", hpp: 8000, price: 18000, stock: 50, image: "https://picsum.photos/40/40?random=1", category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 100}, {rawMaterialId: "rm3", quantity: 15}] },
-  { id: "2", name: "Croissant Coklat", hpp: 12000, price: 22000, stock: 30, image: "https://picsum.photos/40/40?random=2", category: "Roti & Pastry" },
-  { id: "3", name: "Teh Melati Panas", hpp: 5000, price: 15000, stock: 100, image: "https://picsum.photos/40/40?random=3", category: "Minuman Panas", ingredients: [{rawMaterialId: "rm6", quantity: 5}] },
-  { id: "4", name: "Nasi Goreng Spesial", hpp: 18000, price: 35000, stock: 25, image: "https://picsum.photos/40/40?random=4", category: "Makanan Berat" },
-];
+import { getMockProducts, deleteMockProduct } from "@/data/products"; // Use new data source
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 export default function ProductsPage() {
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [productToDelete, setProductToDelete] = React.useState<Product | null>(null);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    setProducts(getMockProducts());
+  }, []);
+
+  const handleDeleteProduct = () => {
+    if (!productToDelete) return;
+
+    const success = deleteMockProduct(productToDelete.id);
+    if (success) {
+      setProducts(products.filter(prod => prod.id !== productToDelete.id));
+      toast({
+        title: "Produk Dihapus",
+        description: `Produk "${productToDelete.name}" telah berhasil dihapus.`,
+      });
+    } else {
+      toast({
+        title: "Gagal Menghapus",
+        description: "Terjadi kesalahan saat menghapus produk.",
+        variant: "destructive",
+      });
+    }
+    setShowDeleteDialog(false);
+    setProductToDelete(null);
+    router.refresh(); // To reflect changes
+  };
+
+  const openDeleteDialog = (product: Product) => {
+    setProductToDelete(product);
+    setShowDeleteDialog(true);
+  };
+
   return (
     <div>
       <PageHeader title="Produk" description="Kelola daftar produk Anda.">
@@ -38,7 +83,7 @@ export default function ProductsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Daftar Produk</CardTitle>
-          <CardDescription>Total {mockProducts.length} produk ditemukan.</CardDescription>
+          <CardDescription>Total {products.length} produk ditemukan.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -51,15 +96,21 @@ export default function ProductsPage() {
                 <TableHead>Harga Jual</TableHead>
                 <TableHead className="hidden md:table-cell">Margin</TableHead>
                 <TableHead>Stok</TableHead>
-                {/* <TableHead className="hidden md:table-cell">Varian</TableHead> */}
                 <TableHead>
                   <span className="sr-only">Aksi</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockProducts.map((product) => {
-                const margin = product.hpp ? product.price - product.hpp : product.price;
+              {products.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
+                    Belum ada produk yang ditambahkan.
+                  </TableCell>
+                </TableRow>
+              )}
+              {products.map((product) => {
+                const margin = product.price - (product.hpp || 0);
                 return (
                   <TableRow key={product.id}>
                     <TableCell className="hidden sm:table-cell">
@@ -76,11 +127,10 @@ export default function ProductsPage() {
                     <TableCell>
                       <Badge variant="outline">{product.category}</Badge>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">Rp {product.hpp?.toLocaleString('id-ID') || "-"}</TableCell>
+                    <TableCell className="hidden md:table-cell">Rp {(product.hpp || 0).toLocaleString('id-ID')}</TableCell>
                     <TableCell>Rp {product.price.toLocaleString('id-ID')}</TableCell>
                     <TableCell className="hidden md:table-cell">Rp {margin.toLocaleString('id-ID')}</TableCell>
-                    <TableCell>{product.stock}</TableCell>
-                    {/* <TableCell className="hidden md:table-cell">{product.variants?.length || '-'} Varian</TableCell> */}
+                    <TableCell>{product.stock.toLocaleString('id-ID')}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -91,11 +141,15 @@ export default function ProductsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                            {/* Future: <Link href={`/dashboard/products/edit/${product.id}`}>Edit</Link> */}
+                          <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/products/edit/${product.id}`}>
+                              <Edit className="mr-2 h-4 w-4" /> Edit
+                            </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                            onClick={() => openDeleteDialog(product)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" /> Hapus
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -108,6 +162,23 @@ export default function ProductsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Anda yakin ingin menghapus produk ini?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat diurungkan. Produk "{productToDelete?.name}" akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProductToDelete(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProduct} className="bg-destructive hover:bg-destructive/90">
+              Ya, Hapus Produk
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -2,8 +2,8 @@
 "use client";
 
 import type { Product, ProductIngredient } from "@/types/product";
-import type { RawMaterial } from "@/types/raw-material"; // Changed from data/raw-materials to types/raw-material
-import type { Unit } from "@/types/unit"; // Import Unit type
+import type { RawMaterial } from "@/types/raw-material"; 
+import type { Unit } from "@/types/unit"; 
 import React from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,16 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { Textarea } from "@/components/ui/textarea"; // Assuming you might want a description field later
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; // Removed CardFooter for now, submit is outside
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; 
 import { Trash2, PlusCircle, Save, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
-// import { mockCategoryNames } from "@/data/categories"; // This should come from props
-
-// Get units from a central place, or pass as props
-import { getMockUnits } from "@/data/units"; // For getting unit abbreviation
+import { getMockUnits } from "@/data/units"; 
+import { _calculateHPP as calculateHPPClientSide } from "@/data/products"; // For client-side HPP display update
 
 const productIngredientSchema = z.object({
   rawMaterialId: z.string().min(1, "Bahan baku harus dipilih"),
@@ -37,7 +34,8 @@ const productIngredientSchema = z.object({
 const productFormSchema = z.object({
   name: z.string().min(1, "Nama produk harus diisi"),
   category: z.string().min(1, "Kategori produk harus dipilih"),
-  hpp: z.coerce.number().min(0, "HPP tidak boleh negatif").optional(),
+  // HPP is now calculated on server, but we can display it
+  hpp: z.coerce.number().min(0, "HPP tidak boleh negatif").optional().default(0), // Keep for display
   price: z.coerce.number().min(0, "Harga jual tidak boleh negatif"),
   stock: z.coerce.number().min(0, "Stok tidak boleh negatif").int("Stok harus angka bulat"),
   image: z.string().optional(), 
@@ -48,10 +46,10 @@ export type ProductFormData = z.infer<typeof productFormSchema>;
 
 interface ProductFormProps {
   initialData?: Product;
-  rawMaterials: RawMaterial[]; // These are all available raw materials
+  rawMaterials: RawMaterial[]; 
   categories: string[]; 
-  onSave: (data: ProductFormData) => Promise<void>;
-  isEditing?: boolean; // Added to differentiate between add/edit
+  onSave: (data: ProductFormData) => Promise<Product | void>;
+  isEditing?: boolean; 
 }
 
 export default function ProductForm({
@@ -64,17 +62,17 @@ export default function ProductForm({
   const { toast } = useToast();
   const router = useRouter();
   const [imagePreview, setImagePreview] = React.useState<string | null>(initialData?.image || null);
-  const allUnits = React.useMemo(() => getMockUnits(), []); // Memoize unit fetching
+  const allUnits = React.useMemo(() => getMockUnits(), []); 
   
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: initialData?.name || "",
       category: initialData?.category || "",
-      hpp: initialData?.hpp || 0,
+      hpp: initialData?.hpp || 0, // Display initial HPP
       price: initialData?.price || 0,
       stock: initialData?.stock || 0,
-      image: initialData?.image || "", // Store the initial image URL here
+      image: initialData?.image || undefined, 
       ingredients: initialData?.ingredients || [],
     },
   });
@@ -83,6 +81,16 @@ export default function ProductForm({
     control: form.control,
     name: "ingredients",
   });
+
+  const watchedIngredients = form.watch("ingredients");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && watchedIngredients) { // Ensure rawMaterials is also available
+      const calculatedHpp = calculateHPPClientSide(watchedIngredients, rawMaterials);
+      form.setValue("hpp", calculatedHpp, { shouldValidate: false }); // Update HPP for display
+    }
+  }, [watchedIngredients, rawMaterials, form]);
+
 
   React.useEffect(() => {
     const currentPreview = imagePreview;
@@ -99,7 +107,7 @@ export default function ProductForm({
       const reader = new FileReader();
       reader.onloadend = () => {
         form.setValue("image", reader.result as string); 
-        setImagePreview(reader.result as string); // Update preview with Data URI directly
+        setImagePreview(reader.result as string); 
       };
       reader.readAsDataURL(file);
     } else {
@@ -110,6 +118,11 @@ export default function ProductForm({
   };
 
   const onSubmit = async (data: ProductFormData) => {
+    // The HPP value from the form (data.hpp) is just for display.
+    // The actual HPP calculation happens on the server action using submitted ingredients.
+    // We don't need to pass data.hpp to onSave if it's always server-calculated.
+    // However, onSave expects ProductFormData which includes HPP.
+    // The server action will ignore this client-displayed hpp and recalculate.
     try {
       await onSave(data);
       toast({
@@ -197,7 +210,7 @@ export default function ProductForm({
                   id="productImage"
                   type="file"
                   accept="image/*"
-                  onChange={handleImageFileChange} // Only call this, form value is set inside
+                  onChange={handleImageFileChange} 
                   className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />
               </div>
@@ -214,9 +227,17 @@ export default function ProductForm({
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="hpp">HPP (Harga Pokok Penjualan) (Opsional)</Label>
-              <Input id="hpp" type="number" placeholder="Contoh: 5000" {...form.register("hpp")} />
-               {form.formState.errors.hpp && (
+              <Label htmlFor="hpp">HPP (Harga Pokok Penjualan)</Label>
+              <Input 
+                id="hpp" 
+                type="number" 
+                placeholder="Dihitung otomatis" 
+                {...form.register("hpp")} 
+                readOnly 
+                className="bg-muted/50"
+              />
+               <p className="text-xs text-muted-foreground mt-1">Dihitung otomatis berdasarkan bahan baku.</p>
+              {form.formState.errors.hpp && (
                 <p className="text-sm text-destructive mt-1">{form.formState.errors.hpp.message}</p>
               )}
             </div>
@@ -267,7 +288,6 @@ export default function ProductForm({
                     <Select 
                       onValueChange={(value) => {
                         field.onChange(value);
-                        // Potentially trigger re-render or update related fields if needed
                       }} 
                       defaultValue={field.value}
                     >
@@ -279,7 +299,7 @@ export default function ProductForm({
                            const unit = allUnits.find(u => u.id === material.unitId);
                            return (
                             <SelectItem key={material.id} value={material.id}>
-                              {material.name} (Stok: {material.stock} {unit?.abbreviation || ''})
+                              {material.name} (Stok: {material.stock.toLocaleString('id-ID')} {unit?.abbreviation || ''}) Biaya: Rp {material.costPerUnit?.toLocaleString('id-ID') || '-'} / {unit?.abbreviation || ''}
                             </SelectItem>
                            );
                         })}
