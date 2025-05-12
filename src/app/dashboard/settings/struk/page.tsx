@@ -1,3 +1,4 @@
+tsx
 "use client";
 
 import { PageHeader } from "@/components/page-header";
@@ -8,8 +9,30 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Save, Printer, Bluetooth } from "lucide-react";
-import { useState } from "react";
+import { Save, Printer, Bluetooth, Loader2, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useToast } from "@/hooks/use-toast";
+
+interface MockPrinter {
+  id: string;
+  name: string;
+}
+
+const mockPrinters: MockPrinter[] = [
+  { id: "printer1", name: "Printer Thermal MPT-II" },
+  { id: "printer2", name: "Bluetooth Printer P58" },
+  { id: "printer3", name: "Generic BT Printer" },
+];
 
 export default function StrukSettingsPage() {
   const [paperSize, setPaperSize] = useState("58mm");
@@ -18,6 +41,48 @@ export default function StrukSettingsPage() {
   const [showLogo, setShowLogo] = useState(true);
   const [showAddress, setShowAddress] = useState(true);
   const [showContact, setShowContact] = useState(true);
+
+  const [showPrinterDialog, setShowPrinterDialog] = useState(false);
+  const [isSearchingPrinters, setIsSearchingPrinters] = useState(false);
+  const [foundPrinters, setFoundPrinters] = useState<MockPrinter[]>([]);
+  const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
+  const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleSearchPrinters = async () => {
+    setIsSearchingPrinters(true);
+    setFoundPrinters([]);
+    setSelectedPrinterId(null); 
+    // Simulate searching for printers
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setFoundPrinters(mockPrinters);
+    setIsSearchingPrinters(false);
+  };
+
+  const handleConnectPrinter = () => {
+    if (!selectedPrinterId) {
+      toast({
+        title: "Pilih Printer",
+        description: "Silakan pilih salah satu printer dari daftar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const printerToConnect = foundPrinters.find(p => p.id === selectedPrinterId);
+    if (printerToConnect) {
+      setConnectedPrinterName(printerToConnect.name);
+      toast({
+        title: "Printer Terhubung",
+        description: `${printerToConnect.name} berhasil terhubung.`,
+      });
+      setShowPrinterDialog(false);
+    }
+  };
+
+  const openPrinterSearchDialog = () => {
+    setShowPrinterDialog(true);
+    handleSearchPrinters(); // Start searching immediately when dialog opens
+  }
 
   return (
     <div>
@@ -36,9 +101,21 @@ export default function StrukSettingsPage() {
                 <Bluetooth className="h-5 w-5 text-muted-foreground" />
                 <Label htmlFor="bluetoothPrinter">Printer Bluetooth Thermal</Label>
               </div>
-              <Button variant="outline">
-                <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer
-              </Button>
+              {connectedPrinterName ? (
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                    <span className="text-sm text-green-700">Terhubung ke: <strong>{connectedPrinterName}</strong></span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={openPrinterSearchDialog}>
+                    Ganti Printer
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" onClick={openPrinterSearchDialog}>
+                  <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer
+                </Button>
+              )}
               <p className="text-xs text-muted-foreground">Pastikan Bluetooth aktif dan printer dalam jangkauan.</p>
             </div>
           </fieldset>
@@ -115,6 +192,52 @@ export default function StrukSettingsPage() {
           </Button>
         </CardFooter>
       </Card>
+
+      <Dialog open={showPrinterDialog} onOpenChange={setShowPrinterDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pilih Printer Bluetooth</DialogTitle>
+            <DialogDescription>
+              Pilih printer thermal yang ingin Anda gunakan dari daftar di bawah ini.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {isSearchingPrinters && (
+              <div className="flex items-center justify-center space-x-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Mencari printer...</span>
+              </div>
+            )}
+            {!isSearchingPrinters && foundPrinters.length === 0 && (
+              <p className="text-center text-muted-foreground">Tidak ada printer yang ditemukan. Pastikan printer aktif dan Bluetooth di perangkat Anda menyala.</p>
+            )}
+            {!isSearchingPrinters && foundPrinters.length > 0 && (
+              <RadioGroup value={selectedPrinterId || ""} onValueChange={setSelectedPrinterId}>
+                {foundPrinters.map((printer) => (
+                  <div key={printer.id} className="flex items-center space-x-2 p-2 border rounded-md hover:bg-accent/50">
+                    <RadioGroupItem value={printer.id} id={printer.id} />
+                    <Label htmlFor={printer.id} className="flex-1 cursor-pointer">{printer.name}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            )}
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button type="button" variant="outline" onClick={handleSearchPrinters} disabled={isSearchingPrinters}>
+              {isSearchingPrinters ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Cari Ulang
+            </Button>
+            <div className="flex space-x-2">
+              <DialogClose asChild>
+                <Button type="button" variant="ghost">Batal</Button>
+              </DialogClose>
+              <Button type="button" onClick={handleConnectPrinter} disabled={!selectedPrinterId || isSearchingPrinters}>
+                Hubungkan
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
