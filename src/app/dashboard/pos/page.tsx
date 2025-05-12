@@ -22,7 +22,9 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { getMockProducts, processSaleTransaction } from "@/data/products"; // Use new data source
+import { getMockProducts } from "@/data/products"; 
+import { handleProcessSaleAction } from "./actions";
+
 
 interface Product extends ProductType {
   // image field is already in ProductType if it's optional
@@ -36,17 +38,6 @@ interface CartItem extends Product {
 interface POSSession {
   initialCash: number;
   startTime: Date;
-}
-
-// Server action to process the sale
-async function handleProcessSaleAction(cartItems: CartItem[]): Promise<{ success: boolean; message?: string }> {
-  "use server";
-  const itemsToProcess = cartItems.map(item => ({
-    productId: item.id,
-    quantity: item.quantity,
-    ingredients: item.ingredients, // Pass ingredients for raw material stock deduction
-  }));
-  return processSaleTransaction(itemsToProcess);
 }
 
 
@@ -384,3 +375,4 @@ export default function POSPage() {
     </div>
   );
 }
+
