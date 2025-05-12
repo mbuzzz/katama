@@ -1,13 +1,14 @@
+
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Users, ShoppingCart, Package } from "lucide-react";
 
 export default function DashboardPage() {
   const stats = [
-    { title: "Total Pendapatan", value: "Rp 12,345,000", icon: DollarSign, change: "+12.5%" },
-    { title: "Pelanggan Baru", value: "120", icon: Users, change: "+5.2%" },
-    { title: "Total Pesanan", value: "850", icon: ShoppingCart, change: "+8.1%" },
-    { title: "Produk Tersedia", value: "2,300", icon: Package, change: "-1.5%" },
+    { title: "Total Pendapatan", value: "Rp 1.234.500", icon: DollarSign, change: "+2.5%" },
+    { title: "Pelanggan Baru", value: "12", icon: Users, change: "+1.2%" },
+    { title: "Total Pesanan", value: "85", icon: ShoppingCart, change: "+3.1%" },
+    { title: "Produk Tersedia", value: "2.300", icon: Package, change: "-0.5%" },
   ];
 
   return (
@@ -22,7 +23,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.change} dari bulan lalu</p>
+              <p className="text-xs text-muted-foreground">{stat.change} dari kemarin</p>
             </CardContent>
           </Card>
         ))}
@@ -48,9 +49,9 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">Daftar produk terlaris akan ditampilkan di sini.</p>
             {/* Placeholder for product list */}
             <ul className="space-y-2">
-              <li className="flex justify-between"><span>Produk A</span><span>Rp 500,000</span></li>
-              <li className="flex justify-between"><span>Produk B</span><span>Rp 350,000</span></li>
-              <li className="flex justify-between"><span>Produk C</span><span>Rp 200,000</span></li>
+              <li className="flex justify-between"><span>Produk A</span><span>Rp 50.000</span></li>
+              <li className="flex justify-between"><span>Produk B</span><span>Rp 35.000</span></li>
+              <li className="flex justify-between"><span>Produk C</span><span>Rp 20.000</span></li>
             </ul>
           </CardContent>
         </Card>
@@ -58,3 +59,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
