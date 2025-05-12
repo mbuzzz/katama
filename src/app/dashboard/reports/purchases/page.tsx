@@ -5,6 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
+
 
 // Mock Data
 const mockPurchaseReportData = [
@@ -12,11 +14,6 @@ const mockPurchaseReportData = [
   { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000 },
   { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000 },
 ];
-
-// Placeholder for DatePickerWithRange, create if not available
-const DatePickerWithRange = ({ className }: { className?: string }) => (
-  <Input type="text" placeholder="Pilih rentang tanggal" className={className} />
-);
 
 export default function PurchaseReportPage() {
   return (

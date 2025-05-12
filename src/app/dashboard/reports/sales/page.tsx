@@ -1,11 +1,13 @@
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input"; // Not used directly if DatePickerWithRange is used
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePickerWithRange } from "@/components/ui/date-picker-with-range"; // Assuming this component exists or will be created
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { Download } from "lucide-react";
+import { Label } from "@/components/ui/label"; // Import Label component
 
 // Mock Data
 const mockSalesData = [
@@ -13,11 +15,6 @@ const mockSalesData = [
   { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21 11:15", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000 },
   { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20 14:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000 },
 ];
-
-// Placeholder for DatePickerWithRange, create if not available
-const DatePickerWithRange = ({ className }: { className?: string }) => (
-  <Input type="text" placeholder="Pilih rentang tanggal" className={className} />
-);
 
 
 export default function SalesReportPage() {
@@ -108,26 +105,3 @@ export default function SalesReportPage() {
     </div>
   );
 }
-
-// Ensure Label component exists or import it if it's from shadcn
-import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
-
-const labelVariants = cva(
-  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-)
-
-const Label = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
-    VariantProps<typeof labelVariants>
->(({ className, ...props }, ref) => (
-  <LabelPrimitive.Root
-    ref={ref}
-    className={cn(labelVariants(), className)}
-    {...props}
-  />
-))
-Label.displayName = LabelPrimitive.Root.displayName
