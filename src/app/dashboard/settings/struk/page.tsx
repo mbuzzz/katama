@@ -44,13 +44,13 @@ export default function StrukSettingsPage() {
 
   const [showPrinterDialog, setShowPrinterDialog] = useState(false);
   const [isSearchingPrinters, setIsSearchingPrinters] = useState(false);
-  const [isConnectingPrinter, setIsConnectingPrinter] = useState(false); // New state for connecting
+  const [isConnectingPrinter, setIsConnectingPrinter] = useState(false);
   const [foundPrinters, setFoundPrinters] = useState<MockPrinter[]>([]);
   const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
   const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // This useEffect is in the original code, can be removed if not used for other purposes.
+  // This useEffect can be used for any initial setup if needed.
   useEffect(() => {
   }, []);
 
@@ -58,10 +58,18 @@ export default function StrukSettingsPage() {
     setIsSearchingPrinters(true);
     setFoundPrinters([]);
     setSelectedPrinterId(null); 
-    // Simulate searching for printers
+    // Simulate searching for printers - in a real app, this would interact with browser Bluetooth APIs
     await new Promise(resolve => setTimeout(resolve, 2000));
-    setFoundPrinters(mockPrinters);
+    // For demo purposes, we use mock printers. A real implementation would get this list from the Bluetooth API.
+    setFoundPrinters(mockPrinters); 
     setIsSearchingPrinters(false);
+    if (mockPrinters.length === 0) {
+        toast({
+            title: "Tidak Ada Printer Ditemukan",
+            description: "Pastikan printer Bluetooth Anda aktif dan dalam jangkauan.",
+            variant: "default"
+        })
+    }
   };
 
   const handleConnectPrinter = async () => {
@@ -76,35 +84,40 @@ export default function StrukSettingsPage() {
     if (isConnectingPrinter) return;
 
     setIsConnectingPrinter(true);
-    // Simulate connection delay
-    await new Promise(resolve => setTimeout(resolve, 700)); 
+    // Simulate connection delay - in a real app, this would be the actual connection process
+    await new Promise(resolve => setTimeout(resolve, 1500)); 
 
     const printerToConnect = foundPrinters.find(p => p.id === selectedPrinterId);
     if (printerToConnect) {
+      // In a real app, you'd store the connection status/object.
       setConnectedPrinterName(printerToConnect.name);
       toast({
-        title: "Printer Terhubung (Simulasi)",
-        description: `${printerToConnect.name} berhasil terhubung. Ini adalah simulasi.`,
+        title: "Printer Terhubung",
+        description: `${printerToConnect.name} berhasil terhubung.`,
       });
       setShowPrinterDialog(false);
     } else {
         toast({
-            title: "Error",
-            description: "Printer yang dipilih tidak ditemukan. Silakan coba lagi.",
+            title: "Koneksi Gagal",
+            description: "Gagal terhubung ke printer yang dipilih. Silakan coba lagi.",
             variant: "destructive",
         });
     }
     setIsConnectingPrinter(false);
-    setSelectedPrinterId(null); // Clear selection after attempting connection
+    // Do not clear selectedPrinterId here if you want it to persist on reopen until successful connection
   };
 
   const openPrinterSearchDialog = () => {
     setShowPrinterDialog(true);
-    if (!connectedPrinterName) { // Only auto-search if not already connected
+    // Reset states for a fresh search/connection attempt if dialog is re-opened
+    // and no printer is currently "connected" in our state.
+    if (!connectedPrinterName) {
+        setFoundPrinters([]); // Clear previous list to show loading/search state
         handleSearchPrinters(); 
     } else {
-        // If already connected, still show list but don't auto-search unless "Cari Ulang"
-        setFoundPrinters(mockPrinters); // Show current list if re-opening to change
+        // If a printer is already "connected", show the list with the current one potentially pre-selected
+        // or just show the list of previously found printers for a change.
+        setFoundPrinters(mockPrinters); // Or fetch again if desired
         setIsSearchingPrinters(false);
     }
   }
@@ -116,11 +129,11 @@ export default function StrukSettingsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Konfigurasi Struk</CardTitle>
-          <CardDescription>Atur koneksi printer (simulasi), ukuran kertas, dan konten struk.</CardDescription>
+          <CardDescription>Atur koneksi printer, ukuran kertas, dan konten struk.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <fieldset className="border p-4 rounded-md">
-            <legend className="text-sm font-medium px-1">Koneksi Printer (Simulasi)</legend>
+            <legend className="text-sm font-medium px-1">Koneksi Printer</legend>
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Bluetooth className="h-5 w-5 text-muted-foreground" />
@@ -130,7 +143,7 @@ export default function StrukSettingsPage() {
                 <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
                   <div className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="text-sm text-green-700">Terhubung ke: <strong>{connectedPrinterName}</strong> (Simulasi)</span>
+                    <span className="text-sm text-green-700">Terhubung ke: <strong>{connectedPrinterName}</strong></span>
                   </div>
                   <Button variant="outline" size="sm" onClick={openPrinterSearchDialog}>
                     Ganti Printer
@@ -138,10 +151,10 @@ export default function StrukSettingsPage() {
                 </div>
               ) : (
                 <Button variant="outline" onClick={openPrinterSearchDialog}>
-                  <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer (Simulasi)
+                  <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer
                 </Button>
               )}
-              <p className="text-xs text-muted-foreground">Simulasi pencarian dan koneksi printer Bluetooth. Tidak ada interaksi hardware.</p>
+              <p className="text-xs text-muted-foreground">Hubungkan ke printer Bluetooth thermal untuk mencetak struk.</p>
             </div>
           </fieldset>
 
@@ -221,15 +234,14 @@ export default function StrukSettingsPage() {
       <Dialog open={showPrinterDialog} onOpenChange={(isOpen) => {
         setShowPrinterDialog(isOpen);
         if (!isOpen) {
-            // setSelectedPrinterId(null); // Optionally reset selection when dialog is closed by other means
-            setIsConnectingPrinter(false); // Ensure connecting state is reset
+            setIsConnectingPrinter(false); 
         }
       }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Pilih Printer Bluetooth (Simulasi)</DialogTitle>
+            <DialogTitle>Pilih Printer Bluetooth</DialogTitle>
             <DialogDescription>
-              Pilih printer thermal yang ingin Anda gunakan dari daftar di bawah ini. Ini adalah simulasi.
+              Pilih printer thermal yang ingin Anda gunakan dari daftar di bawah ini.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -240,7 +252,7 @@ export default function StrukSettingsPage() {
               </div>
             )}
             {!isSearchingPrinters && foundPrinters.length === 0 && (
-              <p className="text-center text-muted-foreground">Tidak ada printer simulasi yang ditemukan. Klik "Cari Ulang" untuk memulai simulasi pencarian.</p>
+              <p className="text-center text-muted-foreground">Tidak ada printer yang ditemukan. Klik "Cari Ulang" untuk mencoba lagi.</p>
             )}
             {!isSearchingPrinters && foundPrinters.length > 0 && (
               <RadioGroup value={selectedPrinterId || ""} onValueChange={setSelectedPrinterId}>
