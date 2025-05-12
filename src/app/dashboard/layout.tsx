@@ -1,8 +1,9 @@
+
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // Added useRouter
 import {
   SidebarProvider,
   Sidebar,
@@ -34,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast"; // Added useToast
 
 export default function DashboardLayout({
   children,
@@ -59,6 +61,17 @@ export default function DashboardLayout({
 
 function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    // Perform any logout logic here (e.g., clearing session, calling API)
+    toast({
+      title: "Keluar Berhasil",
+      description: "Anda telah berhasil keluar.",
+    });
+    router.push("/"); // Redirect to login page
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -77,7 +90,7 @@ function AppSidebar() {
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter className="p-4 border-t">
-        <Button variant="ghost" className="w-full justify-start">
+        <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span className="group-data-[collapsible=icon]:hidden">Keluar</span>
         </Button>
@@ -157,6 +170,17 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
 
 function AppHeader() {
   const { isMobile } = useSidebar();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    toast({
+      title: "Keluar Berhasil",
+      description: "Anda telah berhasil keluar.",
+    });
+    router.push("/");
+  };
+
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
       {isMobile && <SidebarTrigger asChild><Button size="icon" variant="outline"><Menu className="h-5 w-5" /></Button></SidebarTrigger>}
@@ -180,10 +204,14 @@ function AppHeader() {
             <DropdownMenuItem>Pengaturan</DropdownMenuItem>
             <DropdownMenuItem>Dukungan</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Keluar</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Keluar
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
   );
 }
+
