@@ -24,6 +24,7 @@ import { Trash2, PlusCircle, Save, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation"; // For redirecting after save
 import Image from "next/image";
+import { mockCategoryNames } from "@/data/categories"; // Use the names from the new category data structure
 
 const productIngredientSchema = z.object({
   rawMaterialId: z.string().min(1, "Bahan baku harus dipilih"),
@@ -45,14 +46,14 @@ type ProductFormData = z.infer<typeof productFormSchema>;
 interface ProductFormProps {
   initialData?: Product;
   rawMaterials: RawMaterial[];
-  categories: string[];
+  categories: string[]; // This now comes from mockCategoryNames
   onSave: (data: ProductFormData) => Promise<void>;
 }
 
 export default function ProductForm({
   initialData,
   rawMaterials,
-  categories,
+  categories, // This will be mockCategoryNames
   onSave,
 }: ProductFormProps) {
   const { toast } = useToast();

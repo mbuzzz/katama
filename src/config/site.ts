@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   UserCog,
   ShieldCheck,
   Building2,
+  ListTree, // Added for Kategori
 } from 'lucide-react';
 
 export type NavItem = {
@@ -79,6 +81,12 @@ export const siteConfig: SiteConfig = {
       href: `${dashboardBaseUrl}/products`,
       icon: Package,
       description: "Kelola daftar produk Anda.",
+    },
+    {
+      title: "Kategori",
+      href: `${dashboardBaseUrl}/categories`,
+      icon: ListTree,
+      description: "Kelola kategori produk.",
     },
     {
       title: "Pembelanjaan",
