@@ -107,11 +107,13 @@ export default function POSPage() {
       });
       return;
     }
+    // In a real app, integrate with payment gateway or record transaction
     toast({
       title: "Pembayaran Berhasil (Simulasi)",
       description: `Total Rp ${total.toLocaleString()} telah dibayar. Struk dicetak.`,
     });
     setCartItems([]); 
+    // Potentially clear customer info, etc.
   }
 
   const handleOpenPOSSession = () => {
@@ -133,9 +135,10 @@ export default function POSPage() {
     });
   };
 
+  // Screen to open POS session
   if (!posSession) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
+      <div className="flex flex-col items-center justify-center h-full p-4">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
             <CardTitle className="text-center text-2xl">Buka Sesi POS</CardTitle>
@@ -185,12 +188,16 @@ export default function POSPage() {
     );
   }
 
+  // Main POS interface
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Point of Sale" description={`Sesi dimulai pukul ${posSession.startTime.toLocaleTimeString()} dengan modal awal Rp ${posSession.initialCash.toLocaleString()}`} />
-      <div className="flex flex-col md:grid md:grid-cols-3 gap-6 flex-1 overflow-hidden">
-        {/* Product Selection */}
-        <Card className="md:col-span-2 shadow-lg flex flex-col flex-1 min-h-0">
+      <PageHeader 
+        title="Point of Sale" 
+        description={`Sesi dimulai ${posSession.startTime.toLocaleDateString()} pukul ${posSession.startTime.toLocaleTimeString()} dengan modal awal Rp ${posSession.initialCash.toLocaleString()}`} 
+      />
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 flex-1 overflow-hidden">
+        {/* Product Selection Area */}
+        <Card className="lg:col-span-2 shadow-lg flex flex-col flex-1 min-h-0">
           <CardHeader>
             <CardTitle>Pilih Produk</CardTitle>
             <Input 
@@ -202,27 +209,33 @@ export default function POSPage() {
             />
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden p-0">
-            <ScrollArea className="h-full p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <ScrollArea className="h-full p-2 md:p-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4">
                 {filteredProducts.map((product) => (
-                  <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="relative w-full h-32">
+                  <Card 
+                    key={product.id} 
+                    className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleAddProductToCart(product)}
+                  >
+                    <div className="relative w-full aspect-[4/3] sm:aspect-square"> {/* Adjusted aspect ratio for consistency */}
                       <Image 
                         src={product.image} 
                         alt={product.name} 
                         fill={true}
                         style={{objectFit:"cover"}}
                         className="rounded-t-md"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                         data-ai-hint={`${product.category} product`} 
                       />
                     </div>
-                    <CardContent className="p-3">
-                      <h3 className="font-semibold text-sm truncate">{product.name}</h3>
+                    <CardContent className="p-2 sm:p-3">
+                      <h3 className="font-semibold text-xs sm:text-sm truncate">{product.name}</h3>
                       <p className="text-xs text-muted-foreground">Rp {product.price.toLocaleString()}</p>
                       <Button 
                         size="sm" 
                         className="w-full mt-2 text-xs"
-                        onClick={() => handleAddProductToCart(product)}
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); handleAddProductToCart(product); }} // Prevent card click if button is clicked
                       >
                         Tambah
                       </Button>
@@ -237,28 +250,28 @@ export default function POSPage() {
           </CardContent>
         </Card>
 
-        {/* Order Summary & Payment */}
-        <Card className="shadow-lg flex flex-col flex-1 min-h-0">
+        {/* Order Summary & Payment Area */}
+        <Card className="shadow-lg flex flex-col flex-1 min-h-0"> {/* Ensure this takes available space and scrolls */}
           <CardHeader>
             <CardTitle>Detail Pesanan</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full pr-2">
+          <CardContent className="flex-1 overflow-hidden"> {/* This enables scrolling for content */}
+            <ScrollArea className="h-full pr-1 md:pr-2">
               {cartItems.length === 0 ? (
                 <p className="text-muted-foreground text-center py-10">Keranjang kosong.</p>
               ) : (
-                <ul className="space-y-3">
+                <ul className="space-y-2 sm:space-y-3">
                   {cartItems.map((item) => (
                     <li key={item.id} className="flex items-center justify-between text-sm">
-                      <div>
-                        <p className="font-medium">{item.name}</p>
+                      <div className="flex-1 mr-2">
+                        <p className="font-medium truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString()} x {item.quantity}</p>
                       </div>
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleUpdateQuantity(item.id, -1)}><MinusCircle className="h-3 w-3" /></Button>
-                        <span className="w-4 text-center">{item.quantity}</span>
-                        <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleUpdateQuantity(item.id, 1)}><PlusCircle className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveFromCart(item.id)}><Trash2 className="h-3 w-3" /></Button>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => handleUpdateQuantity(item.id, -1)}><MinusCircle className="h-3 w-3" /></Button>
+                        <span className="w-5 text-center text-xs sm:text-sm">{item.quantity}</span>
+                        <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => handleUpdateQuantity(item.id, 1)}><PlusCircle className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 text-destructive" onClick={() => handleRemoveFromCart(item.id)}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </li>
                   ))}
@@ -269,35 +282,35 @@ export default function POSPage() {
           {cartItems.length > 0 && (
             <>
               <Separator />
-              <CardContent className="space-y-2 pt-4">
-                <div className="flex justify-between text-sm">
+              <CardContent className="space-y-1 sm:space-y-2 pt-2 sm:pt-4 pb-2 sm:pb-3">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>Rp {subtotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Pajak ({taxRate * 100}%)</span>
                   <span>Rp {tax.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between font-semibold text-lg">
+                <div className="flex justify-between font-semibold text-sm sm:text-lg">
                   <span>Total</span>
                   <span>Rp {total.toLocaleString()}</span>
                 </div>
               </CardContent>
             </>
           )}
-          <CardFooter className="flex flex-col gap-3 pt-4 border-t">
-             <Label className="text-sm self-start">Metode Pembayaran</Label>
-            <div className="grid grid-cols-3 gap-2 w-full">
-                <Button variant="outline"><DollarSignIcon className="mr-1 h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Cash</span></Button>
-                <Button variant="outline"><CreditCard className="mr-1 h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Card</span></Button>
-                <Button variant="outline"><QrCode className="mr-1 h-4 w-4 sm:mr-2" /> QRIS</Button>
+          <CardFooter className="flex flex-col gap-2 sm:gap-3 pt-2 sm:pt-4 border-t">
+             <Label className="text-xs sm:text-sm self-start">Metode Pembayaran</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+                <Button variant="outline" size="sm"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Cash</span></Button>
+                <Button variant="outline" size="sm"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Card</span></Button>
+                <Button variant="outline" size="sm"><QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS</Button>
             </div>
-            <Button size="lg" className="w-full mt-2" onClick={handlePayment} disabled={cartItems.length === 0}>
+            <Button size="lg" className="w-full mt-2 text-sm sm:text-base" onClick={handlePayment} disabled={cartItems.length === 0}>
               <Printer className="mr-2 h-4 w-4" /> Bayar &amp; Cetak Struk
             </Button>
-            <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => {
+            <Button size="sm" variant="outline" className="w-full mt-1" onClick={() => {
               setPosSession(null);
-              setCartItems([]);
+              setCartItems([]); // Clear cart when closing session
               toast({title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset."})
             }}>
               Tutup Sesi POS
