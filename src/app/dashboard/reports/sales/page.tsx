@@ -1,0 +1,133 @@
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range"; // Assuming this component exists or will be created
+import { Download } from "lucide-react";
+
+// Mock Data
+const mockSalesData = [
+  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21 10:30", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000 },
+  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21 11:15", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000 },
+  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20 14:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000 },
+];
+
+// Placeholder for DatePickerWithRange, create if not available
+const DatePickerWithRange = ({ className }: { className?: string }) => (
+  <Input type="text" placeholder="Pilih rentang tanggal" className={className} />
+);
+
+
+export default function SalesReportPage() {
+  return (
+    <div>
+      <PageHeader title="Laporan Penjualan" description="Analisis detail penjualan Anda.">
+        <Button variant="outline">
+          <Download className="mr-2 h-4 w-4" /> Unduh Laporan
+        </Button>
+      </PageHeader>
+
+      <Card className="mb-6 shadow-lg">
+        <CardHeader>
+          <CardTitle>Filter Laporan</CardTitle>
+        </CardHeader>
+        <CardContent className="grid md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="date-range">Rentang Tanggal</Label>
+            <DatePickerWithRange className="mt-1" />
+          </div>
+          <div>
+            <Label htmlFor="user-filter">User (Kasir)</Label>
+            <Select>
+              <SelectTrigger id="user-filter" className="mt-1">
+                <SelectValue placeholder="Semua User" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua User</SelectItem>
+                <SelectItem value="ana">Kasir Ana</SelectItem>
+                <SelectItem value="budi">Kasir Budi</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="outlet-filter">Outlet</Label>
+            <Select>
+              <SelectTrigger id="outlet-filter" className="mt-1">
+                <SelectValue placeholder="Semua Outlet" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Outlet</SelectItem>
+                <SelectItem value="pusat">Outlet Pusat</SelectItem>
+                <SelectItem value="cabang_a">Outlet Cabang A</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Detail Penjualan</CardTitle>
+          <CardDescription>Menampilkan {mockSalesData.length} transaksi.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Outlet</TableHead>
+                <TableHead>Timestamp</TableHead>
+                <TableHead>User (Kasir)</TableHead>
+                <TableHead>Nama Produk</TableHead>
+                <TableHead className="text-right">Harga</TableHead>
+                <TableHead className="text-right">Jumlah</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockSalesData.map((sale) => (
+                <TableRow key={sale.id}>
+                  <TableCell>{sale.outlet}</TableCell>
+                  <TableCell>{sale.timestamp}</TableCell>
+                  <TableCell>{sale.user}</TableCell>
+                  <TableCell className="font-medium">{sale.productName}</TableCell>
+                  <TableCell className="text-right">Rp {sale.price.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{sale.quantity}</TableCell>
+                  <TableCell className="text-right">Rp {sale.total.toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="font-bold">
+                <TableCell colSpan={6} className="text-right">Grand Total</TableCell>
+                <TableCell className="text-right">Rp {mockSalesData.reduce((sum, item) => sum + item.total, 0).toLocaleString()}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Ensure Label component exists or import it if it's from shadcn
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const labelVariants = cva(
+  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+)
+
+const Label = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
+    VariantProps<typeof labelVariants>
+>(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root
+    ref={ref}
+    className={cn(labelVariants(), className)}
+    {...props}
+  />
+))
+Label.displayName = LabelPrimitive.Root.displayName
