@@ -4,15 +4,9 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = GeistSans({ 
-  variable: '--font-geist-sans',
-  subsets: ['latin'], // Subsets might be optional or handled differently by geist/font
-});
-
-const geistMono = GeistMono({ 
-  variable: '--font-geist-mono',
-  subsets: ['latin'], // Subsets might be optional or handled differently by geist/font
-});
+// GeistSans and GeistMono are objects, not functions.
+// Access their `variable` property directly.
+// The `subsets` option is generally handled by the font package itself or not needed for `geist/font`.
 
 export const metadata: Metadata = {
   title: 'TokoLite POS',
@@ -26,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased font-sans`}>
         {children}
         <Toaster />
       </body>
