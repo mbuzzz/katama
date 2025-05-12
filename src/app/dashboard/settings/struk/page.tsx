@@ -1,4 +1,4 @@
-tsx
+
 "use client";
 
 import { PageHeader } from "@/components/page-header";
@@ -44,10 +44,15 @@ export default function StrukSettingsPage() {
 
   const [showPrinterDialog, setShowPrinterDialog] = useState(false);
   const [isSearchingPrinters, setIsSearchingPrinters] = useState(false);
+  const [isConnectingPrinter, setIsConnectingPrinter] = useState(false); // New state for connecting
   const [foundPrinters, setFoundPrinters] = useState<MockPrinter[]>([]);
   const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
   const [connectedPrinterName, setConnectedPrinterName] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // This useEffect is in the original code, can be removed if not used for other purposes.
+  useEffect(() => {
+  }, []);
 
   const handleSearchPrinters = async () => {
     setIsSearchingPrinters(true);
@@ -59,7 +64,7 @@ export default function StrukSettingsPage() {
     setIsSearchingPrinters(false);
   };
 
-  const handleConnectPrinter = () => {
+  const handleConnectPrinter = async () => {
     if (!selectedPrinterId) {
       toast({
         title: "Pilih Printer",
@@ -68,20 +73,40 @@ export default function StrukSettingsPage() {
       });
       return;
     }
+    if (isConnectingPrinter) return;
+
+    setIsConnectingPrinter(true);
+    // Simulate connection delay
+    await new Promise(resolve => setTimeout(resolve, 700)); 
+
     const printerToConnect = foundPrinters.find(p => p.id === selectedPrinterId);
     if (printerToConnect) {
       setConnectedPrinterName(printerToConnect.name);
       toast({
-        title: "Printer Terhubung",
-        description: `${printerToConnect.name} berhasil terhubung.`,
+        title: "Printer Terhubung (Simulasi)",
+        description: `${printerToConnect.name} berhasil terhubung. Ini adalah simulasi.`,
       });
       setShowPrinterDialog(false);
+    } else {
+        toast({
+            title: "Error",
+            description: "Printer yang dipilih tidak ditemukan. Silakan coba lagi.",
+            variant: "destructive",
+        });
     }
+    setIsConnectingPrinter(false);
+    setSelectedPrinterId(null); // Clear selection after attempting connection
   };
 
   const openPrinterSearchDialog = () => {
     setShowPrinterDialog(true);
-    handleSearchPrinters(); // Start searching immediately when dialog opens
+    if (!connectedPrinterName) { // Only auto-search if not already connected
+        handleSearchPrinters(); 
+    } else {
+        // If already connected, still show list but don't auto-search unless "Cari Ulang"
+        setFoundPrinters(mockPrinters); // Show current list if re-opening to change
+        setIsSearchingPrinters(false);
+    }
   }
 
   return (
@@ -91,11 +116,11 @@ export default function StrukSettingsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Konfigurasi Struk</CardTitle>
-          <CardDescription>Atur koneksi printer, ukuran kertas, dan konten struk.</CardDescription>
+          <CardDescription>Atur koneksi printer (simulasi), ukuran kertas, dan konten struk.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <fieldset className="border p-4 rounded-md">
-            <legend className="text-sm font-medium px-1">Koneksi Printer</legend>
+            <legend className="text-sm font-medium px-1">Koneksi Printer (Simulasi)</legend>
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Bluetooth className="h-5 w-5 text-muted-foreground" />
@@ -105,7 +130,7 @@ export default function StrukSettingsPage() {
                 <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
                   <div className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="text-sm text-green-700">Terhubung ke: <strong>{connectedPrinterName}</strong></span>
+                    <span className="text-sm text-green-700">Terhubung ke: <strong>{connectedPrinterName}</strong> (Simulasi)</span>
                   </div>
                   <Button variant="outline" size="sm" onClick={openPrinterSearchDialog}>
                     Ganti Printer
@@ -113,10 +138,10 @@ export default function StrukSettingsPage() {
                 </div>
               ) : (
                 <Button variant="outline" onClick={openPrinterSearchDialog}>
-                  <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer
+                  <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer (Simulasi)
                 </Button>
               )}
-              <p className="text-xs text-muted-foreground">Pastikan Bluetooth aktif dan printer dalam jangkauan.</p>
+              <p className="text-xs text-muted-foreground">Simulasi pencarian dan koneksi printer Bluetooth. Tidak ada interaksi hardware.</p>
             </div>
           </fieldset>
 
@@ -193,28 +218,34 @@ export default function StrukSettingsPage() {
         </CardFooter>
       </Card>
 
-      <Dialog open={showPrinterDialog} onOpenChange={setShowPrinterDialog}>
+      <Dialog open={showPrinterDialog} onOpenChange={(isOpen) => {
+        setShowPrinterDialog(isOpen);
+        if (!isOpen) {
+            // setSelectedPrinterId(null); // Optionally reset selection when dialog is closed by other means
+            setIsConnectingPrinter(false); // Ensure connecting state is reset
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Pilih Printer Bluetooth</DialogTitle>
+            <DialogTitle>Pilih Printer Bluetooth (Simulasi)</DialogTitle>
             <DialogDescription>
-              Pilih printer thermal yang ingin Anda gunakan dari daftar di bawah ini.
+              Pilih printer thermal yang ingin Anda gunakan dari daftar di bawah ini. Ini adalah simulasi.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             {isSearchingPrinters && (
-              <div className="flex items-center justify-center space-x-2">
+              <div className="flex items-center justify-center space-x-2 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 <span>Mencari printer...</span>
               </div>
             )}
             {!isSearchingPrinters && foundPrinters.length === 0 && (
-              <p className="text-center text-muted-foreground">Tidak ada printer yang ditemukan. Pastikan printer aktif dan Bluetooth di perangkat Anda menyala.</p>
+              <p className="text-center text-muted-foreground">Tidak ada printer simulasi yang ditemukan. Klik "Cari Ulang" untuk memulai simulasi pencarian.</p>
             )}
             {!isSearchingPrinters && foundPrinters.length > 0 && (
               <RadioGroup value={selectedPrinterId || ""} onValueChange={setSelectedPrinterId}>
                 {foundPrinters.map((printer) => (
-                  <div key={printer.id} className="flex items-center space-x-2 p-2 border rounded-md hover:bg-accent/50">
+                  <div key={printer.id} className="flex items-center space-x-2 p-2 border rounded-md hover:bg-accent/50 has-[input:checked]:bg-accent/70">
                     <RadioGroupItem value={printer.id} id={printer.id} />
                     <Label htmlFor={printer.id} className="flex-1 cursor-pointer">{printer.name}</Label>
                   </div>
@@ -223,16 +254,17 @@ export default function StrukSettingsPage() {
             )}
           </div>
           <DialogFooter className="sm:justify-between">
-            <Button type="button" variant="outline" onClick={handleSearchPrinters} disabled={isSearchingPrinters}>
+            <Button type="button" variant="outline" onClick={handleSearchPrinters} disabled={isSearchingPrinters || isConnectingPrinter}>
               {isSearchingPrinters ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Cari Ulang
             </Button>
             <div className="flex space-x-2">
               <DialogClose asChild>
-                <Button type="button" variant="ghost">Batal</Button>
+                <Button type="button" variant="ghost" disabled={isConnectingPrinter}>Batal</Button>
               </DialogClose>
-              <Button type="button" onClick={handleConnectPrinter} disabled={!selectedPrinterId || isSearchingPrinters}>
-                Hubungkan
+              <Button type="button" onClick={handleConnectPrinter} disabled={!selectedPrinterId || isSearchingPrinters || isConnectingPrinter}>
+                {isConnectingPrinter && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isConnectingPrinter ? "Menghubungkan..." : "Hubungkan"}
               </Button>
             </div>
           </DialogFooter>
@@ -241,3 +273,4 @@ export default function StrukSettingsPage() {
     </div>
   );
 }
+
