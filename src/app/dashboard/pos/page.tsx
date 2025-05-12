@@ -1,6 +1,7 @@
 
 "use client";
 
+import type { Product as ProductType } from "@/types/product"; // Assuming types are defined elsewhere or should be
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Trash2, Printer, CreditCard, QrCode, DollarSignIcon, Landmark, PlayCircle } from "lucide-react";
+import { PlusCircle, MinusCircle, Trash2, Printer, CreditCard, QrCode, DollarSignIcon, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -22,13 +23,9 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  category: string;
-  variants?: { name: string; price: number }[];
+interface Product extends ProductType {
+  image: string; // ensure image is part of Product
+  variants?: { name: string; price: number }[]; // keep variants if used
 }
 
 interface CartItem extends Product {
@@ -40,14 +37,23 @@ interface POSSession {
   startTime: Date;
 }
 
-// Mock data
+// Expanded Mock data for better scroll testing
 const mockProducts: Product[] = [
-  { id: "1", name: "Kopi Susu Aren", price: 18000, image: "https://picsum.photos/150/150?random=1", category: "Minuman", variants: [{name: "Less Sugar", price: 0}, {name: "Extra Shot", price: 5000}] },
-  { id: "2", name: "Croissant Coklat", price: 22000, image: "https://picsum.photos/150/150?random=2", category: "Makanan" },
-  { id: "3", name: "Teh Melati", price: 15000, image: "https://picsum.photos/150/150?random=3", category: "Minuman" },
-  { id: "4", name: "Nasi Goreng Spesial", price: 35000, image: "https://picsum.photos/150/150?random=4", category: "Makanan" },
-  { id: "5", name: "Americano", price: 16000, image: "https://picsum.photos/150/150?random=5", category: "Minuman" },
-  { id: "6", name: "Donat Gula", price: 10000, image: "https://picsum.photos/150/150?random=6", category: "Makanan" },
+  { id: "1", name: "Kopi Susu Aren", price: 18000, image: "https://picsum.photos/150/150?random=1", category: "Minuman", stock: 100, variants: [{name: "Less Sugar", price: 0}, {name: "Extra Shot", price: 5000}] },
+  { id: "2", name: "Croissant Coklat", price: 22000, image: "https://picsum.photos/150/150?random=2", category: "Makanan", stock: 50 },
+  { id: "3", name: "Teh Melati", price: 15000, image: "https://picsum.photos/150/150?random=3", category: "Minuman", stock: 100 },
+  { id: "4", name: "Nasi Goreng Spesial", price: 35000, image: "https://picsum.photos/150/150?random=4", category: "Makanan", stock: 30 },
+  { id: "5", name: "Americano", price: 16000, image: "https://picsum.photos/150/150?random=5", category: "Minuman", stock: 100 },
+  { id: "6", name: "Donat Gula", price: 10000, image: "https://picsum.photos/150/150?random=6", category: "Makanan", stock: 80 },
+  { id: "7", name: "Cappuccino", price: 20000, image: "https://picsum.photos/150/150?random=7", category: "Minuman", stock: 100 },
+  { id: "8", name: "Red Velvet Latte", price: 25000, image: "https://picsum.photos/150/150?random=8", category: "Minuman", stock: 70 },
+  { id: "9", name: "Matcha Latte", price: 25000, image: "https://picsum.photos/150/150?random=9", category: "Minuman", stock: 70 },
+  { id: "10", name: "Kentang Goreng", price: 18000, image: "https://picsum.photos/150/150?random=10", category: "Makanan", stock: 120 },
+  { id: "11", name: "Roti Bakar Coklat Keju", price: 20000, image: "https://picsum.photos/150/150?random=11", category: "Makanan", stock: 60 },
+  { id: "12", name: "Es Teh Lemon", price: 12000, image: "https://picsum.photos/150/150?random=12", category: "Minuman", stock: 150 },
+  { id: "13", name: "Muffin Blueberry", price: 18000, image: "https://picsum.photos/150/150?random=13", category: "Makanan", stock: 40 },
+  { id: "14", name: "Air Mineral", price: 5000, image: "https://picsum.photos/150/150?random=14", category: "Minuman", stock: 200 },
+  { id: "15", name: "Mie Ayam", price: 28000, image: "https://picsum.photos/150/150?random=15", category: "Makanan", stock: 25 },
 ];
 
 export default function POSPage() {
@@ -206,8 +212,8 @@ export default function POSPage() {
                       <Image 
                         src={product.image} 
                         alt={product.name} 
-                        layout="fill"
-                        objectFit="cover"
+                        fill={true}
+                        style={{objectFit:"cover"}}
                         className="rounded-t-md"
                         data-ai-hint={`${product.category} product`} 
                       />
