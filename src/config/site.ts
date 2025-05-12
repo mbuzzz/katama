@@ -19,7 +19,8 @@ import {
   UserCog,
   ShieldCheck,
   Building2,
-  ListTree, // Added for Kategori
+  ListTree, 
+  Archive, // Added for Bahan Baku (Raw Materials)
 } from 'lucide-react';
 
 export type NavItem = {
@@ -87,6 +88,12 @@ export const siteConfig: SiteConfig = {
       href: `${dashboardBaseUrl}/categories`,
       icon: ListTree,
       description: "Kelola kategori produk.",
+    },
+    {
+      title: "Bahan Baku",
+      href: `${dashboardBaseUrl}/raw-materials`,
+      icon: Archive,
+      description: "Kelola stok bahan baku.",
     },
     {
       title: "Pembelanjaan",

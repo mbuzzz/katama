@@ -2,7 +2,8 @@
 "use client";
 
 import type { Product, ProductIngredient } from "@/types/product";
-import type { RawMaterial } from "@/data/raw-materials";
+import type { RawMaterial } from "@/types/raw-material"; // Changed from data/raw-materials to types/raw-material
+import type { Unit } from "@/types/unit"; // Import Unit type
 import React from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,18 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } // Assuming you might want a description field later
-from "@/components/ui/textarea";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+// import { Textarea } from "@/components/ui/textarea"; // Assuming you might want a description field later
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; // Removed CardFooter for now, submit is outside
 import { Trash2, PlusCircle, Save, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation"; // For redirecting after save
+import { useRouter } from "next/navigation"; 
 import Image from "next/image";
-import { mockCategoryNames } from "@/data/categories"; // Use the names from the new category data structure
+// import { mockCategoryNames } from "@/data/categories"; // This should come from props
+
+// Get units from a central place, or pass as props
+import { getMockUnits } from "@/data/units"; // For getting unit abbreviation
 
 const productIngredientSchema = z.object({
   rawMaterialId: z.string().min(1, "Bahan baku harus dipilih"),
-  quantity: z.coerce.number().min(0.001, "Jumlah harus lebih dari 0"), // use coerce for input type number
+  quantity: z.coerce.number().min(0.001, "Jumlah harus lebih dari 0"), 
 });
 
 const productFormSchema = z.object({
@@ -37,7 +40,7 @@ const productFormSchema = z.object({
   hpp: z.coerce.number().min(0, "HPP tidak boleh negatif").optional(),
   price: z.coerce.number().min(0, "Harga jual tidak boleh negatif"),
   stock: z.coerce.number().min(0, "Stok tidak boleh negatif").int("Stok harus angka bulat"),
-  image: z.string().optional(), // Will store public URL or Data URI
+  image: z.string().optional(), 
   ingredients: z.array(productIngredientSchema).optional(),
 });
 
@@ -45,20 +48,23 @@ type ProductFormData = z.infer<typeof productFormSchema>;
 
 interface ProductFormProps {
   initialData?: Product;
-  rawMaterials: RawMaterial[];
-  categories: string[]; // This now comes from mockCategoryNames
+  rawMaterials: RawMaterial[]; // These are all available raw materials
+  categories: string[]; 
   onSave: (data: ProductFormData) => Promise<void>;
+  isEditing?: boolean; // Added to differentiate between add/edit
 }
 
 export default function ProductForm({
   initialData,
   rawMaterials,
-  categories, // This will be mockCategoryNames
+  categories, 
   onSave,
+  isEditing = false,
 }: ProductFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [imagePreview, setImagePreview] = React.useState<string | null>(initialData?.image || null);
+  const allUnits = React.useMemo(() => getMockUnits(), []); // Memoize unit fetching
   
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
@@ -68,7 +74,7 @@ export default function ProductForm({
       hpp: initialData?.hpp || 0,
       price: initialData?.price || 0,
       stock: initialData?.stock || 0,
-      image: initialData?.image || "",
+      image: initialData?.image || "", // Store the initial image URL here
       ingredients: initialData?.ingredients || [],
     },
   });
@@ -79,7 +85,6 @@ export default function ProductForm({
   });
 
   React.useEffect(() => {
-    // Cleanup object URLs to prevent memory leaks
     const currentPreview = imagePreview;
     if (currentPreview && currentPreview.startsWith("blob:")) {
       return () => {
@@ -93,15 +98,14 @@ export default function ProductForm({
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        form.setValue("image", reader.result as string); // Set Data URI to form
+        form.setValue("image", reader.result as string); 
+        setImagePreview(reader.result as string); // Update preview with Data URI directly
       };
       reader.readAsDataURL(file);
-      setImagePreview(URL.createObjectURL(file)); // Set blob URL for preview
     } else {
-      // If no file is selected (e.g., user cancels file dialog), revert to initial image or clear
-      const initialImage = initialData?.image || "";
-      form.setValue("image", initialImage);
-      setImagePreview(initialImage || null);
+      const initialImageValue = initialData?.image || "";
+      form.setValue("image", initialImageValue);
+      setImagePreview(initialImageValue || null);
     }
   };
 
@@ -109,10 +113,11 @@ export default function ProductForm({
     try {
       await onSave(data);
       toast({
-        title: "Produk Disimpan",
-        description: `${data.name} telah berhasil disimpan.`,
+        title: isEditing ? "Produk Diperbarui" : "Produk Ditambahkan",
+        description: `${data.name} telah berhasil ${isEditing ? 'diperbarui' : 'ditambahkan'}.`,
       });
-      router.push("/dashboard/products"); // Redirect to product list
+      router.push("/dashboard/products"); 
+      router.refresh();
     } catch (error) {
       toast({
         title: "Gagal Menyimpan",
@@ -123,14 +128,18 @@ export default function ProductForm({
     }
   };
 
-  const getRawMaterialUnit = (id: string) => {
-    return rawMaterials.find(rm => rm.id === id)?.unit || '';
+  const getRawMaterialUnitAbbreviation = (rawMaterialId: string) => {
+    const material = rawMaterials.find(rm => rm.id === rawMaterialId);
+    if (material) {
+      const unit = allUnits.find(u => u.id === material.unitId);
+      return unit?.abbreviation || '';
+    }
+    return '';
   }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Product Details Section */}
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Detail Produk</CardTitle>
@@ -177,7 +186,7 @@ export default function ProductForm({
                     width={80}
                     height={80}
                     className="rounded-md object-cover aspect-square border"
-                    data-ai-hint="product image"
+                    data-ai-hint="product preview"
                   />
                 ) : (
                   <div className="w-20 h-20 rounded-md border flex items-center justify-center bg-muted">
@@ -188,7 +197,7 @@ export default function ProductForm({
                   id="productImage"
                   type="file"
                   accept="image/*"
-                  onChange={handleImageFileChange}
+                  onChange={handleImageFileChange} // Only call this, form value is set inside
                   className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />
               </div>
@@ -196,12 +205,9 @@ export default function ProductForm({
                 <p className="text-sm text-destructive mt-1">{form.formState.errors.image.message}</p>
               )}
             </div>
-
-
           </CardContent>
         </Card>
 
-        {/* Pricing & Stock Section */}
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Harga & Stok</CardTitle>
@@ -234,7 +240,6 @@ export default function ProductForm({
         </Card>
       </div>
 
-      {/* Ingredients Section */}
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Bahan Baku / Resep (Opsional)</CardTitle>
@@ -259,16 +264,25 @@ export default function ProductForm({
                   name={`ingredients.${index}.rawMaterialId`}
                   control={form.control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Potentially trigger re-render or update related fields if needed
+                      }} 
+                      defaultValue={field.value}
+                    >
                       <SelectTrigger id={`ingredients.${index}.rawMaterialId`}>
                         <SelectValue placeholder="Pilih bahan baku" />
                       </SelectTrigger>
                       <SelectContent>
-                        {rawMaterials.map((material) => (
-                          <SelectItem key={material.id} value={material.id}>
-                            {material.name} ({material.stock} {material.unit})
-                          </SelectItem>
-                        ))}
+                        {rawMaterials.map((material) => {
+                           const unit = allUnits.find(u => u.id === material.unitId);
+                           return (
+                            <SelectItem key={material.id} value={material.id}>
+                              {material.name} (Stok: {material.stock} {unit?.abbreviation || ''})
+                            </SelectItem>
+                           );
+                        })}
                       </SelectContent>
                     </Select>
                   )}
@@ -291,7 +305,7 @@ export default function ProductForm({
                   />
                   {form.watch(`ingredients.${index}.rawMaterialId`) && (
                     <span className="px-3 py-2 border border-l-0 rounded-r-md bg-muted text-sm text-muted-foreground">
-                      {getRawMaterialUnit(form.watch(`ingredients.${index}.rawMaterialId`))}
+                      {getRawMaterialUnitAbbreviation(form.watch(`ingredients.${index}.rawMaterialId`))}
                     </span>
                   )}
                 </div>
@@ -304,7 +318,7 @@ export default function ProductForm({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="text-destructive hover:bg-destructive/10 self-end mb-0.5" // Adjusted for alignment
+                className="text-destructive hover:bg-destructive/10 self-end mb-0.5" 
                 onClick={() => remove(index)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -321,10 +335,9 @@ export default function ProductForm({
         </Button>
         <Button type="submit" disabled={form.formState.isSubmitting}>
           <Save className="mr-2 h-4 w-4" />
-          {form.formState.isSubmitting ? "Menyimpan..." : (initialData ? "Simpan Perubahan" : "Simpan Produk")}
+          {form.formState.isSubmitting ? "Menyimpan..." : (isEditing ? "Simpan Perubahan" : "Simpan Produk")}
         </Button>
       </div>
     </form>
   );
 }
-
