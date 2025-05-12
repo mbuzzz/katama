@@ -247,7 +247,7 @@ export default function POSPage() {
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden p-0">
             <ScrollArea className="h-full p-2 md:p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                 {filteredProducts.map((product) => (
                   <Card 
                     key={product.id} 
@@ -261,7 +261,7 @@ export default function POSPage() {
                         fill={true}
                         style={{objectFit:"cover"}}
                         className="rounded-t-md"
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1200px) 25vw, 20vw"
+                        sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
                         data-ai-hint={`${product.category} produk`} 
                       />
                       {product.stock === 0 && (
