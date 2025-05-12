@@ -15,6 +15,7 @@ import { getMockUnits } from "@/data/units"; // To get unit names/abbreviations
 import type { Product } from "@/types/product";
 import type { RawMaterial } from "@/types/raw-material";
 import type { Unit } from "@/types/unit";
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 interface StockItem {
   id: string;
@@ -36,6 +37,7 @@ export default function StockReportPage() {
   const [filteredStockItems, setFilteredStockItems] = React.useState<StockItem[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [units, setUnits] = React.useState<Unit[]>([]);
+  const { toast } = useToast(); // Initialize useToast
 
   React.useEffect(() => {
     const fetchedUnits = getMockUnits();
@@ -54,7 +56,7 @@ export default function StockReportPage() {
         type: "Produk Jadi",
         categoryOrType: p.category,
         quantity: p.stock,
-        unit: "unit", // Products might not have a single unit if composed, display "unit" or "pcs"
+        unit: "unit", 
         status,
         icon: Package,
       };
@@ -63,14 +65,14 @@ export default function StockReportPage() {
     const rawMaterialStockItems: StockItem[] = rawMaterials.map(rm => {
       let status: StockItem["status"] = "Stok Aman";
       if (rm.stock === 0) status = "Stok Habis";
-      else if (rm.stock < LOW_STOCK_THRESHOLD_RAWMATERIAL) status = "Stok Menipis"; // Could be rm.lowStockThreshold
+      else if (rm.stock < LOW_STOCK_THRESHOLD_RAWMATERIAL) status = "Stok Menipis"; 
       
       const unitInfo = fetchedUnits.find(u => u.id === rm.unitId);
       return {
         id: `rm-${rm.id}`,
         name: rm.name,
         type: "Bahan Baku",
-        categoryOrType: "Bahan Baku", // Could be more specific if raw materials had categories
+        categoryOrType: "Bahan Baku", 
         quantity: rm.stock,
         unit: unitInfo?.abbreviation || "N/A",
         status,
@@ -94,12 +96,21 @@ export default function StockReportPage() {
     setFilteredStockItems(filtered);
   }, [searchTerm, allStockItems]);
 
+  const handleDownloadReport = () => {
+    toast({
+      title: "Unduh Laporan (Dalam Pengembangan)",
+      description: "Fitur unduh laporan PDF sedang dalam pengembangan dan akan segera tersedia.",
+      duration: 5000,
+    });
+    // Placeholder for actual PDF generation logic
+    console.log("Attempting to download stock report PDF...");
+  };
 
   return (
     <div>
       <PageHeader title="Laporan Stok" description="Monitor ketersediaan stok barang jadi dan bahan baku.">
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" /> Unduh Laporan
+        <Button variant="outline" onClick={handleDownloadReport}>
+          <Download className="mr-2 h-4 w-4" /> Unduh Laporan PDF
         </Button>
       </PageHeader>
 
@@ -165,7 +176,7 @@ export default function StockReportPage() {
                       className={
                         item.status === "Stok Aman" ? "bg-green-100 text-green-800 border-green-300" :
                         item.status === "Stok Menipis" ? "bg-yellow-100 text-yellow-800 border-yellow-300" :
-                        "" // Destructive already has good default styles
+                        "" 
                       }
                     >
                       {item.status}

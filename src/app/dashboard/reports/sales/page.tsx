@@ -1,13 +1,16 @@
 
+"use client";
+
+import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-// import { Input } from "@/components/ui/input"; // Not used directly if DatePickerWithRange is used
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { Download } from "lucide-react";
-import { Label } from "@/components/ui/label"; // Import Label component
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 // Mock Data
 const mockSalesData = [
@@ -18,11 +21,24 @@ const mockSalesData = [
 
 
 export default function SalesReportPage() {
+  const { toast } = useToast();
+
+  const handleDownloadReport = () => {
+    toast({
+      title: "Unduh Laporan (Dalam Pengembangan)",
+      description: "Fitur unduh laporan PDF sedang dalam pengembangan dan akan segera tersedia.",
+      duration: 5000,
+    });
+    // Placeholder for actual PDF generation logic
+    // e.g., using jsPDF or react-pdf
+    console.log("Attempting to download sales report PDF...");
+  };
+
   return (
     <div>
       <PageHeader title="Laporan Penjualan" description="Analisis detail penjualan Anda.">
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" /> Unduh Laporan
+        <Button variant="outline" onClick={handleDownloadReport}>
+          <Download className="mr-2 h-4 w-4" /> Unduh Laporan PDF
         </Button>
       </PageHeader>
 
