@@ -20,7 +20,8 @@ import {
   ShieldCheck,
   Building2,
   ListTree, 
-  Archive, 
+  Archive,
+  PlusCircle, 
 } from 'lucide-react';
 
 export type NavItem = {
@@ -53,13 +54,13 @@ export type SiteConfig = {
 const dashboardBaseUrl = "/dashboard";
 
 export const siteConfig: SiteConfig = {
-  name: "TokoLite POS",
-  description: "Aplikasi Point of Sale untuk usaha kecil dan menengah, dirancang dengan nuansa hangat dan mengundang.",
-  url: "https://tokolite.example.com", 
-  ogImage: "https://tokolite.example.com/og.jpg", 
+  name: "KATAMA POS",
+  description: "Aplikasi Point of Sale KATAMA untuk usaha kecil dan menengah, dirancang dengan nuansa hangat dan mengundang.",
+  url: "https://katama.example.com", 
+  ogImage: "https://katama.example.com/og.jpg", 
   links: {
     twitter: "https://twitter.com/example",
-    github: "https://github.com/example/tokolite",
+    github: "https://github.com/example/katama",
   },
   mainNav: [
   ],
@@ -89,31 +90,12 @@ export const siteConfig: SiteConfig = {
         { title: "Satuan Barang", href: `${dashboardBaseUrl}/units`, icon: Tags, description: "Kelola satuan barang." },
       ]
     },
-    // The individual items Kategori, Bahan Baku, Satuan Barang are now under "Manajemen Produk"
-    // {
-    //   title: "Kategori",
-    //   href: `${dashboardBaseUrl}/categories`,
-    //   icon: ListTree,
-    //   description: "Kelola kategori produk.",
-    // },
-    // {
-    //   title: "Bahan Baku",
-    //   href: `${dashboardBaseUrl}/raw-materials`,
-    //   icon: Archive,
-    //   description: "Kelola stok bahan baku.",
-    // },
      {
       title: "Pembelanjaan",
       href: `${dashboardBaseUrl}/purchases`,
       icon: Truck, // Icon for purchases
       description: "Catat dan kelola pembelanjaan bahan baku.",
     },
-    // {
-    //   title: "Satuan Barang",
-    //   href: `${dashboardBaseUrl}/units`,
-    //   icon: Tags,
-    //   description: "Kelola satuan barang.",
-    // },
     {
       title: "Laporan",
       href: `${dashboardBaseUrl}/reports`,
@@ -141,7 +123,4 @@ export const siteConfig: SiteConfig = {
   ],
 };
 
-// Helper type for SidebarNavItem with PlusCircle icon for "Tambah" items
-import { PlusCircle } from 'lucide-react'; 
 export type AddItemSidebarNavItem = SidebarNavItem & { icon: typeof PlusCircle };
-

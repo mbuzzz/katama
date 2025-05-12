@@ -14,9 +14,9 @@ import {
 
 // Mock data
 const mockOutlets = [
-  { id: "1", name: "TokoLite Pusat", address: "Jl. Merdeka No. 1, Kota Bahagia", status: "Aktif", manager: "Budi Santoso" },
-  { id: "2", name: "TokoLite Cabang Sudirman", address: "Jl. Jend. Sudirman Kav. 20, Kota Bahagia", status: "Aktif", manager: "Candra Wijaya" },
-  { id: "3", name: "TokoLite Express Stasiun", address: "Stasiun Kota Lama Lt. 1, Kota Bahagia", status: "Tidak Aktif", manager: "-" },
+  { id: "1", name: "KATAMA Pusat", address: "Jl. Merdeka No. 1, Kota Bahagia", status: "Aktif", manager: "Budi Santoso" },
+  { id: "2", name: "KATAMA Cabang Sudirman", address: "Jl. Jend. Sudirman Kav. 20, Kota Bahagia", status: "Aktif", manager: "Candra Wijaya" },
+  { id: "3", name: "KATAMA Express Stasiun", address: "Stasiun Kota Lama Lt. 1, Kota Bahagia", status: "Tidak Aktif", manager: "-" },
 ];
 
 export default function OutletsPage() {

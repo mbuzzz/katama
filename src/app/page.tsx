@@ -48,7 +48,7 @@ export default function LoginPage() {
             <Logo className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Selamat Datang Kembali!</CardTitle>
-          <CardDescription>Masukkan email dan password Anda untuk masuk ke TokoLite POS.</CardDescription>
+          <CardDescription>Masukkan email dan password Anda untuk masuk ke KATAMA POS.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,7 +101,7 @@ export default function LoginPage() {
           <p>Belum punya akun? <a href="#" className="text-accent underline hover:text-accent/80">Hubungi Admin</a></p>
           <p className="mt-2 text-xs text-muted-foreground">Akun Demo: demo@tokolite.com / demo</p>
           <p className="mt-2 text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} TokoLite POS. Hak cipta dilindungi.
+            &copy; {new Date().getFullYear()} KATAMA POS. Hak cipta dilindungi.
           </p>
         </CardFooter>
       </Card>

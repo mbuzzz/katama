@@ -11,7 +11,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 export default function GeneralSettingsPage() {
-  const [companyName, setCompanyName] = useState("TokoLite Jaya");
+  const [companyName, setCompanyName] = useState("KATAMA Jaya");
   const [companyAddress, setCompanyAddress] = useState("Jl. Merdeka No. 123, Kota Bahagia");
   const [companyContact, setCompanyContact] = useState("0812-3456-7890");
   const [logoPreview, setLogoPreview] = useState<string | null>("https://picsum.photos/150/150?random=logo");

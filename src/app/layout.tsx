@@ -5,8 +5,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'TokoLite POS',
-  description: 'Aplikasi Point of Sale untuk usaha kecil dan menengah',
+  title: 'KATAMA POS',
+  description: 'Aplikasi Point of Sale KATAMA untuk usaha kecil dan menengah',
 };
 
 export default function RootLayout({

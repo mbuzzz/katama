@@ -12,7 +12,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dasbor" description="Selamat datang di TokoLite POS Anda." />
+      <PageHeader title="Dasbor" description="Selamat datang di KATAMA POS Anda." />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <Card key={index} className="shadow-lg">

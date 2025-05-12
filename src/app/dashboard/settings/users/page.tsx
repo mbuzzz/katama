@@ -12,14 +12,14 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-  DropdownMenuSeparator, // Added import
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 // Mock data
 const mockUsers = [
-  { id: "1", name: "Ana Maria", email: "ana@tokolite.com", role: "Kasir", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user1" },
-  { id: "2", name: "Budi Santoso", email: "budi@tokolite.com", role: "Admin", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user2" },
-  { id: "3", name: "Candra Wijaya", email: "candra@tokolite.com", role: "Manajer", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user3" },
+  { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user1" },
+  { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user2" },
+  { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user3" },
 ];
 
 export default function UsersPage() {
