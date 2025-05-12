@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Product as ProductType, ProductIngredient } from "@/types/product";
@@ -245,7 +244,7 @@ export default function POSPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0">
+          <CardContent className="flex-1 overflow-hidden p-0 min-h-0">
             <ScrollArea className="h-full p-2 md:p-4">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                 {filteredProducts.map((product) => (
@@ -298,7 +297,7 @@ export default function POSPage() {
           <CardHeader>
             <CardTitle>Detail Pesanan</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden">
+          <CardContent className="flex-1 overflow-hidden min-h-0">
             <ScrollArea className="h-full pr-1 md:pr-2">
               {cartItems.length === 0 ? (
                 <p className="text-muted-foreground text-center py-10">Keranjang kosong.</p>
@@ -343,7 +342,7 @@ export default function POSPage() {
           )}
           <CardFooter className="flex flex-col gap-2 sm:gap-3 pt-2 sm:pt-4 border-t">
              <Label className="text-xs sm:text-sm self-start">Metode Pembayaran</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+            <div className="grid grid-cols-3 gap-2 w-full">
                 <Button variant="outline" size="sm"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Tunai</span></Button>
                 <Button variant="outline" size="sm"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span></Button>
                 <Button variant="outline" size="sm"><QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS</Button>
