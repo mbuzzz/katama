@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Edit, Trash2, MoreHorizontal, UserCircle2, Award, Star } from "lucide-react"; // Added Award and Star
+import { PlusCircle, Edit, Trash2, MoreHorizontal, UserCircle2, Award, Star } from "lucide-react"; 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -13,28 +13,31 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
+  DropdownMenuSeparator, 
 } from "@/components/ui/dropdown-menu";
-import type { User } from "@/types/user"; // Import User type
+import type { User } from "@/types/user"; 
+import { getMockUsers } from "@/data/users"; // Import from data/users.ts
 
-// Mock data - Updated to include points and badge
-export const mockUsers: User[] = [
-  { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user1", points: 1250, badge: "Pro" },
-  { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user2", points: 500, badge: "Pemula" },
-  { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user3", points: 2500, badge: "Veteran" },
-  { id: "4", name: "Dewi Lestari", email: "dewi@katama.com", role: "Kasir", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user4", points: 800, badge: "Pemula" },
-];
+// mockUsers is now fetched from data/users.ts, which has the adjusted points.
+// const mockUsers: User[] = [
+//   { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user1", points: 970, badge: "Pemula" },
+//   { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user2", points: 400, badge: "Pemula" },
+//   { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user3", points: 2500, badge: "Veteran" },
+//   { id: "4", name: "Dewi Lestari", email: "dewi@katama.com", role: "Kasir", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user4", points: 0, badge: "Pemula" },
+// ];
+
 
 export default function UsersPage() {
-  // Function to determine badge variant based on badge name
+  const users = getMockUsers(); // Fetch users from the central data source
+
   const getBadgeVariant = (badgeName?: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (badgeName?.toLowerCase()) {
       case "pro":
-        return "secondary"; // Blueish
+        return "secondary"; 
       case "veteran":
-        return "default"; // Primary color (Yellow in current theme)
+        return "default"; 
       case "pemula":
-        return "outline"; // Simple outline
+        return "outline"; 
       default:
         return "outline";
     }
@@ -52,7 +55,7 @@ export default function UsersPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Daftar Pengguna</CardTitle>
-          <CardDescription>Total {mockUsers.length} pengguna ditemukan.</CardDescription>
+          <CardDescription>Total {users.length} pengguna ditemukan.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -71,7 +74,7 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockUsers.map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="hidden sm:table-cell">
                     <Avatar className="h-10 w-10">
@@ -95,7 +98,13 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     {user.badge && (
-                      <Badge variant={getBadgeVariant(user.badge)}>
+                      <Badge variant={getBadgeVariant(user.badge)}
+                       className={
+                        user.badge === 'Pro' ? "bg-blue-500 hover:bg-blue-600 text-primary-foreground" :
+                        user.badge === 'Veteran' ? "bg-yellow-500 hover:bg-yellow-600 text-primary-foreground" :
+                        user.badge === 'Pemula' ? "border-border" : ""
+                      }
+                      >
                         <Award className="mr-1 h-3.5 w-3.5" />
                         {user.badge}
                       </Badge>
@@ -127,4 +136,3 @@ export default function UsersPage() {
     </div>
   );
 }
-

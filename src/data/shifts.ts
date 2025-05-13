@@ -1,6 +1,6 @@
 
 import type { Shift, ShiftFormData, EndShiftData } from '@/types/shift';
-import { mockUsers } from '@/app/dashboard/settings/users/page'; 
+import { getMockUsers } from '@/data/users'; // Changed import path
 import { mockOutlets } from '@/app/dashboard/settings/outlets/page'; 
 import { differenceInMinutes, formatDistanceStrict } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -45,20 +45,22 @@ const calculateDuration = (startTime: string, endTime: string | null): string | 
 };
 
 export const getMockShifts = (): Shift[] => {
+  const users = getMockUsers(); // Fetch users from data/users.ts
   return [...mockShiftsStore].map(shift => ({
     ...shift,
-    userName: mockUsers.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
+    userName: users.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
     outletName: mockOutlets.find(o => o.id === shift.outletId)?.name || 'Tidak Diketahui',
     duration: calculateDuration(shift.startTime, shift.endTime),
   })).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 };
 
 export const getMockShiftById = (id: string): Shift | undefined => {
+  const users = getMockUsers();
   const shift = mockShiftsStore.find((s) => s.id === id);
   if (shift) {
     return {
       ...shift,
-      userName: mockUsers.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
+      userName: users.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
       outletName: mockOutlets.find(o => o.id === shift.outletId)?.name || 'Tidak Diketahui',
       duration: calculateDuration(shift.startTime, shift.endTime),
     };
@@ -67,7 +69,8 @@ export const getMockShiftById = (id: string): Shift | undefined => {
 };
 
 export const addMockShift = (shiftData: ShiftFormData): Shift => {
-  const user = mockUsers.find(u => u.id === shiftData.userId);
+  const users = getMockUsers();
+  const user = users.find(u => u.id === shiftData.userId);
   const outlet = mockOutlets.find(o => o.id === shiftData.outletId);
 
   const newShift: Shift = {
@@ -130,8 +133,7 @@ export const cancelMockShift = (id: string, notes?: string): Shift | undefined =
 }
 
 // For shift form user selection
-export const getMockUsersForSelect = () => mockUsers.map((u: User) => ({ value: u.id, label: u.name })); // Ensure 'u' is typed as User
+export const getMockUsersForSelect = () => getMockUsers().map((u: User) => ({ value: u.id, label: u.name })); // Ensure 'u' is typed as User
 
 // For shift form outlet selection
 export const getMockOutletsForSelect = () => mockOutlets.map(o => ({ value: o.id, label: o.name }));
-
