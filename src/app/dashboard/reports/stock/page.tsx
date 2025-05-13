@@ -34,8 +34,8 @@ interface StockItem {
 }
 
 
-const LOW_STOCK_THRESHOLD_PRODUCT = 5;
-const LOW_STOCK_THRESHOLD_RAWMATERIAL = 10; 
+const LOW_STOCK_THRESHOLD_PRODUCT = 10; // Adjusted threshold for demo
+const LOW_STOCK_THRESHOLD_RAWMATERIAL = 20; // Adjusted threshold for demo
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -45,12 +45,12 @@ export default function StockReportPage() {
   const [allStockItems, setAllStockItems] = React.useState<StockItem[]>([]);
   const [filteredStockItems, setFilteredStockItems] = React.useState<StockItem[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [units, setUnits] = React.useState<Unit[]>([]);
+  // const [units, setUnits] = React.useState<Unit[]>([]); // Units are fetched and used directly in effect
   const { toast } = useToast(); 
 
   React.useEffect(() => {
     const fetchedUnits = getMockUnits();
-    setUnits(fetchedUnits);
+    // setUnits(fetchedUnits); // Not strictly needed in state if only used here
 
     const products = getMockProducts();
     const rawMaterials = getMockRawMaterials();
@@ -81,7 +81,7 @@ export default function StockReportPage() {
         id: `rm-${rm.id}`,
         name: rm.name,
         type: "Bahan Baku",
-        categoryOrType: "Bahan Baku", 
+        categoryOrType: "Bahan Baku", // Or derive more specific type if available
         quantity: rm.stock,
         unit: unitInfo?.abbreviation || "N/A",
         status,
@@ -91,8 +91,7 @@ export default function StockReportPage() {
 
     const combinedItems = [...productStockItems, ...rawMaterialStockItems].sort((a,b) => a.name.localeCompare(b.name));
     setAllStockItems(combinedItems);
-    setFilteredStockItems(combinedItems);
-
+    // setFilteredStockItems(combinedItems); // Initial filter will be applied by the next effect
   }, []);
 
   React.useEffect(() => {
@@ -100,12 +99,21 @@ export default function StockReportPage() {
     const filtered = allStockItems.filter(item => 
       item.name.toLowerCase().includes(lowerSearchTerm) ||
       item.categoryOrType.toLowerCase().includes(lowerSearchTerm) ||
-      item.type.toLowerCase().includes(lowerSearchTerm)
+      item.type.toLowerCase().includes(lowerSearchTerm) ||
+      item.status.toLowerCase().includes(lowerSearchTerm)
     );
     setFilteredStockItems(filtered);
   }, [searchTerm, allStockItems]);
 
   const handleDownloadReport = () => {
+     if (filteredStockItems.length === 0) {
+      toast({
+        title: "Tidak Ada Data",
+        description: "Tidak ada data stok untuk filter yang dipilih.",
+        variant: "destructive",
+      });
+      return;
+    }
      try {
       const doc = new jsPDF() as jsPDFWithAutoTable;
       const currentDate = format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale });
@@ -114,9 +122,9 @@ export default function StockReportPage() {
 
       doc.setFontSize(18);
       doc.text(reportTitle, 14, 22);
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.text(`Tanggal Laporan: ${currentDate}`, 14, 30);
-      doc.text(`Filter Pencarian: ${searchTerm || "Tidak ada"}`, 14, 36);
+      doc.text(`Filter Pencarian: ${searchTerm || "Tidak ada"}`, 14, 35);
 
 
       const tableColumn = ["Tipe", "Nama Barang", "Kategori/Jenis", "Jumlah", "Satuan", "Status"];
@@ -137,9 +145,9 @@ export default function StockReportPage() {
       doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 42, // Adjusted startY
+        startY: 42, 
         theme: 'grid',
-        headStyles: { fillColor: [60, 56, 91] }, 
+        headStyles: { fillColor: [60, 56, 91], textColor: 255 }, 
         styles: { font: "helvetica", fontSize: 9 },
         columnStyles: {
           3: { halign: 'right' },
@@ -187,11 +195,11 @@ export default function StockReportPage() {
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4">
           <div className="relative">
-            <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               type="search" 
-              placeholder="Cari nama barang, kategori, atau tipe..." 
-              className="pl-8" 
+              placeholder="Cari nama, kategori, tipe, atau status..." 
+              className="pl-8 h-10" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -241,9 +249,9 @@ export default function StockReportPage() {
                         "destructive" 
                       }
                       className={
-                        item.status === "Stok Aman" ? "bg-green-100 text-green-800 border-green-300" :
-                        item.status === "Stok Menipis" ? "bg-yellow-100 text-yellow-800 border-yellow-300" :
-                        "" 
+                        item.status === "Stok Aman" ? "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-200 border-green-300 dark:border-green-700" :
+                        item.status === "Stok Menipis" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700" :
+                        item.status === "Stok Habis" ? "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-200 border-red-300 dark:border-red-700" : ""
                       }
                     >
                       {item.status}

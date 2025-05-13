@@ -13,15 +13,19 @@ import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { useToast } from "@/hooks/use-toast"; 
-import { format } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 
 // Mock Data
-const mockPurchaseReportData = [
-  { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000 },
-  { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000 },
-  { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000 },
+const mockPurchaseReportDataFull = [
+  { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000 },
+  { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000 },
+  { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000 },
+  { id: "P004", outlet: "Outlet Pusat", timestamp: "2024-07-22T11:00:00", user: "Admin Toko", itemName: "Biji Kopi Robusta", price: 120000, quantity: 8, unit: "kg", total: 960000 },
 ];
+
+type PurchaseRecord = typeof mockPurchaseReportDataFull[0];
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -29,8 +33,44 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function PurchaseReportPage() {
   const { toast } = useToast();
+  const [filteredPurchaseData, setFilteredPurchaseData] = React.useState<PurchaseRecord[]>(mockPurchaseReportDataFull);
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+  const [itemSearchTerm, setItemSearchTerm] = React.useState<string>("");
+
+  React.useEffect(() => {
+    let data = [...mockPurchaseReportDataFull];
+
+    if (dateRange?.from && dateRange?.to) {
+      data = data.filter(purchase => {
+        const purchaseDate = parseISO(purchase.timestamp);
+        return isWithinInterval(purchaseDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.to as Date) });
+      });
+    } else if (dateRange?.from) {
+        data = data.filter(purchase => {
+        const purchaseDate = parseISO(purchase.timestamp);
+        return isWithinInterval(purchaseDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.from as Date) });
+      });
+    }
+
+
+    if (itemSearchTerm) {
+      data = data.filter(purchase => 
+        purchase.itemName.toLowerCase().includes(itemSearchTerm.toLowerCase())
+      );
+    }
+    setFilteredPurchaseData(data);
+  }, [dateRange, itemSearchTerm]);
+
 
   const handleDownloadReport = () => {
+    if (filteredPurchaseData.length === 0) {
+      toast({
+        title: "Tidak Ada Data",
+        description: "Tidak ada data pembelanjaan untuk filter yang dipilih.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const doc = new jsPDF() as jsPDFWithAutoTable;
       const currentDate = format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale });
@@ -39,16 +79,27 @@ export default function PurchaseReportPage() {
 
       doc.setFontSize(18);
       doc.text(reportTitle, 14, 22);
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.text(`Tanggal Laporan: ${currentDate}`, 14, 30);
+      let filterInfoY = 35;
+      if (dateRange?.from) {
+        const fromStr = format(dateRange.from, "dd/MM/yy", { locale: idLocale });
+        const toStr = dateRange.to ? format(dateRange.to, "dd/MM/yy", { locale: idLocale }) : fromStr;
+        doc.text(`Periode: ${fromStr} - ${toStr}`, 14, filterInfoY);
+        filterInfoY += 5;
+      }
+      if (itemSearchTerm) {
+        doc.text(`Filter Barang: ${itemSearchTerm}`, 14, filterInfoY);
+        filterInfoY += 5;
+      }
 
       const tableColumn = ["Outlet", "Waktu", "Pengguna", "Nama Barang", "Harga Satuan", "Jumlah", "Satuan", "Total"];
       const tableRows: any[][] = [];
 
-      mockPurchaseReportData.forEach(purchase => {
+      filteredPurchaseData.forEach(purchase => {
         const purchaseData = [
           purchase.outlet,
-          new Date(purchase.timestamp).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+          format(parseISO(purchase.timestamp), "dd/MM/yy, HH:mm", { locale: idLocale }),
           purchase.user,
           purchase.itemName,
           `Rp ${purchase.price.toLocaleString('id-ID')}`,
@@ -59,7 +110,7 @@ export default function PurchaseReportPage() {
         tableRows.push(purchaseData);
       });
       
-      const totalOverall = mockPurchaseReportData.reduce((sum, item) => sum + item.total, 0);
+      const totalOverall = filteredPurchaseData.reduce((sum, item) => sum + item.total, 0);
       tableRows.push([
         { content: "Total Keseluruhan Pembelanjaan", colSpan: 7, styles: { halign: 'right', fontStyle: 'bold' } },
         { content: `Rp ${totalOverall.toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } }
@@ -68,9 +119,9 @@ export default function PurchaseReportPage() {
       doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 36,
+        startY: filterInfoY + 2,
         theme: 'grid',
-        headStyles: { fillColor: [60, 56, 91] }, // #F5F5DC in RGB (approx)
+        headStyles: { fillColor: [60, 56, 91], textColor: 255 }, 
         styles: { font: "helvetica", fontSize: 9 },
         columnStyles: {
           4: { halign: 'right' },
@@ -121,11 +172,22 @@ export default function PurchaseReportPage() {
         <CardContent className="grid md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="date-range">Rentang Tanggal</Label>
-            <DatePickerWithRange className="mt-1" />
+            <DatePickerWithRange 
+              className="mt-1" 
+              date={dateRange}
+              onDateChange={setDateRange}
+            />
           </div>
           <div>
             <Label htmlFor="item-search">Nama Barang</Label>
-            <Input id="item-search" type="search" placeholder="Cari nama barang..." className="mt-1" />
+            <Input 
+              id="item-search" 
+              type="search" 
+              placeholder="Cari nama barang..." 
+              className="mt-1" 
+              value={itemSearchTerm}
+              onChange={(e) => setItemSearchTerm(e.target.value)}
+            />
           </div>
         </CardContent>
       </Card>
@@ -133,7 +195,7 @@ export default function PurchaseReportPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Detail Pembelanjaan</CardTitle>
-          <CardDescription>Menampilkan {mockPurchaseReportData.length} transaksi pembelanjaan.</CardDescription>
+          <CardDescription>Menampilkan {filteredPurchaseData.length} transaksi pembelanjaan.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -150,10 +212,17 @@ export default function PurchaseReportPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockPurchaseReportData.map((purchase) => (
+              {filteredPurchaseData.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
+                    Tidak ada data pembelanjaan yang cocok dengan filter yang dipilih.
+                  </TableCell>
+                </TableRow>
+              )}
+              {filteredPurchaseData.map((purchase) => (
                 <TableRow key={purchase.id}>
                   <TableCell>{purchase.outlet}</TableCell>
-                  <TableCell>{new Date(purchase.timestamp).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
+                  <TableCell>{format(parseISO(purchase.timestamp), "dd/MM/yy, HH:mm", { locale: idLocale })}</TableCell>
                   <TableCell>{purchase.user}</TableCell>
                   <TableCell className="font-medium">{purchase.itemName}</TableCell>
                   <TableCell className="text-right">Rp {purchase.price.toLocaleString('id-ID')}</TableCell>
@@ -162,10 +231,12 @@ export default function PurchaseReportPage() {
                   <TableCell className="text-right">Rp {purchase.total.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               ))}
-               <TableRow className="font-bold">
-                <TableCell colSpan={7} className="text-right">Total Keseluruhan Pembelanjaan</TableCell>
-                <TableCell className="text-right">Rp {mockPurchaseReportData.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</TableCell>
-              </TableRow>
+               {filteredPurchaseData.length > 0 && (
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell colSpan={7} className="text-right">Total Keseluruhan Pembelanjaan (Filtered)</TableCell>
+                  <TableCell className="text-right">Rp {filteredPurchaseData.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</TableCell>
+                </TableRow>
+               )}
             </TableBody>
           </Table>
         </CardContent>

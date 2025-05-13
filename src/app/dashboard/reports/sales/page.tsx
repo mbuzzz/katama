@@ -13,15 +13,24 @@ import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 
 // Mock Data
-const mockSalesData = [
-  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21 10:30", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000 },
-  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21 11:15", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000 },
-  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20 14:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000 },
+const mockSalesDataFull = [
+  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000 },
+  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000 },
+  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000 },
+  { id: "S004", outlet: "Outlet Pusat", timestamp: "2024-07-22T09:00:00", user: "Kasir Ana", productName: "Americano", price: 16000, quantity: 1, total: 16000 },
+  { id: "S005", outlet: "Outlet Cabang A", timestamp: "2024-07-22T12:30:00", user: "Kasir Budi", productName: "Kopi Susu Aren", price: 18000, quantity: 1, total: 18000 },
 ];
+
+type SaleRecord = typeof mockSalesDataFull[0];
+
+const uniqueUsers = Array.from(new Set(mockSalesDataFull.map(sale => sale.user)));
+const uniqueOutlets = Array.from(new Set(mockSalesDataFull.map(sale => sale.outlet)));
+
 
 // Extend jsPDF with autoTable
 interface jsPDFWithAutoTable extends jsPDF {
@@ -30,8 +39,46 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function SalesReportPage() {
   const { toast } = useToast();
+  const [filteredSalesData, setFilteredSalesData] = React.useState<SaleRecord[]>(mockSalesDataFull);
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+  const [selectedUser, setSelectedUser] = React.useState<string>("all");
+  const [selectedOutlet, setSelectedOutlet] = React.useState<string>("all");
+
+  React.useEffect(() => {
+    let data = [...mockSalesDataFull];
+
+    if (dateRange?.from && dateRange?.to) {
+      data = data.filter(sale => {
+        const saleDate = parseISO(sale.timestamp);
+        return isWithinInterval(saleDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.to as Date) });
+      });
+    } else if (dateRange?.from) {
+       data = data.filter(sale => {
+        const saleDate = parseISO(sale.timestamp);
+        return isWithinInterval(saleDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.from as Date) });
+      });
+    }
+
+    if (selectedUser !== "all") {
+      data = data.filter(sale => sale.user === selectedUser);
+    }
+
+    if (selectedOutlet !== "all") {
+      data = data.filter(sale => sale.outlet === selectedOutlet);
+    }
+    setFilteredSalesData(data);
+  }, [dateRange, selectedUser, selectedOutlet]);
+
 
   const handleDownloadReport = () => {
+    if (filteredSalesData.length === 0) {
+      toast({
+        title: "Tidak Ada Data",
+        description: "Tidak ada data penjualan untuk filter yang dipilih.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const doc = new jsPDF() as jsPDFWithAutoTable;
       const currentDate = format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale });
@@ -41,18 +88,33 @@ export default function SalesReportPage() {
       // Header
       doc.setFontSize(18);
       doc.text(reportTitle, 14, 22);
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.text(`Tanggal Laporan: ${currentDate}`, 14, 30);
-      // TODO: Add filters information here if applied
+      let filterInfoY = 35;
+      if (dateRange?.from) {
+        const fromStr = format(dateRange.from, "dd/MM/yy", { locale: idLocale });
+        const toStr = dateRange.to ? format(dateRange.to, "dd/MM/yy", { locale: idLocale }) : fromStr;
+        doc.text(`Periode: ${fromStr} - ${toStr}`, 14, filterInfoY);
+        filterInfoY += 5;
+      }
+      if (selectedUser !== "all") {
+        doc.text(`Pengguna: ${selectedUser}`, 14, filterInfoY);
+        filterInfoY += 5;
+      }
+      if (selectedOutlet !== "all") {
+        doc.text(`Outlet: ${selectedOutlet}`, 14, filterInfoY);
+        filterInfoY += 5;
+      }
+
 
       // Table
       const tableColumn = ["Outlet", "Waktu", "Pengguna", "Produk", "Harga", "Jumlah", "Total"];
       const tableRows: any[][] = [];
 
-      mockSalesData.forEach(sale => {
+      filteredSalesData.forEach(sale => {
         const saleData = [
           sale.outlet,
-          new Date(sale.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
+          format(parseISO(sale.timestamp), "dd/MM/yy, HH:mm", { locale: idLocale }),
           sale.user,
           sale.productName,
           `Rp ${sale.price.toLocaleString('id-ID')}`,
@@ -63,7 +125,7 @@ export default function SalesReportPage() {
       });
 
       // Footer row for total
-      const totalOverall = mockSalesData.reduce((sum, item) => sum + item.total, 0);
+      const totalOverall = filteredSalesData.reduce((sum, item) => sum + item.total, 0);
       tableRows.push([
         { content: "Total Keseluruhan", colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
         { content: `Rp ${totalOverall.toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } }
@@ -72,9 +134,9 @@ export default function SalesReportPage() {
       doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 36,
+        startY: filterInfoY + 2,
         theme: 'grid',
-        headStyles: { fillColor: [60, 56, 91] }, // #F5F5DC in RGB (approx)
+        headStyles: { fillColor: [60, 56, 91], textColor: 255 },
         styles: { font: "helvetica", fontSize: 9 },
         columnStyles: {
           4: { halign: 'right' },
@@ -126,31 +188,37 @@ export default function SalesReportPage() {
         <CardContent className="grid md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="date-range">Rentang Tanggal</Label>
-            <DatePickerWithRange className="mt-1" />
+            <DatePickerWithRange 
+              className="mt-1"
+              date={dateRange}
+              onDateChange={setDateRange} 
+            />
           </div>
           <div>
             <Label htmlFor="user-filter">Pengguna (Kasir)</Label>
-            <Select>
+            <Select value={selectedUser} onValueChange={setSelectedUser}>
               <SelectTrigger id="user-filter" className="mt-1">
                 <SelectValue placeholder="Semua Pengguna" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Pengguna</SelectItem>
-                <SelectItem value="ana">Kasir Ana</SelectItem>
-                <SelectItem value="budi">Kasir Budi</SelectItem>
+                {uniqueUsers.map(user => (
+                  <SelectItem key={user} value={user}>{user}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div>
             <Label htmlFor="outlet-filter">Outlet</Label>
-            <Select>
+            <Select value={selectedOutlet} onValueChange={setSelectedOutlet}>
               <SelectTrigger id="outlet-filter" className="mt-1">
                 <SelectValue placeholder="Semua Outlet" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Outlet</SelectItem>
-                <SelectItem value="pusat">Outlet Pusat</SelectItem>
-                <SelectItem value="cabang_a">Outlet Cabang A</SelectItem>
+                 {uniqueOutlets.map(outlet => (
+                  <SelectItem key={outlet} value={outlet}>{outlet}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -160,7 +228,7 @@ export default function SalesReportPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Detail Penjualan</CardTitle>
-          <CardDescription>Menampilkan {mockSalesData.length} transaksi.</CardDescription>
+          <CardDescription>Menampilkan {filteredSalesData.length} transaksi.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -176,10 +244,17 @@ export default function SalesReportPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockSalesData.map((sale) => (
+              {filteredSalesData.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
+                    Tidak ada data penjualan yang cocok dengan filter yang dipilih.
+                  </TableCell>
+                </TableRow>
+              )}
+              {filteredSalesData.map((sale) => (
                 <TableRow key={sale.id}>
                   <TableCell>{sale.outlet}</TableCell>
-                  <TableCell>{new Date(sale.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</TableCell>
+                  <TableCell>{format(parseISO(sale.timestamp), "dd/MM/yy, HH:mm", { locale: idLocale })}</TableCell>
                   <TableCell>{sale.user}</TableCell>
                   <TableCell className="font-medium">{sale.productName}</TableCell>
                   <TableCell className="text-right">Rp {sale.price.toLocaleString('id-ID')}</TableCell>
@@ -187,10 +262,12 @@ export default function SalesReportPage() {
                   <TableCell className="text-right">Rp {sale.total.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               ))}
-              <TableRow className="font-bold">
-                <TableCell colSpan={6} className="text-right">Total Keseluruhan</TableCell>
-                <TableCell className="text-right">Rp {mockSalesData.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</TableCell>
-              </TableRow>
+              {filteredSalesData.length > 0 && (
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell colSpan={6} className="text-right">Total Keseluruhan (Filtered)</TableCell>
+                  <TableCell className="text-right">Rp {filteredSalesData.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
