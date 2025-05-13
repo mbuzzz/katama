@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Edit, Trash2, MoreHorizontal, UserCircle2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, MoreHorizontal, UserCircle2, Award, Star } from "lucide-react"; // Added Award and Star
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -13,20 +13,37 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-  DropdownMenuSeparator, // Added missing import
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import type { User } from "@/types/user"; // Import User type
 
-// Mock data - Exported for use in shifts module
-export const mockUsers = [
-  { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user1" },
-  { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user2" },
-  { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user3" },
+// Mock data - Updated to include points and badge
+export const mockUsers: User[] = [
+  { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user1", points: 1250, badge: "Pro" },
+  { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user2", points: 500, badge: "Pemula" },
+  { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user3", points: 2500, badge: "Veteran" },
+  { id: "4", name: "Dewi Lestari", email: "dewi@katama.com", role: "Kasir", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user4", points: 800, badge: "Pemula" },
 ];
 
 export default function UsersPage() {
+  // Function to determine badge variant based on badge name
+  const getBadgeVariant = (badgeName?: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (badgeName?.toLowerCase()) {
+      case "pro":
+        return "secondary"; // Blueish
+      case "veteran":
+        return "default"; // Primary color (Yellow in current theme)
+      case "pemula":
+        return "outline"; // Simple outline
+      default:
+        return "outline";
+    }
+  };
+
+
   return (
     <div>
-      <PageHeader title="Manajemen Pengguna" description="Kelola akun pengguna, peran, dan akses.">
+      <PageHeader title="Manajemen Pengguna" description="Kelola akun pengguna, peran, poin, dan lencana.">
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" /> Tambah Pengguna
         </Button>
@@ -46,6 +63,8 @@ export default function UsersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Peran (Role)</TableHead>
                 <TableHead className="hidden md:table-cell">Outlet</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">Poin</TableHead>
+                <TableHead className="hidden lg:table-cell">Lencana</TableHead>
                 <TableHead>
                   <span className="sr-only">Aksi</span>
                 </TableHead>
@@ -68,6 +87,20 @@ export default function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{user.outlet}</TableCell>
+                  <TableCell className="text-right hidden lg:table-cell">
+                    <div className="flex items-center justify-end">
+                       <Star className="h-3.5 w-3.5 text-yellow-500 mr-1" />
+                       {user.points?.toLocaleString('id-ID') || 0}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {user.badge && (
+                      <Badge variant={getBadgeVariant(user.badge)}>
+                        <Award className="mr-1 h-3.5 w-3.5" />
+                        {user.badge}
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -94,3 +127,4 @@ export default function UsersPage() {
     </div>
   );
 }
+

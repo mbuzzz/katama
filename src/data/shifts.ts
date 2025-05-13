@@ -4,6 +4,7 @@ import { mockUsers } from '@/app/dashboard/settings/users/page';
 import { mockOutlets } from '@/app/dashboard/settings/outlets/page'; 
 import { differenceInMinutes, formatDistanceStrict } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import type { User } from '@/types/user'; // Import User type
 
 let mockShiftsStore: Shift[] = [
   {
@@ -129,7 +130,7 @@ export const cancelMockShift = (id: string, notes?: string): Shift | undefined =
 }
 
 // For shift form user selection
-export const getMockUsersForSelect = () => mockUsers.map(u => ({ value: u.id, label: u.name }));
+export const getMockUsersForSelect = () => mockUsers.map((u: User) => ({ value: u.id, label: u.name })); // Ensure 'u' is typed as User
 
 // For shift form outlet selection
 export const getMockOutletsForSelect = () => mockOutlets.map(o => ({ value: o.id, label: o.name }));
