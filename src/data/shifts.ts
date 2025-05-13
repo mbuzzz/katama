@@ -13,8 +13,8 @@ let mockShiftsStore: Shift[] = [
     userName: 'Budi Santoso',
     outletId: '1', // KATAMA Pusat
     outletName: 'KATAMA Pusat',
-    startTime: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8 hours ago
-    endTime: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+    startTime: "2024-07-23T02:00:00.000Z", // Static: Approx. 8 hours before a reference time like 2024-07-23T10:00:00Z
+    endTime: "2024-07-23T09:00:00.000Z",   // Static: Approx. 1 hour before
     initialCash: 500000,
     finalCash: 1250000,
     totalSales: 750000,
@@ -27,7 +27,7 @@ let mockShiftsStore: Shift[] = [
     userName: 'Ana Maria',
     outletId: '1', // KATAMA Pusat
     outletName: 'KATAMA Pusat',
-    startTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    startTime: "2024-07-23T08:00:00.000Z", // Static: Approx. 2 hours before
     endTime: null,
     initialCash: 300000,
     finalCash: null,
@@ -41,8 +41,8 @@ let mockShiftsStore: Shift[] = [
     userName: 'Dewi Lestari',
     outletId: '2', // Cabang Sudirman
     outletName: 'KATAMA Cabang Sudirman',
-    startTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
-    endTime: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), // Yesterday
+    startTime: "2024-07-22T10:00:00.000Z", // Static: Approx. 24 hours before (Yesterday)
+    endTime: "2024-07-22T16:00:00.000Z",   // Static: Approx. 18 hours before (Yesterday)
     initialCash: 400000,
     finalCash: 900000,
     totalSales: 500000,
@@ -91,7 +91,7 @@ export const addMockShift = (shiftData: ShiftFormData): Shift => {
   const outlet = mockOutlets.find(o => o.id === shiftData.outletId);
 
   const newShift: Shift = {
-    id: `shift${mockShiftsStore.length + 1}-${Date.now().toString().slice(-4)}`,
+    id: `shift${mockShiftsStore.length + 1}-${Date.now().toString().slice(-4)}`, // Date.now() for ID is fine
     startTime: new Date().toISOString(),
     endTime: null,
     finalCash: null,
@@ -158,3 +158,4 @@ export const getMockShiftsForSelect = () => {
     return { value: shift.id, label };
   });
 };
+

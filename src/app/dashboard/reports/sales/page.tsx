@@ -20,12 +20,12 @@ import { getMockShiftsForSelect } from "@/data/shifts"; // Import shift data hel
 
 // Mock Data
 const mockSalesDataFull = [
-  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000, shiftId: "shift2" },
-  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000, shiftId: "shift1" },
-  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000, shiftId: "shift1" },
-  { id: "S004", outlet: "Outlet Pusat", timestamp: "2024-07-22T09:00:00", user: "Kasir Ana", productName: "Americano", price: 16000, quantity: 1, total: 16000, shiftId: "shift2" },
-  { id: "S005", outlet: "Outlet Cabang A", timestamp: "2024-07-22T12:30:00", user: "Kasir Budi", productName: "Kopi Susu Aren", price: 18000, quantity: 1, total: 18000, shiftId: "shift1" },
-  { id: "S006", outlet: "Outlet Cabang Sudirman", timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), user: "Dewi Lestari", productName: "Es Teh Manis", price: 10000, quantity: 5, total: 50000, shiftId: "shift3" },
+  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00.000Z", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000, shiftId: "shift2" },
+  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00.000Z", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000, shiftId: "shift1" },
+  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00.000Z", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000, shiftId: "shift1" },
+  { id: "S004", outlet: "Outlet Pusat", timestamp: "2024-07-22T09:00:00.000Z", user: "Kasir Ana", productName: "Americano", price: 16000, quantity: 1, total: 16000, shiftId: "shift2" },
+  { id: "S005", outlet: "Outlet Cabang A", timestamp: "2024-07-22T12:30:00.000Z", user: "Kasir Budi", productName: "Kopi Susu Aren", price: 18000, quantity: 1, total: 18000, shiftId: "shift1" },
+  { id: "S006", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Dewi Lestari", productName: "Es Teh Manis", price: 10000, quantity: 5, total: 50000, shiftId: "shift3" },
 ];
 
 type SaleRecord = typeof mockSalesDataFull[0];
@@ -296,3 +296,4 @@ export default function SalesReportPage() {
     </div>
   );
 }
+

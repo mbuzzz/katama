@@ -21,11 +21,11 @@ import { getMockShiftsForSelect } from "@/data/shifts"; // Import shift data hel
 
 // Mock Data
 const mockPurchaseReportDataFull = [
-  { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000, shiftId: "shift1" },
-  { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000, shiftId: "shift1" },
-  { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000, shiftId: "shift1" },
-  { id: "P004", outlet: "Outlet Pusat", timestamp: "2024-07-22T11:00:00", user: "Admin Toko", itemName: "Biji Kopi Robusta", price: 120000, quantity: 8, unit: "kg", total: 960000, shiftId: "shift2" },
-  { id: "P005", outlet: "Outlet Cabang Sudirman", timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), user: "Manajer Cabang", itemName: "Bubuk Es Teh", price: 50000, quantity: 10, unit: "kg", total: 500000, shiftId: "shift3" },
+  { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000, shiftId: "shift1" },
+  { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00.000Z", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000, shiftId: "shift1" },
+  { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00.000Z", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000, shiftId: "shift1" },
+  { id: "P004", outlet: "Outlet Pusat", timestamp: "2024-07-22T11:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Robusta", price: 120000, quantity: 8, unit: "kg", total: 960000, shiftId: "shift2" },
+  { id: "P005", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Manajer Cabang", itemName: "Bubuk Es Teh", price: 50000, quantity: 10, unit: "kg", total: 500000, shiftId: "shift3" },
 ];
 
 type PurchaseRecord = typeof mockPurchaseReportDataFull[0];
@@ -270,3 +270,4 @@ export default function PurchaseReportPage() {
     </div>
   );
 }
+
