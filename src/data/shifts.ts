@@ -1,8 +1,9 @@
 
-import type { Shift, ShiftFormData, EndShiftFormData } from '@/types/shift';
-import { mockUsers } from '@/app/dashboard/settings/users/page'; // Assuming this exports users
-import { mockOutlets } // Assuming this exports outlets
-from '@/app/dashboard/settings/outlets/page'; 
+import type { Shift, ShiftFormData, EndShiftData } from '@/types/shift';
+import { mockUsers } from '@/app/dashboard/settings/users/page'; 
+import { mockOutlets } from '@/app/dashboard/settings/outlets/page'; 
+import { differenceInMinutes, formatDistanceStrict } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 let mockShiftsStore: Shift[] = [
   {
@@ -35,11 +36,19 @@ let mockShiftsStore: Shift[] = [
   },
 ];
 
+const calculateDuration = (startTime: string, endTime: string | null): string | null => {
+  if (!endTime) return null;
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  return formatDistanceStrict(end, start, { locale: idLocale, unit: 'minute' });
+};
+
 export const getMockShifts = (): Shift[] => {
   return [...mockShiftsStore].map(shift => ({
     ...shift,
     userName: mockUsers.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
     outletName: mockOutlets.find(o => o.id === shift.outletId)?.name || 'Tidak Diketahui',
+    duration: calculateDuration(shift.startTime, shift.endTime),
   })).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 };
 
@@ -50,6 +59,7 @@ export const getMockShiftById = (id: string): Shift | undefined => {
       ...shift,
       userName: mockUsers.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
       outletName: mockOutlets.find(o => o.id === shift.outletId)?.name || 'Tidak Diketahui',
+      duration: calculateDuration(shift.startTime, shift.endTime),
     };
   }
   return undefined;
@@ -64,17 +74,18 @@ export const addMockShift = (shiftData: ShiftFormData): Shift => {
     startTime: new Date().toISOString(),
     endTime: null,
     finalCash: null,
-    totalSales: null,
+    totalSales: null, // Sales are typically tracked via POS transactions during the shift
     status: 'Berjalan',
     ...shiftData,
     userName: user?.name || 'Tidak Diketahui',
     outletName: outlet?.name || 'Tidak Diketahui',
+    duration: null,
   };
   mockShiftsStore.unshift(newShift); // Add to the beginning
   return newShift;
 };
 
-export const endMockShift = (id: string, endShiftData: EndShiftFormData): Shift | undefined => {
+export const endMockShift = (id: string, endShiftData: EndShiftData): Shift | undefined => {
   const shiftIndex = mockShiftsStore.findIndex((s) => s.id === id);
   if (shiftIndex === -1) {
     return undefined;
@@ -85,17 +96,20 @@ export const endMockShift = (id: string, endShiftData: EndShiftFormData): Shift 
     throw new Error("Hanya shift yang sedang berjalan yang bisa diakhiri.");
   }
 
-  const finalCash = endShiftData.finalCash;
-  const totalSales = finalCash - shiftToEnd.initialCash; // Simple calculation
+  const finalCash = endShiftData.finalCashInput;
+  // For simplicity in mock, totalSales is finalCash - initialCash.
+  // In a real system, totalSales would be the sum of transactions by this user during this shift.
+  const totalSales = finalCash - shiftToEnd.initialCash; 
 
   mockShiftsStore[shiftIndex] = {
     ...shiftToEnd,
     endTime: new Date().toISOString(),
     finalCash,
-    totalSales,
-    notes: `${shiftToEnd.notes || ''}\nCatatan Akhir: ${endShiftData.notes || ''}`.trim(),
+    totalSales, // Store the calculated sales
+    notes: `${shiftToEnd.notes || ''}\nCatatan Akhir: ${endShiftData.endNotes || 'Tidak ada catatan.'}`.trim(),
     status: 'Selesai',
   };
+  // Duration will be calculated by getMockShifts or getMockShiftById
   return mockShiftsStore[shiftIndex];
 };
 
@@ -106,10 +120,11 @@ export const cancelMockShift = (id: string, notes?: string): Shift | undefined =
   }
    mockShiftsStore[shiftIndex] = {
     ...mockShiftsStore[shiftIndex],
-    endTime: new Date().toISOString(),
+    endTime: new Date().toISOString(), // Cancellation also marks an end time
     status: 'Dibatalkan',
     notes: `${mockShiftsStore[shiftIndex].notes || ''}\nShift Dibatalkan: ${notes || 'Tidak ada alasan spesifik.'}`.trim(),
   };
+  // Duration will be calculated
   return mockShiftsStore[shiftIndex];
 }
 
@@ -118,3 +133,4 @@ export const getMockUsersForSelect = () => mockUsers.map(u => ({ value: u.id, la
 
 // For shift form outlet selection
 export const getMockOutletsForSelect = () => mockOutlets.map(o => ({ value: o.id, label: o.name }));
+

@@ -22,7 +22,8 @@ import {
   ListTree, 
   Archive,
   PlusCircle, 
-  Clock, // Added Clock icon
+  Clock,
+  UserCheck, // Added UserCheck icon
 } from 'lucide-react';
 
 export type NavItem = {
@@ -116,6 +117,7 @@ export const siteConfig: SiteConfig = {
         { title: "Penjualan", href: `${dashboardBaseUrl}/reports/sales`, icon: DollarSign, description: "Laporan penjualan." },
         { title: "Pembelanjaan", href: `${dashboardBaseUrl}/reports/purchases`, icon: Receipt, description: "Laporan pembelanjaan." },
         { title: "Stok", href: `${dashboardBaseUrl}/reports/stock`, icon: PercentCircle, description: "Laporan stok barang." },
+        { title: "Shift", href: `${dashboardBaseUrl}/reports/shifts`, icon: UserCheck, description: "Laporan aktivitas shift pengguna." },
       ],
     },
     {
@@ -135,3 +137,4 @@ export const siteConfig: SiteConfig = {
 };
 
 export type AddItemSidebarNavItem = SidebarNavItem & { icon: typeof PlusCircle };
+

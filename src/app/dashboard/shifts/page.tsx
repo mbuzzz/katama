@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Edit, Trash2, MoreHorizontal, LogOut, XCircle, CheckCircle, PlayCircle } from "lucide-react";
+import { PlusCircle, LogOut, XCircle, CheckCircle, PlayCircle, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Shift, EndShiftFormData } from "@/types/shift";
+import type { Shift, EndShiftDialogFormData } from "@/types/shift";
 import { getMockShifts, endMockShift, cancelMockShift } from "@/data/shifts";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -42,7 +42,7 @@ export default function ShiftsPage() {
   const [showEndShiftDialog, setShowEndShiftDialog] = React.useState(false);
   const [showCancelShiftDialog, setShowCancelShiftDialog] = React.useState(false);
   const [shiftToModify, setShiftToModify] = React.useState<Shift | null>(null);
-  const [endShiftForm, setEndShiftForm] = React.useState<EndShiftFormData>({ finalCash: 0, notes: "" });
+  const [endShiftForm, setEndShiftForm] = React.useState<EndShiftDialogFormData>({ finalCashInput: 0, endNotes: "" });
   const [cancelShiftNotes, setCancelShiftNotes] = React.useState<string>("");
 
   const { toast } = useToast();
@@ -60,8 +60,10 @@ export default function ShiftsPage() {
   const handleEndShift = async () => {
     if (!shiftToModify) return;
     try {
-      // Simulate server action
-      const updatedShift = endMockShift(shiftToModify.id, endShiftForm);
+      const updatedShift = endMockShift(shiftToModify.id, {
+        finalCashInput: endShiftForm.finalCashInput,
+        endNotes: endShiftForm.endNotes,
+      });
       if (updatedShift) {
         toast({
           title: "Shift Diakhiri",
@@ -80,7 +82,7 @@ export default function ShiftsPage() {
     }
     setShowEndShiftDialog(false);
     setShiftToModify(null);
-    setEndShiftForm({ finalCash: 0, notes: "" });
+    setEndShiftForm({ finalCashInput: 0, endNotes: "" });
   };
 
   const handleCancelShift = async () => {
@@ -111,8 +113,7 @@ export default function ShiftsPage() {
 
   const openEndShiftDialog = (shift: Shift) => {
     setShiftToModify(shift);
-    // Pre-fill final cash with initial cash as a starting point for user input
-    setEndShiftForm({ finalCash: shift.initialCash, notes: "" }); 
+    setEndShiftForm({ finalCashInput: shift.initialCash, endNotes: "" }); 
     setShowEndShiftDialog(true);
   };
 
@@ -133,9 +134,9 @@ export default function ShiftsPage() {
   
   const getStatusBadgeVariant = (status: Shift['status']) => {
     switch (status) {
-      case 'Berjalan': return 'default'; // Blue or primary
-      case 'Selesai': return 'secondary'; // Green-ish or success
-      case 'Dibatalkan': return 'destructive'; // Red
+      case 'Berjalan': return 'default'; 
+      case 'Selesai': return 'secondary'; 
+      case 'Dibatalkan': return 'destructive'; 
       default: return 'outline';
     }
   };
@@ -164,6 +165,7 @@ export default function ShiftsPage() {
                 <TableHead>Outlet</TableHead>
                 <TableHead>Mulai</TableHead>
                 <TableHead>Selesai</TableHead>
+                <TableHead className="hidden sm:table-cell">Durasi</TableHead>
                 <TableHead className="text-right">Modal Awal</TableHead>
                 <TableHead className="text-right hidden md:table-cell">Kas Akhir</TableHead>
                 <TableHead className="text-right hidden md:table-cell">Total Penjualan</TableHead>
@@ -176,7 +178,7 @@ export default function ShiftsPage() {
             <TableBody>
               {shifts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-10">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-10">
                     Belum ada data shift.
                   </TableCell>
                 </TableRow>
@@ -187,6 +189,7 @@ export default function ShiftsPage() {
                   <TableCell>{shift.outletName}</TableCell>
                   <TableCell>{formatDate(shift.startTime)}</TableCell>
                   <TableCell>{formatDate(shift.endTime)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{shift.duration || "-"}</TableCell>
                   <TableCell className="text-right">{formatCurrency(shift.initialCash)}</TableCell>
                   <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.finalCash)}</TableCell>
                   <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.totalSales)}</TableCell>
@@ -242,12 +245,12 @@ export default function ShiftsPage() {
           </AlertDialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="finalCash">Kas Akhir (Rp)</Label>
+              <Label htmlFor="finalCashInput">Kas Akhir (Rp)</Label>
               <Input 
-                id="finalCash" 
+                id="finalCashInput" 
                 type="number" 
-                value={endShiftForm.finalCash}
-                onChange={(e) => setEndShiftForm(prev => ({ ...prev, finalCash: parseFloat(e.target.value) || 0 }))}
+                value={endShiftForm.finalCashInput}
+                onChange={(e) => setEndShiftForm(prev => ({ ...prev, finalCashInput: parseFloat(e.target.value) || 0 }))}
                 placeholder="Masukkan jumlah kas akhir"
               />
             </div>
@@ -255,8 +258,8 @@ export default function ShiftsPage() {
               <Label htmlFor="endNotes">Catatan Akhir Shift (Opsional)</Label>
               <Textarea 
                 id="endNotes"
-                value={endShiftForm.notes}
-                onChange={(e) => setEndShiftForm(prev => ({ ...prev, notes: e.target.value }))}
+                value={endShiftForm.endNotes}
+                onChange={(e) => setEndShiftForm(prev => ({ ...prev, endNotes: e.target.value }))}
                 placeholder="Contoh: Semua transaksi cocok, sisa kembalian sesuai."
                 rows={3}
               />
@@ -302,3 +305,4 @@ export default function ShiftsPage() {
     </div>
   );
 }
+
