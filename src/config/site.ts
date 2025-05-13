@@ -23,7 +23,8 @@ import {
   Archive,
   PlusCircle, 
   Clock,
-  UserCheck, // Added UserCheck icon
+  UserCheck,
+  CalendarClock, // Added CalendarClock icon
 } from 'lucide-react';
 
 export type NavItem = {
@@ -131,10 +132,10 @@ export const siteConfig: SiteConfig = {
         { title: "Pengguna", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna." },
         { title: "Peran", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola peran pengguna." },
         { title: "Outlet", href: `${dashboardBaseUrl}/settings/outlets`, icon: Store, description: "Kelola outlet." },
+        { title: "Jam Operasional", href: `${dashboardBaseUrl}/settings/operating-hours`, icon: CalendarClock, description: "Atur jam buka outlet." },
       ]
     },
   ],
 };
 
 export type AddItemSidebarNavItem = SidebarNavItem & { icon: typeof PlusCircle };
-
