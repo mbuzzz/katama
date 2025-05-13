@@ -1,7 +1,8 @@
 
 "use client";
 
-import type { Product as ProductType, ProductIngredient } from "@/types/product";
+import type { Product as ProductType } from "@/types/product";
+import type { RawMaterial } from "@/types/raw-material"; // For potential future direct raw material display if needed
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Trash2, Printer, CreditCard, QrCode, DollarSignIcon, PlayCircle, AlertCircle, Search } from "lucide-react";
+import { PlusCircle, MinusCircle, Trash2, Download, CreditCard, QrCode, DollarSignIcon, PlayCircle, Search, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -24,11 +25,26 @@ import {
 } from "@/components/ui/dialog";
 import { getMockProducts } from "@/data/products"; 
 import { handleProcessSaleAction } from "./actions";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+
+// localStorage keys
+const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
+const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
+const COMPANY_ADDRESS_STORAGE_KEY = 'katama-pos-company-address'; // Define if used in settings
+const COMPANY_CONTACT_STORAGE_KEY = 'katama-pos-company-contact'; // Define if used in settings
+
+const STRUK_HEADER_TEXT_KEY = 'katama-pos-struk-headerText';
+const STRUK_FOOTER_TEXT_KEY = 'katama-pos-struk-footerText';
+const STRUK_SHOW_LOGO_KEY = 'katama-pos-struk-showLogo';
+const STRUK_SHOW_ADDRESS_KEY = 'katama-pos-struk-showAddress';
+const STRUK_SHOW_CONTACT_KEY = 'katama-pos-struk-showContact';
 
 
 interface Product extends ProductType {
   // image field is already in ProductType if it's optional
-  // variants?: { name: string; price: number }[]; // Already in ProductType
 }
 
 interface CartItem extends Product {
@@ -38,6 +54,12 @@ interface CartItem extends Product {
 interface POSSession {
   initialCash: number;
   startTime: Date;
+}
+
+type PaymentMethod = "Tunai" | "Kartu" | "QRIS";
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
 }
 
 
@@ -50,22 +72,45 @@ export default function POSPage() {
   const [initialCashInput, setInitialCashInput] = React.useState("");
   const { toast } = useToast();
   const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = React.useState<PaymentMethod>("Tunai");
+
+  // States for receipt details from localStorage
+  const [companyName, setCompanyName] = React.useState<string>("KATAMA POS");
+  const [companyAddress, setCompanyAddress] = React.useState<string>("Alamat Perusahaan Anda");
+  const [companyContact, setCompanyContact] = React.useState<string>("Kontak Perusahaan Anda");
+  const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
+  const [strukHeaderText, setStrukHeaderText] = React.useState<string>("Terima Kasih!");
+  const [strukFooterText, setStrukFooterText] = React.useState<string>("Barang yang sudah dibeli tidak dapat dikembalikan.");
+  const [strukShowLogo, setStrukShowLogo] = React.useState<boolean>(true);
+  const [strukShowAddress, setStrukShowAddress] = React.useState<boolean>(true);
+  const [strukShowContact, setStrukShowContact] = React.useState<boolean>(true);
+
 
   React.useEffect(() => {
-    // Fetch products from the centralized data source.
-    // This runs on initial mount and whenever cartItems change, ensuring the
-    // product list used for display and validation (e.g., stock checks) is fresh.
     setProducts(getMockProducts());
+    // Load company and struk settings from localStorage
+    if (typeof window !== 'undefined') {
+      setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || "KATAMA POS");
+      // Assuming these keys are set by src/app/dashboard/settings/general/page.tsx
+      // If not, provide fallback or ensure they are set.
+      setCompanyAddress(localStorage.getItem('katama-pos-company-address') || "Jl. Contoh No. 123, Kota Contoh");
+      setCompanyContact(localStorage.getItem('katama-pos-company-contact') || "0812-3456-7890");
+      setCustomLogoUrl(localStorage.getItem(LOGO_STORAGE_KEY));
+      
+      setStrukHeaderText(localStorage.getItem(STRUK_HEADER_TEXT_KEY) || "Terima Kasih Atas Kunjungan Anda!");
+      setStrukFooterText(localStorage.getItem(STRUK_FOOTER_TEXT_KEY) || "Barang yang sudah dibeli tidak dapat dikembalikan.");
+      setStrukShowLogo(localStorage.getItem(STRUK_SHOW_LOGO_KEY) === 'true');
+      setStrukShowAddress(localStorage.getItem(STRUK_SHOW_ADDRESS_KEY) === 'true');
+      setStrukShowContact(localStorage.getItem(STRUK_SHOW_CONTACT_KEY) === 'true');
+    }
   }, [cartItems]); 
 
   const handleAddProductToCart = (product: Product) => {
-    // Ensure we are checking against the latest stock info for the product from our 'products' state
     const currentProductDetails = products.find(p => p.id === product.id);
     if (!currentProductDetails) {
         toast({ title: "Produk tidak ditemukan.", variant: "destructive"});
         return;
     }
-
 
     if (currentProductDetails.stock <= 0) {
       toast({
@@ -91,7 +136,6 @@ export default function POSPage() {
           item.id === currentProductDetails.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      // When adding a new item, spread currentProductDetails to get its latest stock and other info
       return [...prevItems, { ...currentProductDetails, quantity: 1 }];
     });
     toast({ title: `${currentProductDetails.name} ditambahkan ke keranjang.` });
@@ -102,11 +146,10 @@ export default function POSPage() {
       const productInCart = prevItems.find((item) => item.id === productId);
       if (!productInCart) return prevItems;
 
-      // Get latest stock info from the 'products' state which is kept fresh
       const productDetailsFromState = products.find(p => p.id === productId);
       if (!productDetailsFromState) {
           toast({ title: "Detail produk tidak ditemukan untuk pembaruan kuantitas.", variant: "destructive"});
-          return prevItems; // Should not happen if item is in cart
+          return prevItems;
       }
 
       const newQuantity = Math.max(0, productInCart.quantity + change);
@@ -117,7 +160,6 @@ export default function POSPage() {
             description: `Jumlah "${productDetailsFromState.name}" di keranjang melebihi stok yang tersedia (${productDetailsFromState.stock}).`,
             variant: "destructive",
           });
-        // Cap quantity at available stock if trying to increase beyond it
         return prevItems.map(item => item.id === productId ? {...item, quantity: productDetailsFromState.stock} : item).filter(item => item.quantity > 0);
       }
       
@@ -141,6 +183,120 @@ export default function POSPage() {
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = subtotal; 
 
+  const generateReceiptPDF = () => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const transactionDate = new Date();
+    const receiptId = `TXN-${Date.now().toString().slice(-6)}`;
+    const fileName = `Struk_${receiptId}_${format(transactionDate, "yyyyMMddHHmmss")}.pdf`;
+    let yPos = 15;
+
+    // Header
+    if (strukShowLogo && customLogoUrl) {
+      try {
+        // Check if it's a data URI for PNG or JPEG
+        if (customLogoUrl.startsWith("data:image/png;base64,") || customLogoUrl.startsWith("data:image/jpeg;base64,")) {
+            doc.addImage(customLogoUrl, customLogoUrl.includes("png") ? "PNG" : "JPEG", 15, yPos, 30, 10); // Adjust size/pos as needed
+            yPos += 15; // Space after logo
+        } else {
+            console.warn("Format logo tidak didukung untuk PDF atau bukan data URI base64.");
+        }
+      } catch (e) {
+        console.error("Gagal menambahkan logo ke PDF:", e);
+      }
+    }
+
+    doc.setFontSize(16);
+    doc.text(companyName, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center" });
+    yPos += 7;
+
+    doc.setFontSize(10);
+    if (strukShowAddress) {
+      doc.text(companyAddress, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center" });
+      yPos += 5;
+    }
+    if (strukShowContact) {
+      doc.text(companyContact, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center" });
+      yPos += 5;
+    }
+    yPos += 3; // Extra space before details
+    doc.setLineWidth(0.2);
+    doc.line(10, yPos, doc.internal.pageSize.getWidth() - 10, yPos); // Horizontal line
+    yPos += 7;
+
+    doc.setFontSize(9);
+    doc.text(`No. Struk: ${receiptId}`, 15, yPos);
+    doc.text(`Tanggal: ${format(transactionDate, "dd MMM yyyy, HH:mm:ss", { locale: idLocale })}`, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
+    yPos += 5;
+    doc.text(`Kasir: Kasir POS (Contoh)`, 15, yPos); // Mock cashier
+    yPos += 7;
+
+    // Table Items
+    const tableColumn = ["No", "Nama Item", "Qty", "Harga", "Total"];
+    const tableRows: any[][] = [];
+    cartItems.forEach((item, index) => {
+      const itemData = [
+        index + 1,
+        item.name,
+        item.quantity,
+        `Rp ${item.price.toLocaleString('id-ID')}`,
+        `Rp ${(item.price * item.quantity).toLocaleString('id-ID')}`
+      ];
+      tableRows.push(itemData);
+    });
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: yPos,
+      theme: 'striped',
+      headStyles: { fillColor: [220, 220, 220], textColor: 20, fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 8 },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 10 },
+        1: { halign: 'left', cellWidth: 'auto' },
+        2: { halign: 'center' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+      },
+      didDrawPage: (data) => { yPos = data.cursor?.y || yPos; }
+    });
+    
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+
+
+    // Summary
+    doc.setFontSize(10);
+    doc.text("Subtotal:", 130, yPos, { align: "left" });
+    doc.text(`Rp ${subtotal.toLocaleString('id-ID')}`, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
+    yPos += 6;
+
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("Total:", 130, yPos, { align: "left" });
+    doc.text(`Rp ${total.toLocaleString('id-ID')}`, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
+    yPos += 6;
+    doc.setFont(undefined, 'normal');
+
+    doc.setFontSize(9);
+    doc.text("Metode Pembayaran:", 15, yPos);
+    doc.text(selectedPaymentMethod, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
+    yPos += 10;
+
+    // Footer Text
+    doc.setLineWidth(0.2);
+    doc.line(10, yPos, doc.internal.pageSize.getWidth() - 10, yPos); // Horizontal line
+    yPos += 7;
+
+    doc.setFontSize(9);
+    doc.text(strukHeaderText, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center", maxWidth: doc.internal.pageSize.getWidth() - 30 });
+    yPos += strukHeaderText ? (doc.getTextDimensions(strukHeaderText, {maxWidth: doc.internal.pageSize.getWidth() - 30}).h + 3) : 0;
+    
+    doc.text(strukFooterText, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center", maxWidth: doc.internal.pageSize.getWidth() - 30 });
+
+    doc.save(fileName);
+  };
+
+
   const handlePayment = async () => {
     if (cartItems.length === 0) {
       toast({
@@ -152,29 +308,24 @@ export default function POSPage() {
     }
     setIsProcessingPayment(true);
     const result = await handleProcessSaleAction(cartItems);
-    setIsProcessingPayment(false);
-
+    
     if (result.success) {
+      generateReceiptPDF();
       toast({
         title: "Pembayaran Berhasil",
-        description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
+        description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui. Struk diunduh.`,
       });
       setCartItems([]); 
-      // setProducts will be called by the useEffect due to cartItems changing,
-      // ensuring the product list reflects updated stock.
-      // Explicitly calling setProducts(getMockProducts()) here is also fine
-      // but the useEffect handles it.
-      setProducts(getMockProducts()); // Explicit refresh after sale
+      setProducts(getMockProducts()); 
     } else {
       toast({
         title: "Pembayaran Gagal",
         description: result.message || "Terjadi kesalahan saat memproses penjualan.",
         variant: "destructive",
       });
-       // Even if payment fails, refresh product list as some pre-checks might have passed
-       // or to ensure UI consistency if partial changes were hypothetically made (not in this mock)
       setProducts(getMockProducts());
     }
+    setIsProcessingPayment(false);
   }
 
   const handleOpenPOSSession = () => {
@@ -256,7 +407,6 @@ export default function POSPage() {
         className="py-3 md:py-4" 
       />
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 flex-1 overflow-hidden">
-        {/* Product Selection Card */}
         <Card className="lg:col-span-2 shadow-lg flex flex-col flex-1 min-h-0">
           <CardHeader className="p-3 sm:p-4">
             <CardTitle className="text-lg sm:text-xl">Pilih Produk</CardTitle>
@@ -322,8 +472,7 @@ export default function POSPage() {
           </CardContent>
         </Card>
 
-        {/* Order Details Card */}
-        <Card className="shadow-lg flex flex-col flex-1 min-h-0 lg:max-h-[calc(100vh-var(--header-height,88px)-var(--pageheader-height,80px)-2rem)]"> {/* max-h for lg screens */}
+        <Card className="shadow-lg flex flex-col flex-1 min-h-0 lg:max-h-[calc(100vh-var(--header-height,88px)-var(--pageheader-height,80px)-2rem)]">
           <CardHeader className="p-3 sm:p-4">
             <CardTitle className="text-lg sm:text-xl">Detail Pesanan</CardTitle>
           </CardHeader>
@@ -372,9 +521,18 @@ export default function POSPage() {
           <CardFooter className="flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 border-t">
              <Label className="text-xs sm:text-sm self-start font-medium">Metode Pembayaran</Label>
             <div className="grid grid-cols-3 gap-2 w-full">
-                <Button variant="outline" size="sm" className="h-9 text-xs px-2"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Tunai</span></Button>
-                <Button variant="outline" size="sm" className="h-9 text-xs px-2"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span></Button>
-                <Button variant="outline" size="sm" className="h-9 text-xs px-2"><QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS</Button>
+                <Button variant={selectedPaymentMethod === "Tunai" ? "default" : "outline"} size="sm" className="h-9 text-xs px-2" onClick={() => setSelectedPaymentMethod("Tunai")}>
+                    {selectedPaymentMethod === "Tunai" && <CheckCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />}
+                    <DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Tunai</span>
+                </Button>
+                <Button variant={selectedPaymentMethod === "Kartu" ? "default" : "outline"} size="sm" className="h-9 text-xs px-2" onClick={() => setSelectedPaymentMethod("Kartu")}>
+                    {selectedPaymentMethod === "Kartu" && <CheckCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />}
+                    <CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span>
+                </Button>
+                <Button variant={selectedPaymentMethod === "QRIS" ? "default" : "outline"} size="sm" className="h-9 text-xs px-2" onClick={() => setSelectedPaymentMethod("QRIS")}>
+                     {selectedPaymentMethod === "QRIS" && <CheckCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />}
+                    <QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS
+                </Button>
             </div>
             <Button 
               size="lg" 
@@ -387,8 +545,8 @@ export default function POSPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-              ) : <Printer className="mr-2 h-4 w-4" />}
-              {isProcessingPayment ? "Memproses..." : "Bayar & Cetak Struk"}
+              ) : <Download className="mr-2 h-4 w-4" />}
+              {isProcessingPayment ? "Memproses..." : "Bayar & Unduh Struk"}
             </Button>
             <Button size="sm" variant="ghost" className="w-full mt-1 h-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => {
               setPosSession(null);

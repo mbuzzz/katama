@@ -13,39 +13,48 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
-const DEFAULT_LOGO_PLACEHOLDER = "https://picsum.photos/150/150?random=logo-placeholder";
+const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
+const COMPANY_ADDRESS_STORAGE_KEY = 'katama-pos-company-address';
+const COMPANY_CONTACT_STORAGE_KEY = 'katama-pos-company-contact';
+const DEFAULT_LOGO_PLACEHOLDER = "https://picsum.photos/100/100?random=logo-placeholder"; // smaller placeholder
 
 export default function GeneralSettingsPage() {
-  const [companyName, setCompanyName] = useState("KATAMA Jaya");
-  const [companyAddress, setCompanyAddress] = useState("Jl. Es Teh Indonesia No. 1, Kota Segar");
-  const [companyContact, setCompanyContact] = useState("0812-1234-5678");
+  const [companyName, setCompanyName] = useState(""); // Initial empty, load from LS
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [companyContact, setCompanyContact] = useState("");
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Load settings from localStorage on component mount
     const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
     if (storedLogo) {
       setCustomLogo(storedLogo);
     }
+    setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || "KATAMA Es Teh");
+    setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Kesegaran No. 1, Kota Sejuk");
+    setCompanyContact(localStorage.getItem(COMPANY_CONTACT_STORAGE_KEY) || "0812-0000-3333");
   }, []);
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+      if (file.size > 1 * 1024 * 1024) { // 1MB size limit
+        toast({ title: "Ukuran Logo Terlalu Besar", description: "Pilih file logo dengan ukuran maksimal 1MB.", variant: "destructive" });
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
         setCustomLogo(result);
+        // Save logo directly for immediate feedback in sidebar
         try {
           localStorage.setItem(LOGO_STORAGE_KEY, result);
-          toast({ title: "Logo Diperbarui", description: "Logo berhasil diunggah dan akan tampil setelah refresh halaman." });
-          // Optionally trigger a custom event to inform other components like sidebar
-           window.dispatchEvent(new CustomEvent('logoChanged', { detail: result }));
+          window.dispatchEvent(new CustomEvent('logoChanged', { detail: result }));
+          toast({ title: "Logo Diperbarui", description: "Pratinjau logo diperbarui. Simpan perubahan untuk menerapkan." });
         } catch (error) {
             console.error("Error saving logo to localStorage:", error);
-            toast({ title: "Gagal Menyimpan Logo", description: "Ukuran logo mungkin terlalu besar untuk disimpan.", variant: "destructive" });
-            // Potentially revert customLogo state if localStorage fails and it's critical
-            // For now, we'll leave the preview and let the user know it might not persist fully.
+            toast({ title: "Gagal Menyimpan Logo", description: "Ukuran logo mungkin terlalu besar untuk penyimpanan lokal.", variant: "destructive" });
         }
       };
       reader.readAsDataURL(file);
@@ -53,20 +62,24 @@ export default function GeneralSettingsPage() {
   };
   
   const handleSaveChanges = () => {
-    // Save other settings (name, address, contact) if needed
-    // For logo, it's already saved on change due to localStorage interaction
-    // If customLogo is null and there was a stored one, this means "remove custom logo"
-    // but current UI doesn't have a remove button. User can only replace.
-    // If they want to revert to default, they'd need to clear it or we add a "reset logo" button.
-
-    // For demo, we just toast.
+    // Save all settings to localStorage
+    localStorage.setItem(COMPANY_NAME_STORAGE_KEY, companyName);
+    localStorage.setItem(COMPANY_ADDRESS_STORAGE_KEY, companyAddress);
+    localStorage.setItem(COMPANY_CONTACT_STORAGE_KEY, companyContact);
+    if (customLogo) {
+      localStorage.setItem(LOGO_STORAGE_KEY, customLogo);
+      window.dispatchEvent(new CustomEvent('logoChanged', { detail: customLogo }));
+    } else {
+      localStorage.removeItem(LOGO_STORAGE_KEY); // If customLogo is null/cleared
+      window.dispatchEvent(new CustomEvent('logoChanged', { detail: null }));
+    }
+    
+    window.dispatchEvent(new CustomEvent('companyNameChanged', { detail: companyName }));
+    
     toast({
       title: "Pengaturan Disimpan",
       description: "Informasi perusahaan telah diperbarui.",
     });
-     // Force refresh other components if needed, e.g. sidebar to reflect logo change
-     // This is a bit of a hack, better to use context or a global state manager.
-     window.dispatchEvent(new Event('storage')); // This will trigger the listener in AppSidebar
   };
 
 
@@ -119,12 +132,12 @@ export default function GeneralSettingsPage() {
                 alt="Pratinjau Logo" 
                 width={100} 
                 height={100} 
-                className="rounded-md border object-contain bg-muted" // Added bg-muted for placeholder visibility
-                data-ai-hint={!customLogo ? "generic placeholder" : undefined} // AI hint only for placeholder
-                key={customLogo || DEFAULT_LOGO_PLACEHOLDER} // Force re-render on src change
+                className="rounded-md border object-contain bg-muted aspect-square"
+                data-ai-hint={!customLogo ? "generic placeholder" : "company logo"}
+                key={customLogo || DEFAULT_LOGO_PLACEHOLDER} 
               />
-              <Input id="companyLogo" type="file" accept="image/*" onChange={handleLogoChange} />
-              <p className="text-xs text-muted-foreground">Format: JPG, PNG, WEBP. Maks: 1MB. Rekomendasi rasio aspek 4:1 (mis. 120x30px).</p>
+              <Input id="companyLogo" type="file" accept="image/png, image/jpeg, image/webp" onChange={handleLogoChange} />
+              <p className="text-xs text-muted-foreground">Format: JPG, PNG, WEBP. Maks: 1MB. Rekomendasi rasio aspek 1:1 (persegi) atau 4:1 (melebar) untuk sidebar.</p>
             </div>
           </div>
         </CardContent>

@@ -4,12 +4,12 @@
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; // Not used directly now, but keep for potential future use
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Save, Printer, Bluetooth, Loader2, CheckCircle, AlertTriangle } from "lucide-react"; // Added AlertTriangle
+import { Save, Printer, Bluetooth, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -22,12 +22,23 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Added Alert components
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface WebBluetoothDevice {
   id: string;
   name?: string;
 }
+
+// localStorage keys
+const STRUK_PAPER_SIZE_KEY = 'katama-pos-struk-paperSize';
+const STRUK_HEADER_TEXT_KEY = 'katama-pos-struk-headerText';
+const STRUK_FOOTER_TEXT_KEY = 'katama-pos-struk-footerText';
+const STRUK_SHOW_LOGO_KEY = 'katama-pos-struk-showLogo';
+const STRUK_SHOW_ADDRESS_KEY = 'katama-pos-struk-showAddress';
+const STRUK_SHOW_CONTACT_KEY = 'katama-pos-struk-showContact';
+const CONNECTED_PRINTER_NAME_KEY = 'katama-pos-connectedPrinterName';
+const CONNECTED_PRINTER_ID_KEY = 'katama-pos-connectedPrinterId';
+
 
 export default function StrukSettingsPage() {
   const [paperSize, setPaperSize] = useState("58mm");
@@ -51,7 +62,53 @@ export default function StrukSettingsPage() {
     if (typeof navigator.bluetooth === 'undefined') {
       setBluetoothError("Web Bluetooth API tidak didukung di browser ini. Fitur koneksi printer tidak akan berfungsi.");
     }
+
+    // Load settings from localStorage
+    const storedPaperSize = localStorage.getItem(STRUK_PAPER_SIZE_KEY);
+    if (storedPaperSize) setPaperSize(storedPaperSize);
+
+    const storedHeaderText = localStorage.getItem(STRUK_HEADER_TEXT_KEY);
+    if (storedHeaderText) setHeaderText(storedHeaderText);
+
+    const storedFooterText = localStorage.getItem(STRUK_FOOTER_TEXT_KEY);
+    if (storedFooterText) setFooterText(storedFooterText);
+
+    const storedShowLogo = localStorage.getItem(STRUK_SHOW_LOGO_KEY);
+    setShowLogo(storedShowLogo === 'true'); // Default to false if not found or not 'true'
+
+    const storedShowAddress = localStorage.getItem(STRUK_SHOW_ADDRESS_KEY);
+    setShowAddress(storedShowAddress === 'true');
+
+    const storedShowContact = localStorage.getItem(STRUK_SHOW_CONTACT_KEY);
+    setShowContact(storedShowContact === 'true');
+    
+    const storedConnectedPrinterName = localStorage.getItem(CONNECTED_PRINTER_NAME_KEY);
+    if (storedConnectedPrinterName) setConnectedPrinterName(storedConnectedPrinterName);
+    const storedConnectedPrinterId = localStorage.getItem(CONNECTED_PRINTER_ID_KEY);
+    if (storedConnectedPrinterId) setSelectedPrinterId(storedConnectedPrinterId);
+
+
   }, []);
+
+  const handleSaveSettings = () => {
+    localStorage.setItem(STRUK_PAPER_SIZE_KEY, paperSize);
+    localStorage.setItem(STRUK_HEADER_TEXT_KEY, headerText);
+    localStorage.setItem(STRUK_FOOTER_TEXT_KEY, footerText);
+    localStorage.setItem(STRUK_SHOW_LOGO_KEY, String(showLogo));
+    localStorage.setItem(STRUK_SHOW_ADDRESS_KEY, String(showAddress));
+    localStorage.setItem(STRUK_SHOW_CONTACT_KEY, String(showContact));
+    
+    if (connectedPrinterName && selectedPrinterId) {
+        localStorage.setItem(CONNECTED_PRINTER_NAME_KEY, connectedPrinterName);
+        localStorage.setItem(CONNECTED_PRINTER_ID_KEY, selectedPrinterId);
+    } else {
+        localStorage.removeItem(CONNECTED_PRINTER_NAME_KEY);
+        localStorage.removeItem(CONNECTED_PRINTER_ID_KEY);
+    }
+
+    toast({ title: "Pengaturan Disimpan", description: "Konfigurasi struk telah berhasil disimpan." });
+  };
+
 
   const handleSearchPrinters = async () => {
     if (typeof navigator.bluetooth === 'undefined') {
@@ -66,15 +123,12 @@ export default function StrukSettingsPage() {
 
     try {
       const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true, // For broader compatibility in demo, be more specific in production
-        // filters: [{ services: ['00001800-0000-1000-8000-00805f9b34fb'] }], // Example: Generic Access service
-        optionalServices: ['00001101-0000-1000-8000-00805f9b34fb'] // Serial Port Profile
+        acceptAllDevices: true, 
+        optionalServices: ['00001101-0000-1000-8000-00805f9b34fb'] 
       });
       if (device) {
-        setFoundPrinters(prev => [...prev, { id: device.id, name: device.name || `Printer ${device.id.substring(0,6)}` }]);
-        if (foundPrinters.length === 0) { // if it was the first one found
-             toast({ title: "Printer Ditemukan", description: `Printer "${device.name || device.id}" ditemukan.`});
-        }
+        setFoundPrinters(prev => [...prev, { id: device.id, name: device.name || `Printer (${device.id.substring(0,6)}...)` }]);
+        toast({ title: "Printer Ditemukan", description: `Printer "${device.name || device.id}" ditemukan.`});
       }
     } catch (error: any) {
       console.error("Error mencari printer Bluetooth:", error);
@@ -100,61 +154,44 @@ export default function StrukSettingsPage() {
     setBluetoothError(null);
     setIsConnectingPrinter(true);
 
-    // Note: Actual connection and communication with a thermal printer via Web Bluetooth
-    // is complex and involves GATT services, characteristics, and printer-specific commands (ESC/POS).
-    // This is a simplified connection attempt for demonstration.
-    try {
-      // In a real app, you'd use the selectedPrinterId to get the BluetoothDevice object
-      // (which you should store when found) and then device.gatt.connect()
-      const printerToConnect = foundPrinters.find(p => p.id === selectedPrinterId);
-      if (!printerToConnect) {
-        throw new Error("Printer tidak ditemukan di daftar.");
-      }
-      
-      // This is a placeholder for actual connection logic
-      // For example:
-      // const device = await navigator.bluetooth.requestDevice({ filters: [{ deviceId: selectedPrinterId }] }); // This is not how you reconnect, store the device object
-      // const server = await device.gatt.connect();
-      // console.log("Terhubung ke server GATT:", server);
-
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate connection
-      
-      setConnectedPrinterName(printerToConnect.name || `Printer ${printerToConnect.id.substring(0,6)}`);
-      toast({ title: "Printer Terhubung (Simulasi)", description: `${printerToConnect.name} berhasil terhubung.` });
-      setShowPrinterDialog(false);
-    } catch (error: any) {
-      console.error("Gagal menghubungkan ke printer:", error);
-      const errorMessage = "Gagal terhubung ke printer. Coba lagi.";
-      setBluetoothError(errorMessage);
-      toast({ title: "Koneksi Gagal", description: errorMessage, variant: "destructive" });
-    } finally {
+    const printerToConnect = foundPrinters.find(p => p.id === selectedPrinterId);
+    if (!printerToConnect) {
       setIsConnectingPrinter(false);
+      toast({ title: "Error", description: "Printer yang dipilih tidak ditemukan.", variant: "destructive" });
+      return;
     }
+    
+    // Actual connection logic would go here. For now, we just set it as connected.
+    // This part remains a placeholder because Web Bluetooth API for printing is complex.
+    // navigator.bluetooth.requestDevice({ filters: [{ deviceId: selectedPrinterId }]}) // This isn't correct for reconnecting, store the device object
+    // .then(device => device.gatt.connect())
+    // .then(server => { ... })
+    
+    // Simulate successful connection for UI update
+    setConnectedPrinterName(printerToConnect.name || `Printer ${printerToConnect.id.substring(0,6)}...`);
+    localStorage.setItem(CONNECTED_PRINTER_NAME_KEY, printerToConnect.name || `Printer ${printerToConnect.id.substring(0,6)}...`);
+    localStorage.setItem(CONNECTED_PRINTER_ID_KEY, selectedPrinterId);
+    toast({ title: "Printer Terhubung", description: `Printer "${printerToConnect.name}" berhasil terhubung (simulasi).` });
+    setShowPrinterDialog(false);
+    setIsConnectingPrinter(false);
   };
 
   const openPrinterSearchDialog = () => {
     if (typeof navigator.bluetooth === 'undefined') {
       setBluetoothError("Web Bluetooth API tidak didukung di browser ini. Fitur koneksi printer tidak akan berfungsi.");
       toast({ title: "Error", description: "Web Bluetooth tidak didukung.", variant: "destructive" });
-      setShowPrinterDialog(false); // Don't even open if not supported
       return;
     }
     setShowPrinterDialog(true);
     setBluetoothError(null);
-    // Don't auto-search if already connected, let user initiate if they want to change
-    if (!connectedPrinterName) {
-      setFoundPrinters([]); // Clear previous list for a fresh search
-      // handleSearchPrinters(); // User should click search button in dialog
-    } else {
-        // If already connected, can pre-fill or let user search again
-    }
+    setFoundPrinters([]); 
   }
 
   return (
     <div>
       <PageHeader title="Pengaturan Struk" description="Kustomisasi tampilan dan informasi pada struk belanja." />
       
-      {bluetoothError && (
+      {bluetoothError && !showPrinterDialog && ( // Only show global error if dialog isn't open
          <Alert variant="destructive" className="mb-6">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Masalah Bluetooth</AlertTitle>
@@ -176,17 +213,17 @@ export default function StrukSettingsPage() {
                 <Label htmlFor="bluetoothPrinter">Printer Bluetooth Thermal</Label>
               </div>
               {connectedPrinterName ? (
-                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md dark:bg-green-900/30 dark:border-green-700">
                   <div className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="text-sm text-green-700">Terhubung ke: <strong>{connectedPrinterName}</strong></span>
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
+                    <span className="text-sm text-green-700 dark:text-green-300">Terhubung ke: <strong>{connectedPrinterName}</strong></span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={openPrinterSearchDialog} disabled={!!bluetoothError}>
+                  <Button variant="outline" size="sm" onClick={openPrinterSearchDialog} disabled={!!bluetoothError && typeof navigator.bluetooth === 'undefined'}>
                     Ganti Printer
                   </Button>
                 </div>
               ) : (
-                <Button variant="outline" onClick={openPrinterSearchDialog} disabled={!!bluetoothError}>
+                <Button variant="outline" onClick={openPrinterSearchDialog} disabled={!!bluetoothError && typeof navigator.bluetooth === 'undefined'}>
                   <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer
                 </Button>
               )}
@@ -261,7 +298,7 @@ export default function StrukSettingsPage() {
 
         </CardContent>
         <CardFooter className="border-t pt-6">
-          <Button>
+          <Button onClick={handleSaveSettings}>
             <Save className="mr-2 h-4 w-4" /> Simpan Pengaturan Struk
           </Button>
         </CardFooter>
@@ -271,6 +308,7 @@ export default function StrukSettingsPage() {
         setShowPrinterDialog(isOpen);
         if (!isOpen) {
             setIsConnectingPrinter(false); 
+            setBluetoothError(null); // Clear dialog-specific error when closing
         }
       }}>
         <DialogContent className="sm:max-w-md">
@@ -280,6 +318,13 @@ export default function StrukSettingsPage() {
               Klik "Cari Printer" untuk menemukan perangkat. Pilih printer thermal dari daftar di bawah ini.
             </DialogDescription>
           </DialogHeader>
+           {bluetoothError && (
+            <Alert variant="destructive" className="my-2">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Error Bluetooth</AlertTitle>
+              <AlertDescription>{bluetoothError}</AlertDescription>
+            </Alert>
+           )}
           <div className="py-4 space-y-4">
             {isSearchingPrinters && (
               <div className="flex items-center justify-center space-x-2 text-muted-foreground">
@@ -293,16 +338,16 @@ export default function StrukSettingsPage() {
             {!isSearchingPrinters && foundPrinters.length > 0 && (
               <RadioGroup value={selectedPrinterId || ""} onValueChange={setSelectedPrinterId}>
                 {foundPrinters.map((printer) => (
-                  <div key={printer.id} className="flex items-center space-x-2 p-2 border rounded-md hover:bg-accent/50 has-[input:checked]:bg-accent/70">
+                  <div key={printer.id} className="flex items-center space-x-2 p-2 border rounded-md hover:bg-accent/50 has-[input:checked]:bg-accent/70 dark:hover:bg-accent/30 dark:has-[input:checked]:bg-accent/50">
                     <RadioGroupItem value={printer.id} id={`printer-${printer.id}`} />
-                    <Label htmlFor={`printer-${printer.id}`} className="flex-1 cursor-pointer">{printer.name || `Printer Tidak Dikenal (${printer.id.substring(0,6)})`}</Label>
+                    <Label htmlFor={`printer-${printer.id}`} className="flex-1 cursor-pointer">{printer.name || `Printer Tidak Dikenal (${printer.id.substring(0,6)}...)`}</Label>
                   </div>
                 ))}
               </RadioGroup>
             )}
           </div>
           <DialogFooter className="sm:justify-between items-center flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={handleSearchPrinters} disabled={isSearchingPrinters || isConnectingPrinter}>
+            <Button type="button" variant="outline" onClick={handleSearchPrinters} disabled={isSearchingPrinters || isConnectingPrinter || (!!bluetoothError && typeof navigator.bluetooth === 'undefined')}>
               {isSearchingPrinters ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Cari Printer
             </Button>
@@ -310,7 +355,7 @@ export default function StrukSettingsPage() {
               <DialogClose asChild>
                 <Button type="button" variant="ghost" disabled={isConnectingPrinter}>Batal</Button>
               </DialogClose>
-              <Button type="button" onClick={handleConnectPrinter} disabled={!selectedPrinterId || isSearchingPrinters || isConnectingPrinter}>
+              <Button type="button" onClick={handleConnectPrinter} disabled={!selectedPrinterId || isSearchingPrinters || isConnectingPrinter || (!!bluetoothError && typeof navigator.bluetooth === 'undefined')}>
                 {isConnectingPrinter && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isConnectingPrinter ? "Menghubungkan..." : "Hubungkan"}
               </Button>
