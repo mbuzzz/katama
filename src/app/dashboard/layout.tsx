@@ -1,11 +1,11 @@
 
-"use client";
+"use client"; // Keep this if any child or this component uses client features like hooks
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; 
+import { usePathname, useRouter } from "next/navigation";
 import {
-  SidebarProvider,
+  SidebarProvider, // Keep for useSidebar hook
   Sidebar,
   SidebarHeader,
   SidebarContent,
@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { siteConfig, type SidebarNavItem } from "@/config/site";
 import { Logo } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { Menu, Bell, UserCircle, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { Menu as MenuIconLucide, Bell, UserCircle, LogOut, ChevronDown, ChevronUp } from 'lucide-react'; // Renamed Menu to avoid conflict
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { AppBottomNav } from "@/components/mobile-bottom-nav"; 
 
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
 const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
@@ -48,19 +49,29 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider defaultOpen>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar />
-        <div className="flex flex-1 flex-col">
-          <AppHeader />
-          <SidebarInset>
-            <ScrollArea className="h-full">
-              <main className="h-full p-4 md:p-6 lg:p-8">{children}</main>
-            </ScrollArea>
-          </SidebarInset>
-        </div>
-      </div>
+    <SidebarProvider defaultOpen> {/* defaultOpen true for desktop */}
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
     </SidebarProvider>
+  );
+}
+
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  const { isMobile } = useSidebar(); 
+
+  return (
+    <div className="flex min-h-screen w-full">
+      {!isMobile && <AppSidebar />} 
+      
+      <div className="flex flex-1 flex-col">
+        <AppHeader /> 
+        <SidebarInset className={cn(isMobile && "pb-20")}> 
+          <ScrollArea className="h-full">
+            <div className="h-full p-4 md:p-6 lg:p-8">{children}</div>
+          </ScrollArea>
+        </SidebarInset>
+      </div>
+      {isMobile && <AppBottomNav navItems={siteConfig.sidebarNav} />} 
+    </div>
   );
 }
 
@@ -80,7 +91,6 @@ function AppSidebar() {
     if (storedCompanyName) {
       setCompanyName(storedCompanyName);
     }
-
 
     const handleStorageChange = (event: StorageEvent | CustomEvent) => {
       if (event instanceof StorageEvent) {
@@ -104,7 +114,6 @@ function AppSidebar() {
     window.addEventListener('logoChanged', handleStorageChange as EventListener);
     window.addEventListener('companyNameChanged', handleStorageChange as EventListener);
 
-
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('logoChanged', handleStorageChange as EventListener);
@@ -112,9 +121,7 @@ function AppSidebar() {
     };
   }, []);
 
-
   const handleLogout = () => {
-    // In a real app, you'd clear session/token here
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
@@ -148,14 +155,12 @@ function AppSidebar() {
   );
 }
 
-
 function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | null }) {
   const { open, state } = useSidebar();
   const [isSubmenuOpen, setIsSubmenuOpen] = React.useState(
     item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false
   );
 
-  // Effect to update submenu open state if path changes externally (e.g. direct navigation)
   React.useEffect(() => {
     const shouldBeOpen = item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false;
     if (shouldBeOpen !== isSubmenuOpen) {
@@ -163,7 +168,6 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, item.items]);
-
 
   const isActive = item.href && pathname === item.href;
   const isParentActive = item.items?.some(subItem => pathname?.startsWith(subItem.href));
@@ -198,7 +202,6 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
                     isActive={pathname === subItem.href}
                      className={cn(pathname === subItem.href && "bg-sidebar-accent text-sidebar-accent-foreground")}
                   >
-                    {/* <subItem.icon className="h-4 w-4" /> */} {/* Icons in sub-items can be too much */}
                     <span>{subItem.title}</span>
                   </SidebarMenuSubButton>
                 </Link>
@@ -228,12 +231,11 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
 
 
 function AppHeader() {
-  const { isMobile, toggleSidebar } = useSidebar();
+  const { isMobile } = useSidebar();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogout = () => {
-     // In a real app, you'd clear session/token here
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
@@ -242,11 +244,16 @@ function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
-      {isMobile && (
-        <SidebarTrigger asChild>
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
+      {isMobile ? (
+         // On mobile, the bottom nav is primary. This space is minimal.
+         // A page title could go here if needed, or actions specific to the current mobile view.
+         // For now, an empty div or a minimal placeholder if flex layout requires it.
+         <div className="w-5 h-5 md:hidden"></div> 
+      ) : (
+         <SidebarTrigger asChild>
           <Button size="icon" variant="outline" aria-label="Toggle Sidebar">
-            <Menu className="h-5 w-5" />
+            <MenuIconLucide className="h-5 w-5" />
           </Button>
         </SidebarTrigger>
       )}
@@ -280,4 +287,3 @@ function AppHeader() {
     </header>
   );
 }
-
