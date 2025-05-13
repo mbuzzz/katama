@@ -110,8 +110,10 @@ export default function OperatingHoursSettingsPage() {
                             <h3 className="text-lg font-semibold text-primary">{outlet.name}</h3>
                             <p className="text-xs text-muted-foreground">{outlet.address}</p>
                         </div>
-                        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(outlet.id);}} className="mt-2 sm:mt-0 shrink-0">
+                        <Button asChild size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(outlet.id);}} className="mt-2 sm:mt-0 shrink-0">
+                          <span className="flex items-center">
                             <Edit className="mr-2 h-4 w-4" /> Atur Jadwal
+                          </span>
                         </Button>
                     </div>
                   </AccordionTrigger>
