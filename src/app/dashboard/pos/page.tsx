@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Product as ProductType, ProductIngredient } from "@/types/product";
@@ -122,9 +123,9 @@ export default function POSPage() {
   );
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const taxRate = 0.1; 
-  const tax = subtotal * taxRate;
-  const total = subtotal + tax;
+  // const taxRate = 0.1; // Pajak dihapus
+  // const tax = subtotal * taxRate; // Pajak dihapus
+  const total = subtotal; // Total sekarang hanya subtotal
 
   const handlePayment = async () => {
     if (cartItems.length === 0) {
@@ -340,10 +341,10 @@ export default function POSPage() {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium">Rp {subtotal.toLocaleString('id-ID')}</span>
                 </div>
-                <div className="flex justify-between text-xs sm:text-sm">
+                {/* <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Pajak ({taxRate * 100}%)</span>
                   <span className="font-medium">Rp {tax.toLocaleString('id-ID')}</span>
-                </div>
+                </div> */}
                 <div className="flex justify-between font-semibold text-sm sm:text-base">
                   <span>Total</span>
                   <span>Rp {total.toLocaleString('id-ID')}</span>
