@@ -10,19 +10,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download } from "lucide-react";
+import { Download, Filter } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast"; 
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
+import { getMockShiftsForSelect } from "@/data/shifts"; // Import shift data helper
 
 // Mock Data
 const mockPurchaseReportDataFull = [
-  { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000 },
-  { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000 },
-  { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000 },
-  { id: "P004", outlet: "Outlet Pusat", timestamp: "2024-07-22T11:00:00", user: "Admin Toko", itemName: "Biji Kopi Robusta", price: 120000, quantity: 8, unit: "kg", total: 960000 },
+  { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000, shiftId: "shift1" },
+  { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000, shiftId: "shift1" },
+  { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000, shiftId: "shift1" },
+  { id: "P004", outlet: "Outlet Pusat", timestamp: "2024-07-22T11:00:00", user: "Admin Toko", itemName: "Biji Kopi Robusta", price: 120000, quantity: 8, unit: "kg", total: 960000, shiftId: "shift2" },
+  { id: "P005", outlet: "Outlet Cabang Sudirman", timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), user: "Manajer Cabang", itemName: "Bubuk Es Teh", price: 50000, quantity: 10, unit: "kg", total: 500000, shiftId: "shift3" },
 ];
 
 type PurchaseRecord = typeof mockPurchaseReportDataFull[0];
@@ -36,30 +39,34 @@ export default function PurchaseReportPage() {
   const [filteredPurchaseData, setFilteredPurchaseData] = React.useState<PurchaseRecord[]>(mockPurchaseReportDataFull);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [itemSearchTerm, setItemSearchTerm] = React.useState<string>("");
+  const [selectedShiftId, setSelectedShiftId] = React.useState<string>("all");
+
+  const shiftsForSelect = React.useMemo(() => getMockShiftsForSelect(), []);
 
   React.useEffect(() => {
     let data = [...mockPurchaseReportDataFull];
 
-    if (dateRange?.from && dateRange?.to) {
+    if (dateRange?.from) {
+      const from = startOfDay(dateRange.from);
+      const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
       data = data.filter(purchase => {
         const purchaseDate = parseISO(purchase.timestamp);
-        return isWithinInterval(purchaseDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.to as Date) });
-      });
-    } else if (dateRange?.from) {
-        data = data.filter(purchase => {
-        const purchaseDate = parseISO(purchase.timestamp);
-        return isWithinInterval(purchaseDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.from as Date) });
+        return isValid(purchaseDate) && isWithinInterval(purchaseDate, { start: from, end: to });
       });
     }
-
 
     if (itemSearchTerm) {
       data = data.filter(purchase => 
         purchase.itemName.toLowerCase().includes(itemSearchTerm.toLowerCase())
       );
     }
+
+    if (selectedShiftId !== "all") {
+      data = data.filter(purchase => purchase.shiftId === selectedShiftId);
+    }
+
     setFilteredPurchaseData(data);
-  }, [dateRange, itemSearchTerm]);
+  }, [dateRange, itemSearchTerm, selectedShiftId]);
 
 
   const handleDownloadReport = () => {
@@ -90,6 +97,11 @@ export default function PurchaseReportPage() {
       }
       if (itemSearchTerm) {
         doc.text(`Filter Barang: ${itemSearchTerm}`, 14, filterInfoY);
+        filterInfoY += 5;
+      }
+      if (selectedShiftId !== "all") {
+        const shiftLabel = shiftsForSelect.find(s => s.value === selectedShiftId)?.label || selectedShiftId;
+        doc.text(`Shift: ${shiftLabel}`, 14, filterInfoY);
         filterInfoY += 5;
       }
 
@@ -167,9 +179,9 @@ export default function PurchaseReportPage() {
       
       <Card className="mb-6 shadow-lg">
         <CardHeader>
-          <CardTitle>Filter Laporan</CardTitle>
+          <CardTitle className="flex items-center"><Filter className="mr-2 h-5 w-5"/> Filter Laporan</CardTitle>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
+        <CardContent className="grid md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="date-range">Rentang Tanggal</Label>
             <DatePickerWithRange 
@@ -188,6 +200,20 @@ export default function PurchaseReportPage() {
               value={itemSearchTerm}
               onChange={(e) => setItemSearchTerm(e.target.value)}
             />
+          </div>
+          <div>
+            <Label htmlFor="shift-filter-purchases">Shift</Label>
+            <Select value={selectedShiftId} onValueChange={setSelectedShiftId}>
+              <SelectTrigger id="shift-filter-purchases" className="mt-1">
+                <SelectValue placeholder="Semua Shift" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Shift</SelectItem>
+                 {shiftsForSelect.map(shift => (
+                  <SelectItem key={shift.value} value={shift.value}>{shift.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

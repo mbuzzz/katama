@@ -1,10 +1,10 @@
 
 import type { Shift, ShiftFormData, EndShiftData } from '@/types/shift';
-import { getMockUsers } from '@/data/users'; // Changed import path
+import { getMockUsers } from '@/data/users'; 
 import { mockOutlets } from '@/app/dashboard/settings/outlets/page'; 
-import { differenceInMinutes, formatDistanceStrict } from 'date-fns';
+import { differenceInMinutes, formatDistanceStrict, format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import type { User } from '@/types/user'; // Import User type
+import type { User } from '@/types/user';
 
 let mockShiftsStore: Shift[] = [
   {
@@ -35,6 +35,20 @@ let mockShiftsStore: Shift[] = [
     notes: 'Memulai shift sore.',
     status: 'Berjalan',
   },
+  {
+    id: 'shift3',
+    userId: '4', // Dewi Lestari
+    userName: 'Dewi Lestari',
+    outletId: '2', // Cabang Sudirman
+    outletName: 'KATAMA Cabang Sudirman',
+    startTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
+    endTime: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), // Yesterday
+    initialCash: 400000,
+    finalCash: 900000,
+    totalSales: 500000,
+    notes: 'Shift kemarin oke.',
+    status: 'Selesai',
+  }
 ];
 
 const calculateDuration = (startTime: string, endTime: string | null): string | null => {
@@ -44,26 +58,29 @@ const calculateDuration = (startTime: string, endTime: string | null): string | 
   return formatDistanceStrict(end, start, { locale: idLocale, unit: 'minute' });
 };
 
-export const getMockShifts = (): Shift[] => {
-  const users = getMockUsers(); // Fetch users from data/users.ts
-  return [...mockShiftsStore].map(shift => ({
+const populateShiftNames = (shift: Shift): Shift => {
+  const users = getMockUsers();
+  const user = users.find(u => u.id === shift.userId);
+  const outlet = mockOutlets.find(o => o.id === shift.outletId);
+  return {
     ...shift,
-    userName: users.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
-    outletName: mockOutlets.find(o => o.id === shift.outletId)?.name || 'Tidak Diketahui',
+    userName: user?.name || 'Tidak Diketahui',
+    outletName: outlet?.name || 'Tidak Diketahui',
     duration: calculateDuration(shift.startTime, shift.endTime),
-  })).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  };
+};
+
+
+export const getMockShifts = (): Shift[] => {
+  return [...mockShiftsStore]
+    .map(populateShiftNames)
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 };
 
 export const getMockShiftById = (id: string): Shift | undefined => {
-  const users = getMockUsers();
   const shift = mockShiftsStore.find((s) => s.id === id);
   if (shift) {
-    return {
-      ...shift,
-      userName: users.find(u => u.id === shift.userId)?.name || 'Tidak Diketahui',
-      outletName: mockOutlets.find(o => o.id === shift.outletId)?.name || 'Tidak Diketahui',
-      duration: calculateDuration(shift.startTime, shift.endTime),
-    };
+    return populateShiftNames(shift);
   }
   return undefined;
 };
@@ -78,15 +95,15 @@ export const addMockShift = (shiftData: ShiftFormData): Shift => {
     startTime: new Date().toISOString(),
     endTime: null,
     finalCash: null,
-    totalSales: null, // Sales are typically tracked via POS transactions during the shift
+    totalSales: null, 
     status: 'Berjalan',
     ...shiftData,
     userName: user?.name || 'Tidak Diketahui',
     outletName: outlet?.name || 'Tidak Diketahui',
     duration: null,
   };
-  mockShiftsStore.unshift(newShift); // Add to the beginning
-  return newShift;
+  mockShiftsStore.unshift(newShift); 
+  return populateShiftNames(newShift);
 };
 
 export const endMockShift = (id: string, endShiftData: EndShiftData): Shift | undefined => {
@@ -101,20 +118,17 @@ export const endMockShift = (id: string, endShiftData: EndShiftData): Shift | un
   }
 
   const finalCash = endShiftData.finalCashInput;
-  // For simplicity in mock, totalSales is finalCash - initialCash.
-  // In a real system, totalSales would be the sum of transactions by this user during this shift.
   const totalSales = finalCash - shiftToEnd.initialCash; 
 
   mockShiftsStore[shiftIndex] = {
     ...shiftToEnd,
     endTime: new Date().toISOString(),
     finalCash,
-    totalSales, // Store the calculated sales
+    totalSales, 
     notes: `${shiftToEnd.notes || ''}\nCatatan Akhir: ${endShiftData.endNotes || 'Tidak ada catatan.'}`.trim(),
     status: 'Selesai',
   };
-  // Duration will be calculated by getMockShifts or getMockShiftById
-  return mockShiftsStore[shiftIndex];
+  return populateShiftNames(mockShiftsStore[shiftIndex]);
 };
 
 export const cancelMockShift = (id: string, notes?: string): Shift | undefined => {
@@ -124,16 +138,23 @@ export const cancelMockShift = (id: string, notes?: string): Shift | undefined =
   }
    mockShiftsStore[shiftIndex] = {
     ...mockShiftsStore[shiftIndex],
-    endTime: new Date().toISOString(), // Cancellation also marks an end time
+    endTime: new Date().toISOString(), 
     status: 'Dibatalkan',
     notes: `${mockShiftsStore[shiftIndex].notes || ''}\nShift Dibatalkan: ${notes || 'Tidak ada alasan spesifik.'}`.trim(),
   };
-  // Duration will be calculated
-  return mockShiftsStore[shiftIndex];
+  return populateShiftNames(mockShiftsStore[shiftIndex]);
 }
 
-// For shift form user selection
-export const getMockUsersForSelect = () => getMockUsers().map((u: User) => ({ value: u.id, label: u.name })); // Ensure 'u' is typed as User
 
-// For shift form outlet selection
+export const getMockUsersForSelect = () => getMockUsers().map((u: User) => ({ value: u.id, label: u.name })); 
+
+
 export const getMockOutletsForSelect = () => mockOutlets.map(o => ({ value: o.id, label: o.name }));
+
+export const getMockShiftsForSelect = () => {
+  return getMockShifts().map(shift => {
+    const startTimeFormatted = format(new Date(shift.startTime), "dd MMM, HH:mm", { locale: idLocale });
+    const label = `Shift ${shift.id.slice(-4)}: ${shift.userName} @ ${shift.outletName} (${startTimeFormatted}${shift.status !== 'Berjalan' ? ` - ${shift.status}` : ''})`;
+    return { value: shift.id, label };
+  });
+};

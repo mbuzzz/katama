@@ -10,20 +10,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { Download } from "lucide-react";
+import { Download, Filter } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
+import { getMockShiftsForSelect } from "@/data/shifts"; // Import shift data helper
 
 // Mock Data
 const mockSalesDataFull = [
-  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000 },
-  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000 },
-  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000 },
-  { id: "S004", outlet: "Outlet Pusat", timestamp: "2024-07-22T09:00:00", user: "Kasir Ana", productName: "Americano", price: 16000, quantity: 1, total: 16000 },
-  { id: "S005", outlet: "Outlet Cabang A", timestamp: "2024-07-22T12:30:00", user: "Kasir Budi", productName: "Kopi Susu Aren", price: 18000, quantity: 1, total: 18000 },
+  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000, shiftId: "shift2" },
+  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000, shiftId: "shift1" },
+  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000, shiftId: "shift1" },
+  { id: "S004", outlet: "Outlet Pusat", timestamp: "2024-07-22T09:00:00", user: "Kasir Ana", productName: "Americano", price: 16000, quantity: 1, total: 16000, shiftId: "shift2" },
+  { id: "S005", outlet: "Outlet Cabang A", timestamp: "2024-07-22T12:30:00", user: "Kasir Budi", productName: "Kopi Susu Aren", price: 18000, quantity: 1, total: 18000, shiftId: "shift1" },
+  { id: "S006", outlet: "Outlet Cabang Sudirman", timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), user: "Dewi Lestari", productName: "Es Teh Manis", price: 10000, quantity: 5, total: 50000, shiftId: "shift3" },
 ];
 
 type SaleRecord = typeof mockSalesDataFull[0];
@@ -32,7 +34,6 @@ const uniqueUsers = Array.from(new Set(mockSalesDataFull.map(sale => sale.user))
 const uniqueOutlets = Array.from(new Set(mockSalesDataFull.map(sale => sale.outlet)));
 
 
-// Extend jsPDF with autoTable
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
 }
@@ -43,19 +44,19 @@ export default function SalesReportPage() {
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [selectedUser, setSelectedUser] = React.useState<string>("all");
   const [selectedOutlet, setSelectedOutlet] = React.useState<string>("all");
+  const [selectedShiftId, setSelectedShiftId] = React.useState<string>("all");
+
+  const shiftsForSelect = React.useMemo(() => getMockShiftsForSelect(), []);
 
   React.useEffect(() => {
     let data = [...mockSalesDataFull];
 
-    if (dateRange?.from && dateRange?.to) {
+    if (dateRange?.from) {
+      const from = startOfDay(dateRange.from);
+      const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
       data = data.filter(sale => {
         const saleDate = parseISO(sale.timestamp);
-        return isWithinInterval(saleDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.to as Date) });
-      });
-    } else if (dateRange?.from) {
-       data = data.filter(sale => {
-        const saleDate = parseISO(sale.timestamp);
-        return isWithinInterval(saleDate, { start: startOfDay(dateRange.from as Date), end: endOfDay(dateRange.from as Date) });
+        return isValid(saleDate) && isWithinInterval(saleDate, { start: from, end: to });
       });
     }
 
@@ -66,8 +67,13 @@ export default function SalesReportPage() {
     if (selectedOutlet !== "all") {
       data = data.filter(sale => sale.outlet === selectedOutlet);
     }
+
+    if (selectedShiftId !== "all") {
+      data = data.filter(sale => sale.shiftId === selectedShiftId);
+    }
+
     setFilteredSalesData(data);
-  }, [dateRange, selectedUser, selectedOutlet]);
+  }, [dateRange, selectedUser, selectedOutlet, selectedShiftId]);
 
 
   const handleDownloadReport = () => {
@@ -85,7 +91,6 @@ export default function SalesReportPage() {
       const reportTitle = "Laporan Penjualan";
       const fileName = `Laporan_Penjualan_${format(new Date(), "yyyyMMddHHmmss")}.pdf`;
 
-      // Header
       doc.setFontSize(18);
       doc.text(reportTitle, 14, 22);
       doc.setFontSize(10);
@@ -105,9 +110,13 @@ export default function SalesReportPage() {
         doc.text(`Outlet: ${selectedOutlet}`, 14, filterInfoY);
         filterInfoY += 5;
       }
+      if (selectedShiftId !== "all") {
+        const shiftLabel = shiftsForSelect.find(s => s.value === selectedShiftId)?.label || selectedShiftId;
+        doc.text(`Shift: ${shiftLabel}`, 14, filterInfoY);
+        filterInfoY += 5;
+      }
 
 
-      // Table
       const tableColumn = ["Outlet", "Waktu", "Pengguna", "Produk", "Harga", "Jumlah", "Total"];
       const tableRows: any[][] = [];
 
@@ -124,7 +133,6 @@ export default function SalesReportPage() {
         tableRows.push(saleData);
       });
 
-      // Footer row for total
       const totalOverall = filteredSalesData.reduce((sum, item) => sum + item.total, 0);
       tableRows.push([
         { content: "Total Keseluruhan", colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
@@ -145,7 +153,6 @@ export default function SalesReportPage() {
         }
       });
       
-      // Footer
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -183,9 +190,9 @@ export default function SalesReportPage() {
 
       <Card className="mb-6 shadow-lg">
         <CardHeader>
-          <CardTitle>Filter Laporan</CardTitle>
+          <CardTitle className="flex items-center"><Filter className="mr-2 h-5 w-5"/> Filter Laporan</CardTitle>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-4">
+        <CardContent className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <Label htmlFor="date-range">Rentang Tanggal</Label>
             <DatePickerWithRange 
@@ -218,6 +225,20 @@ export default function SalesReportPage() {
                 <SelectItem value="all">Semua Outlet</SelectItem>
                  {uniqueOutlets.map(outlet => (
                   <SelectItem key={outlet} value={outlet}>{outlet}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="shift-filter">Shift</Label>
+            <Select value={selectedShiftId} onValueChange={setSelectedShiftId}>
+              <SelectTrigger id="shift-filter" className="mt-1">
+                <SelectValue placeholder="Semua Shift" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Shift</SelectItem>
+                 {shiftsForSelect.map(shift => (
+                  <SelectItem key={shift.value} value={shift.value}>{shift.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
