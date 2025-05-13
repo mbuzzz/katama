@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -243,9 +244,11 @@ function AppHeader() {
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
       {isMobile && (
-        <Button size="icon" variant="outline" onClick={toggleSidebar} aria-label="Toggle Sidebar">
-          <Menu className="h-5 w-5" />
-        </Button>
+        <SidebarTrigger asChild>
+          <Button size="icon" variant="outline" aria-label="Toggle Sidebar">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SidebarTrigger>
       )}
       <div className="ml-auto flex items-center gap-2">
         <Button variant="ghost" size="icon" className="rounded-full">
