@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Product as ProductType, ProductIngredient } from "@/types/product";
@@ -176,7 +177,7 @@ export default function POSPage() {
 
   if (!posSession) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] p-4"> {/* Adjusted height */}
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] p-4"> {/* Adjusted height to be less than full screen */}
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
             <CardTitle className="text-center text-2xl">Buka Sesi POS</CardTitle>
@@ -227,30 +228,32 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-var(--header-height,88px))]"> {/* Adjust for header height */}
+    <div className="flex flex-col h-[calc(100vh-var(--header-height,88px)-1rem)]"> {/* Adjust for header height and some bottom margin */}
       <PageHeader 
         title="Point of Sale" 
         description={`Sesi dimulai ${posSession.startTime.toLocaleDateString('id-ID')} ${posSession.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} | Modal: Rp ${posSession.initialCash.toLocaleString('id-ID')}`} 
+        className="py-4 md:py-6" // Reduced padding for POS page header
       />
-      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 flex-1 overflow-hidden">
-        <Card className="lg:col-span-2 shadow-lg flex flex-col flex-1 min-h-0">
-          <CardHeader>
-            <CardTitle>Pilih Produk</CardTitle>
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 flex-1 overflow-hidden p-1 sm:p-2 md:p-0"> {/* Removed outer page padding, handle inside cards */}
+        {/* Product Selection Card */}
+        <Card className="lg:col-span-2 shadow-lg flex flex-col flex-1 min-h-0"> {/* min-h-0 is crucial for flex child scroll */}
+          <CardHeader className="p-3 sm:p-4">
+            <CardTitle className="text-lg sm:text-xl">Pilih Produk</CardTitle>
             <Input 
               type="search" 
               placeholder="Cari produk..." 
-              className="mt-2" 
+              className="mt-2 h-9 sm:h-10" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0 min-h-0">
-            <ScrollArea className="h-full p-2 md:p-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+          <CardContent className="flex-1 overflow-hidden p-0 min-h-0"> {/* p-0 to allow ScrollArea to manage padding */}
+            <ScrollArea className="h-full p-2 sm:p-3 md:p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                 {filteredProducts.map((product) => (
                   <Card 
                     key={product.id} 
-                    className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${product.stock === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
                     onClick={() => product.stock > 0 && handleAddProductToCart(product)}
                   >
                     <div className="relative w-full aspect-[4/3]">
@@ -260,23 +263,23 @@ export default function POSPage() {
                         fill={true}
                         style={{objectFit:"cover"}}
                         className="rounded-t-md"
-                        sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
+                        sizes="(max-width: 639px) 50vw, (max-width: 767px) 33vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
                         data-ai-hint={`${product.category} produk`} 
                       />
                       {product.stock === 0 && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-t-md">
-                          <span className="text-white font-bold text-sm">STOK HABIS</span>
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-t-md">
+                          <span className="text-white font-bold text-xs sm:text-sm p-1 text-center">STOK HABIS</span>
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-2 sm:p-3">
-                      <h3 className="font-semibold text-xs sm:text-sm truncate">{product.name}</h3>
+                    <CardContent className="p-2 sm:p-3 space-y-1">
+                      <h3 className="font-semibold text-xs sm:text-sm leading-tight truncate">{product.name}</h3>
                       <p className="text-xs text-muted-foreground">Rp {product.price.toLocaleString('id-ID')}</p>
                       <p className="text-xs text-muted-foreground">Stok: {product.stock.toLocaleString('id-ID')}</p>
                       <Button 
                         size="sm" 
-                        className="w-full mt-2 text-xs"
-                        variant="outline"
+                        className="w-full mt-1 text-xs h-8 sm:h-9"
+                        variant={product.stock > 0 ? "outline" : "secondary"}
                         onClick={(e) => { e.stopPropagation(); product.stock > 0 && handleAddProductToCart(product); }}
                         disabled={product.stock === 0}
                       >
@@ -287,20 +290,21 @@ export default function POSPage() {
                 ))}
               </div>
               {filteredProducts.length === 0 && (
-                <p className="text-muted-foreground text-center py-10">Produk tidak ditemukan.</p>
+                <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Produk tidak ditemukan.</p>
               )}
             </ScrollArea>
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg flex flex-col flex-1 min-h-0">
-          <CardHeader>
-            <CardTitle>Detail Pesanan</CardTitle>
+        {/* Order Details Card */}
+        <Card className="shadow-lg flex flex-col flex-1 min-h-0"> {/* min-h-0 for flex child scroll */}
+          <CardHeader className="p-3 sm:p-4">
+            <CardTitle className="text-lg sm:text-xl">Detail Pesanan</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden min-h-0">
-            <ScrollArea className="h-full pr-1 md:pr-2">
+          <CardContent className="flex-1 overflow-hidden min-h-0 p-0"> {/* p-0 to allow ScrollArea to manage padding */}
+            <ScrollArea className="h-full p-2 sm:p-3 pr-1 md:pr-2">
               {cartItems.length === 0 ? (
-                <p className="text-muted-foreground text-center py-10">Keranjang kosong.</p>
+                <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Keranjang kosong.</p>
               ) : (
                 <ul className="space-y-2 sm:space-y-3">
                   {cartItems.map((item) => (
@@ -310,10 +314,10 @@ export default function POSPage() {
                         <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString('id-ID')} x {item.quantity}</p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => handleUpdateQuantity(item.id, -1)}><MinusCircle className="h-3 w-3" /></Button>
+                        <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 shrink-0" onClick={() => handleUpdateQuantity(item.id, -1)}><MinusCircle className="h-3 w-3" /></Button>
                         <span className="w-5 text-center text-xs sm:text-sm">{item.quantity}</span>
-                        <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => handleUpdateQuantity(item.id, 1)}><PlusCircle className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 text-destructive" onClick={() => handleRemoveFromCart(item.id)}><Trash2 className="h-3 w-3" /></Button>
+                        <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 shrink-0" onClick={() => handleUpdateQuantity(item.id, 1)}><PlusCircle className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 text-destructive shrink-0" onClick={() => handleRemoveFromCart(item.id)}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </li>
                   ))}
@@ -324,7 +328,7 @@ export default function POSPage() {
           {cartItems.length > 0 && (
             <>
               <Separator />
-              <CardContent className="space-y-1 sm:space-y-2 pt-2 sm:pt-4 pb-2 sm:pb-3">
+              <CardContent className="space-y-1 sm:space-y-2 p-3 sm:p-4">
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>Rp {subtotal.toLocaleString('id-ID')}</span>
@@ -333,23 +337,23 @@ export default function POSPage() {
                   <span className="text-muted-foreground">Pajak ({taxRate * 100}%)</span>
                   <span>Rp {tax.toLocaleString('id-ID')}</span>
                 </div>
-                <div className="flex justify-between font-semibold text-sm sm:text-lg">
+                <div className="flex justify-between font-semibold text-sm sm:text-base">
                   <span>Total</span>
                   <span>Rp {total.toLocaleString('id-ID')}</span>
                 </div>
               </CardContent>
             </>
           )}
-          <CardFooter className="flex flex-col gap-2 sm:gap-3 pt-2 sm:pt-4 border-t">
+          <CardFooter className="flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 border-t">
              <Label className="text-xs sm:text-sm self-start">Metode Pembayaran</Label>
             <div className="grid grid-cols-3 gap-2 w-full">
-                <Button variant="outline" size="sm"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Tunai</span></Button>
-                <Button variant="outline" size="sm"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span></Button>
-                <Button variant="outline" size="sm"><QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS</Button>
+                <Button variant="outline" size="sm" className="h-9 text-xs px-2"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Tunai</span></Button>
+                <Button variant="outline" size="sm" className="h-9 text-xs px-2"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span></Button>
+                <Button variant="outline" size="sm" className="h-9 text-xs px-2"><QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> QRIS</Button>
             </div>
             <Button 
               size="lg" 
-              className="w-full mt-2 text-sm sm:text-base" 
+              className="w-full mt-2 text-sm sm:text-base h-10 sm:h-11" 
               onClick={handlePayment} 
               disabled={cartItems.length === 0 || isProcessingPayment}
             >
@@ -361,7 +365,7 @@ export default function POSPage() {
               ) : <Printer className="mr-2 h-4 w-4" />}
               {isProcessingPayment ? "Memproses..." : "Bayar & Cetak Struk"}
             </Button>
-            <Button size="sm" variant="outline" className="w-full mt-1" onClick={() => {
+            <Button size="sm" variant="outline" className="w-full mt-1 h-9" onClick={() => {
               setPosSession(null);
               setCartItems([]); 
               toast({title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset."})
