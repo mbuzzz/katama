@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -38,6 +37,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
+const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
+const DEFAULT_COMPANY_NAME = 'KATAMA';
+
 
 export default function DashboardLayout({
   children,
@@ -52,7 +54,7 @@ export default function DashboardLayout({
           <AppHeader />
           <SidebarInset>
             <ScrollArea className="h-full">
-              <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
+              <main className="h-full p-4 md:p-6 lg:p-8">{children}</main>
             </ScrollArea>
           </SidebarInset>
         </div>
@@ -66,32 +68,52 @@ function AppSidebar() {
   const router = useRouter();
   const { toast } = useToast();
   const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
+  const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME);
 
   React.useEffect(() => {
     const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
     if (storedLogo) {
       setCustomLogoUrl(storedLogo);
     }
+    const storedCompanyName = localStorage.getItem(COMPANY_NAME_STORAGE_KEY);
+    if (storedCompanyName) {
+      setCompanyName(storedCompanyName);
+    }
+
 
     const handleStorageChange = (event: StorageEvent | CustomEvent) => {
-      if (event instanceof StorageEvent && event.key === LOGO_STORAGE_KEY) {
-        setCustomLogoUrl(event.newValue);
-      } else if (event instanceof CustomEvent && event.type === 'logoChanged') {
-        setCustomLogoUrl((event as CustomEvent<string>).detail);
+      if (event instanceof StorageEvent) {
+        if (event.key === LOGO_STORAGE_KEY) {
+          setCustomLogoUrl(event.newValue);
+        }
+        if (event.key === COMPANY_NAME_STORAGE_KEY) {
+          setCompanyName(event.newValue || DEFAULT_COMPANY_NAME);
+        }
+      } else if (event instanceof CustomEvent) {
+        if (event.type === 'logoChanged') {
+          setCustomLogoUrl((event as CustomEvent<string>).detail);
+        }
+        if (event.type === 'companyNameChanged') {
+          setCompanyName((event as CustomEvent<string>).detail || DEFAULT_COMPANY_NAME);
+        }
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('logoChanged', handleStorageChange as EventListener); // Listen to custom event
+    window.addEventListener('logoChanged', handleStorageChange as EventListener);
+    window.addEventListener('companyNameChanged', handleStorageChange as EventListener);
+
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('logoChanged', handleStorageChange as EventListener);
+      window.removeEventListener('companyNameChanged', handleStorageChange as EventListener);
     };
   }, []);
 
 
   const handleLogout = () => {
+    // In a real app, you'd clear session/token here
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
@@ -101,9 +123,9 @@ function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r">
-      <SidebarHeader className="p-4 flex items-center justify-center"> {/* Added flex for centering */}
+      <SidebarHeader className="p-4 flex items-center justify-center">
         <Link href="/dashboard" className="flex items-center gap-2">
-           <Logo customLogoUrl={customLogoUrl} />
+           <Logo customLogoUrl={customLogoUrl} companyName={companyName} />
         </Link>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -132,6 +154,16 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false
   );
 
+  // Effect to update submenu open state if path changes externally (e.g. direct navigation)
+  React.useEffect(() => {
+    const shouldBeOpen = item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false;
+    if (shouldBeOpen !== isSubmenuOpen) {
+      setIsSubmenuOpen(shouldBeOpen);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, item.items]);
+
+
   const isActive = item.href && pathname === item.href;
   const isParentActive = item.items?.some(subItem => pathname?.startsWith(subItem.href));
 
@@ -147,7 +179,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
         <SidebarMenuButton
           onClick={toggleSubmenu}
           className="justify-between"
-          isActive={!!isParentActive} // Ensure isActive is boolean
+          isActive={!!isParentActive}
           tooltip={item.title}
         >
           <div className="flex items-center gap-2">
@@ -181,7 +213,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     <SidebarMenuItem>
       <Link href={item.href || "#"} legacyBehavior passHref>
         <SidebarMenuButton
-          isActive={!!isActive} // Ensure isActive is boolean
+          isActive={!!isActive}
           tooltip={item.title}
           className={cn(isActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90")}
         >
@@ -195,11 +227,12 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
 
 
 function AppHeader() {
-  const { isMobile } = useSidebar();
+  const { isMobile, toggleSidebar } = useSidebar();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogout = () => {
+     // In a real app, you'd clear session/token here
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
@@ -209,7 +242,11 @@ function AppHeader() {
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
-      {isMobile && <SidebarTrigger asChild><Button size="icon" variant="outline"><Menu className="h-5 w-5" /></Button></SidebarTrigger>}
+      {isMobile && (
+        <Button size="icon" variant="outline" onClick={toggleSidebar} aria-label="Toggle Sidebar">
+          <Menu className="h-5 w-5" />
+        </Button>
+      )}
       <div className="ml-auto flex items-center gap-2">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
@@ -240,3 +277,4 @@ function AppHeader() {
     </header>
   );
 }
+

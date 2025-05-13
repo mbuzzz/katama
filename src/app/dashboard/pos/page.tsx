@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Product as ProductType, ProductIngredient } from "@/types/product";
@@ -10,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Trash2, Printer, CreditCard, QrCode, DollarSignIcon, PlayCircle, AlertCircle } from "lucide-react";
+import { PlusCircle, MinusCircle, Trash2, Printer, CreditCard, QrCode, DollarSignIcon, PlayCircle, AlertCircle, Search } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -92,7 +91,7 @@ export default function POSPage() {
       if (!productInCart) return prevItems;
 
       const productDetails = products.find(p => p.id === productId);
-      if (!productDetails) return prevItems; // Should not happen
+      if (!productDetails) return prevItems; 
 
       const newQuantity = Math.max(0, productInCart.quantity + change);
 
@@ -118,7 +117,8 @@ export default function POSPage() {
   };
   
   const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -145,7 +145,6 @@ export default function POSPage() {
         description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
       });
       setCartItems([]); 
-      // Re-fetch products to update stock display in POS product list
       setProducts(getMockProducts()); 
     } else {
       toast({
@@ -177,7 +176,7 @@ export default function POSPage() {
 
   if (!posSession) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] p-4"> {/* Adjusted height to be less than full screen */}
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
             <CardTitle className="text-center text-2xl">Buka Sesi POS</CardTitle>
@@ -228,54 +227,59 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-var(--header-height,88px)-1rem)]"> {/* Adjust for header height and some bottom margin */}
+    <div className="flex flex-col h-full">
       <PageHeader 
         title="Point of Sale" 
         description={`Sesi dimulai ${posSession.startTime.toLocaleDateString('id-ID')} ${posSession.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} | Modal: Rp ${posSession.initialCash.toLocaleString('id-ID')}`} 
-        className="py-4 md:py-6" // Reduced padding for POS page header
+        className="py-3 md:py-4" 
       />
-      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 flex-1 overflow-hidden p-1 sm:p-2 md:p-0"> {/* Removed outer page padding, handle inside cards */}
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 flex-1 overflow-hidden">
         {/* Product Selection Card */}
-        <Card className="lg:col-span-2 shadow-lg flex flex-col flex-1 min-h-0"> {/* min-h-0 is crucial for flex child scroll */}
+        <Card className="lg:col-span-2 shadow-lg flex flex-col flex-1 min-h-0">
           <CardHeader className="p-3 sm:p-4">
             <CardTitle className="text-lg sm:text-xl">Pilih Produk</CardTitle>
-            <Input 
-              type="search" 
-              placeholder="Cari produk..." 
-              className="mt-2 h-9 sm:h-10" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="relative mt-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="search" 
+                placeholder="Cari produk atau kategori..." 
+                className="pl-8 h-9 sm:h-10" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0 min-h-0"> {/* p-0 to allow ScrollArea to manage padding */}
+          <CardContent className="flex-1 overflow-hidden p-0 min-h-0">
             <ScrollArea className="h-full p-2 sm:p-3 md:p-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                 {filteredProducts.map((product) => (
                   <Card 
                     key={product.id} 
-                    className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${product.stock === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group border-border hover:border-primary ${product.stock === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
                     onClick={() => product.stock > 0 && handleAddProductToCart(product)}
                   >
-                    <div className="relative w-full aspect-[4/3]">
+                    <div className="relative w-full aspect-[4/3] bg-muted">
                        <Image 
-                        src={product.image || "https://picsum.photos/150/150?random=0"} 
+                        src={product.image || "https://picsum.photos/200/150?random=product"} 
                         alt={product.name} 
                         fill={true}
                         style={{objectFit:"cover"}}
-                        className="rounded-t-md"
+                        className="rounded-t-md group-hover:scale-105 transition-transform duration-300"
                         sizes="(max-width: 639px) 50vw, (max-width: 767px) 33vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
-                        data-ai-hint={`${product.category} produk`} 
+                        data-ai-hint={`${product.category} product`} 
                       />
                       {product.stock === 0 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-t-md">
                           <span className="text-white font-bold text-xs sm:text-sm p-1 text-center">STOK HABIS</span>
                         </div>
                       )}
+                       <div className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-xs text-foreground">
+                        Stok: {product.stock}
+                      </div>
                     </div>
                     <CardContent className="p-2 sm:p-3 space-y-1">
-                      <h3 className="font-semibold text-xs sm:text-sm leading-tight truncate">{product.name}</h3>
+                      <h3 className="font-semibold text-xs sm:text-sm leading-tight truncate group-hover:text-primary">{product.name}</h3>
                       <p className="text-xs text-muted-foreground">Rp {product.price.toLocaleString('id-ID')}</p>
-                      <p className="text-xs text-muted-foreground">Stok: {product.stock.toLocaleString('id-ID')}</p>
                       <Button 
                         size="sm" 
                         className="w-full mt-1 text-xs h-8 sm:h-9"
@@ -290,32 +294,35 @@ export default function POSPage() {
                 ))}
               </div>
               {filteredProducts.length === 0 && (
-                <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Produk tidak ditemukan.</p>
+                <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Produk tidak ditemukan atau belum ada produk.</p>
               )}
             </ScrollArea>
           </CardContent>
         </Card>
 
         {/* Order Details Card */}
-        <Card className="shadow-lg flex flex-col flex-1 min-h-0"> {/* min-h-0 for flex child scroll */}
+        <Card className="shadow-lg flex flex-col flex-1 min-h-0 lg:max-h-[calc(100vh-var(--header-height,88px)-var(--pageheader-height,80px)-2rem)]"> {/* max-h for lg screens */}
           <CardHeader className="p-3 sm:p-4">
             <CardTitle className="text-lg sm:text-xl">Detail Pesanan</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden min-h-0 p-0"> {/* p-0 to allow ScrollArea to manage padding */}
+          <CardContent className="flex-1 overflow-hidden min-h-0 p-0">
             <ScrollArea className="h-full p-2 sm:p-3 pr-1 md:pr-2">
               {cartItems.length === 0 ? (
                 <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Keranjang kosong.</p>
               ) : (
                 <ul className="space-y-2 sm:space-y-3">
                   {cartItems.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between text-sm">
-                      <div className="flex-1 mr-2">
-                        <p className="font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString('id-ID')} x {item.quantity}</p>
+                    <li key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-accent/50 transition-colors">
+                      <div className="flex items-center flex-1 mr-2 min-w-0">
+                        <Image src={item.image || "https://picsum.photos/40/40?random=cart"} alt={item.name} width={32} height={32} className="rounded mr-2 aspect-square object-cover" data-ai-hint="cart item" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString('id-ID')} x {item.quantity}</p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 shrink-0" onClick={() => handleUpdateQuantity(item.id, -1)}><MinusCircle className="h-3 w-3" /></Button>
-                        <span className="w-5 text-center text-xs sm:text-sm">{item.quantity}</span>
+                        <span className="w-5 text-center text-xs sm:text-sm tabular-nums">{item.quantity}</span>
                         <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 shrink-0" onClick={() => handleUpdateQuantity(item.id, 1)}><PlusCircle className="h-3 w-3" /></Button>
                         <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-7 sm:w-7 text-destructive shrink-0" onClick={() => handleRemoveFromCart(item.id)}><Trash2 className="h-3 w-3" /></Button>
                       </div>
@@ -331,11 +338,11 @@ export default function POSPage() {
               <CardContent className="space-y-1 sm:space-y-2 p-3 sm:p-4">
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+                  <span className="font-medium">Rp {subtotal.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Pajak ({taxRate * 100}%)</span>
-                  <span>Rp {tax.toLocaleString('id-ID')}</span>
+                  <span className="font-medium">Rp {tax.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-sm sm:text-base">
                   <span>Total</span>
@@ -345,7 +352,7 @@ export default function POSPage() {
             </>
           )}
           <CardFooter className="flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 border-t">
-             <Label className="text-xs sm:text-sm self-start">Metode Pembayaran</Label>
+             <Label className="text-xs sm:text-sm self-start font-medium">Metode Pembayaran</Label>
             <div className="grid grid-cols-3 gap-2 w-full">
                 <Button variant="outline" size="sm" className="h-9 text-xs px-2"><DollarSignIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Tunai</span><span className="sm:hidden">Tunai</span></Button>
                 <Button variant="outline" size="sm" className="h-9 text-xs px-2"><CreditCard className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Kartu</span><span className="sm:hidden">Kartu</span></Button>
@@ -358,14 +365,14 @@ export default function POSPage() {
               disabled={cartItems.length === 0 || isProcessingPayment}
             >
               {isProcessingPayment ? (
-                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
               ) : <Printer className="mr-2 h-4 w-4" />}
               {isProcessingPayment ? "Memproses..." : "Bayar & Cetak Struk"}
             </Button>
-            <Button size="sm" variant="outline" className="w-full mt-1 h-9" onClick={() => {
+            <Button size="sm" variant="ghost" className="w-full mt-1 h-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => {
               setPosSession(null);
               setCartItems([]); 
               toast({title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset."})
