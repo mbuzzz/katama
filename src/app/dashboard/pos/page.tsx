@@ -25,22 +25,22 @@ import {
 } from "@/components/ui/dialog";
 import { getMockProducts } from "@/data/products"; 
 import { handleProcessSaleAction } from "./actions";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import html2canvas from 'html2canvas';
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 // localStorage keys
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
 const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
-const COMPANY_ADDRESS_STORAGE_KEY = 'katama-pos-company-address'; // Define if used in settings
-const COMPANY_CONTACT_STORAGE_KEY = 'katama-pos-company-contact'; // Define if used in settings
+const COMPANY_ADDRESS_STORAGE_KEY = 'katama-pos-company-address'; 
+const COMPANY_CONTACT_STORAGE_KEY = 'katama-pos-company-contact'; 
 
 const STRUK_HEADER_TEXT_KEY = 'katama-pos-struk-headerText';
 const STRUK_FOOTER_TEXT_KEY = 'katama-pos-struk-footerText';
 const STRUK_SHOW_LOGO_KEY = 'katama-pos-struk-showLogo';
 const STRUK_SHOW_ADDRESS_KEY = 'katama-pos-struk-showAddress';
 const STRUK_SHOW_CONTACT_KEY = 'katama-pos-struk-showContact';
+const STRUK_PAPER_SIZE_KEY = 'katama-pos-struk-paperSize';
 
 
 interface Product extends ProductType {
@@ -57,10 +57,6 @@ interface POSSession {
 }
 
 type PaymentMethod = "Tunai" | "Kartu" | "QRIS";
-
-interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => jsPDF;
-}
 
 
 export default function POSPage() {
@@ -85,6 +81,7 @@ export default function POSPage() {
   const [strukShowAddress, setStrukShowAddress] = React.useState<boolean>(true);
   const [strukShowContact, setStrukShowContact] = React.useState<boolean>(true);
   const [posSessionDisplayTime, setPosSessionDisplayTime] = React.useState<string | null>(null);
+  const [strukPaperSize, setStrukPaperSize] = React.useState<string>("58mm");
 
 
   React.useEffect(() => {
@@ -101,6 +98,7 @@ export default function POSPage() {
       setStrukShowLogo(localStorage.getItem(STRUK_SHOW_LOGO_KEY) === 'true');
       setStrukShowAddress(localStorage.getItem(STRUK_SHOW_ADDRESS_KEY) === 'true');
       setStrukShowContact(localStorage.getItem(STRUK_SHOW_CONTACT_KEY) === 'true');
+      setStrukPaperSize(localStorage.getItem(STRUK_PAPER_SIZE_KEY) || "58mm");
     }
   }, []); 
 
@@ -192,117 +190,98 @@ export default function POSPage() {
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = subtotal; 
 
-  const generateReceiptPDF = () => {
-    const doc = new jsPDF() as jsPDFWithAutoTable;
+  const generateReceiptImage = async () => {
+    const receiptElement = document.createElement('div');
+    receiptElement.id = 'receipt-render-area';
+    receiptElement.style.width = strukPaperSize === '58mm' ? '280px' : '380px';
+    receiptElement.style.padding = '15px';
+    receiptElement.style.fontFamily = '"Courier New", Courier, monospace';
+    receiptElement.style.fontSize = strukPaperSize === '58mm' ? '11px' : '12px';
+    receiptElement.style.color = '#000000';
+    receiptElement.style.backgroundColor = '#ffffff';
+    receiptElement.style.border = '1px solid #ccc'; // Optional: for visibility if testing display
+    receiptElement.style.boxSizing = 'border-box';
+
+    let htmlContent = '';
+
+    // Logo
+    if (strukShowLogo && customLogoUrl && customLogoUrl.startsWith("data:image/")) {
+        htmlContent += `<div style="text-align: center; margin-bottom: 10px;"><img src="${customLogoUrl}" style="max-width: 100px; max-height: 50px; display: inline-block;" alt="logo"/></div>`;
+    }
+
+    // Company Info
+    htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '14px' : '16px'}; font-weight: bold; margin-bottom: 3px;">${companyName}</div>`;
+    if (strukShowAddress && companyAddress) {
+        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 3px;">${companyAddress}</div>`;
+    }
+    if (strukShowContact && companyContact) {
+        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;">${companyContact}</div>`;
+    }
+    htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
+
+    // Transaction Details
     const transactionDate = new Date();
     const receiptId = `TXN-${Date.now().toString().slice(-6)}`;
-    const fileName = `Struk_${receiptId}_${format(transactionDate, "yyyyMMddHHmmss")}.pdf`;
-    let yPos = 15;
+    htmlContent += `<div style="display: flex; justify-content: space-between; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 3px;"><span>No: ${receiptId}</span><span>${format(transactionDate, "dd/MM/yy HH:mm", { locale: idLocale })}</span></div>`;
+    htmlContent += `<div style="font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;">Kasir: POS Kasir</div>`; // Mock cashier
+    htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
-    // Header
-    if (strukShowLogo && customLogoUrl) {
-      try {
-        // Check if it's a data URI for PNG or JPEG
-        if (customLogoUrl.startsWith("data:image/png;base64,") || customLogoUrl.startsWith("data:image/jpeg;base64,")) {
-            doc.addImage(customLogoUrl, customLogoUrl.includes("png") ? "PNG" : "JPEG", 15, yPos, 30, 10); // Adjust size/pos as needed
-            yPos += 15; // Space after logo
-        } else {
-            console.warn("Format logo tidak didukung untuk PDF atau bukan data URI base64.");
-        }
-      } catch (e) {
-        console.error("Gagal menambahkan logo ke PDF:", e);
-      }
-    }
-
-    doc.setFontSize(16);
-    doc.text(companyName, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center" });
-    yPos += 7;
-
-    doc.setFontSize(10);
-    if (strukShowAddress) {
-      doc.text(companyAddress, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center" });
-      yPos += 5;
-    }
-    if (strukShowContact) {
-      doc.text(companyContact, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center" });
-      yPos += 5;
-    }
-    yPos += 3; // Extra space before details
-    doc.setLineWidth(0.2);
-    doc.line(10, yPos, doc.internal.pageSize.getWidth() - 10, yPos); // Horizontal line
-    yPos += 7;
-
-    doc.setFontSize(9);
-    doc.text(`No. Struk: ${receiptId}`, 15, yPos);
-    doc.text(`Tanggal: ${format(transactionDate, "dd MMM yyyy, HH:mm:ss", { locale: idLocale })}`, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
-    yPos += 5;
-    doc.text(`Kasir: Kasir POS (Contoh)`, 15, yPos); // Mock cashier
-    yPos += 7;
-
-    // Table Items
-    const tableColumn = ["No", "Nama Item", "Qty", "Harga", "Total"];
-    const tableRows: any[][] = [];
-    cartItems.forEach((item, index) => {
-      const itemData = [
-        index + 1,
-        item.name,
-        item.quantity,
-        `Rp ${item.price.toLocaleString('id-ID')}`,
-        `Rp ${(item.price * item.quantity).toLocaleString('id-ID')}`
-      ];
-      tableRows.push(itemData);
+    // Items Table
+    htmlContent += '<table><thead><tr><th style="text-align: left; padding-right: 5px;">Item</th><th style="text-align: right; padding-right: 5px;">Qty</th><th style="text-align: right; padding-right: 5px;">Harga</th><th style="text-align: right;">Total</th></tr></thead><tbody>';
+    cartItems.forEach(item => {
+        htmlContent += `
+            <tr style="font-size: ${strukPaperSize === '58mm' ? '11px' : '12px'};">
+                <td style="text-align: left; padding-right: 5px; vertical-align: top;">${item.name}</td>
+                <td style="text-align: right; padding-right: 5px; vertical-align: top;">${item.quantity}</td>
+                <td style="text-align: right; padding-right: 5px; vertical-align: top;">${item.price.toLocaleString('id-ID')}</td>
+                <td style="text-align: right; vertical-align: top;">${(item.price * item.quantity).toLocaleString('id-ID')}</td>
+            </tr>`;
     });
-
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: yPos,
-      theme: 'striped',
-      headStyles: { fillColor: [220, 220, 220], textColor: 20, fontStyle: 'bold', fontSize: 8 },
-      bodyStyles: { fontSize: 8 },
-      columnStyles: {
-        0: { halign: 'center', cellWidth: 10 },
-        1: { halign: 'left', cellWidth: 'auto' },
-        2: { halign: 'center' },
-        3: { halign: 'right' },
-        4: { halign: 'right' },
-      },
-      didDrawPage: (data) => { yPos = data.cursor?.y || yPos; }
-    });
-    
-    yPos = (doc as any).lastAutoTable.finalY + 10;
-
+    htmlContent += '</tbody></table>';
+    htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
     // Summary
-    doc.setFontSize(10);
-    doc.text("Subtotal:", 130, yPos, { align: "left" });
-    doc.text(`Rp ${subtotal.toLocaleString('id-ID')}`, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
-    yPos += 6;
-
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text("Total:", 130, yPos, { align: "left" });
-    doc.text(`Rp ${total.toLocaleString('id-ID')}`, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
-    yPos += 6;
-    doc.setFont(undefined, 'normal');
-
-    doc.setFontSize(9);
-    doc.text("Metode Pembayaran:", 15, yPos);
-    doc.text(selectedPaymentMethod, doc.internal.pageSize.getWidth() - 15, yPos, { align: "right" });
-    yPos += 10;
+    htmlContent += `<div style="display: flex; justify-content: space-between; font-size: ${strukPaperSize === '58mm' ? '11px' : '12px'}; margin-bottom: 3px;"><span>Subtotal:</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>`;
+    htmlContent += `<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: ${strukPaperSize === '58mm' ? '13px' : '14px'}; margin-bottom: 5px;"><span>TOTAL:</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>`;
+    htmlContent += `<div style="display: flex; justify-content: space-between; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;"><span>Pembayaran:</span><span>${selectedPaymentMethod}</span></div>`;
+    htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
     // Footer Text
-    doc.setLineWidth(0.2);
-    doc.line(10, yPos, doc.internal.pageSize.getWidth() - 10, yPos); // Horizontal line
-    yPos += 7;
+    if (strukHeaderText) {
+        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '11px' : '12px'}; margin-top: 10px;">${strukHeaderText}</div>`;
+    }
+    if (strukFooterText) {
+        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-top: 5px;">${strukFooterText}</div>`;
+    }
 
-    doc.setFontSize(9);
-    doc.text(strukHeaderText, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center", maxWidth: doc.internal.pageSize.getWidth() - 30 });
-    yPos += strukHeaderText ? (doc.getTextDimensions(strukHeaderText, {maxWidth: doc.internal.pageSize.getWidth() - 30}).h + 3) : 0;
+    receiptElement.innerHTML = htmlContent;
     
-    doc.text(strukFooterText, doc.internal.pageSize.getWidth() / 2, yPos, { align: "center", maxWidth: doc.internal.pageSize.getWidth() - 30 });
+    // Temporarily append to body to render for html2canvas, then remove
+    receiptElement.style.position = 'absolute';
+    receiptElement.style.left = '-9999px'; // Off-screen
+    document.body.appendChild(receiptElement);
 
-    doc.save(fileName);
+    try {
+      const canvas = await html2canvas(receiptElement, { 
+        scale: 2, // Higher scale for better quality
+        useCORS: true, // For external images if any (logo from dataURI is fine)
+        logging: false // Disable console logging from html2canvas
+      });
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `Struk_${receiptId}_${format(transactionDate, "yyyyMMddHHmmss")}.png`;
+      link.click();
+    } catch (error) {
+        console.error("Gagal membuat gambar struk:", error);
+        toast({
+            title: "Gagal Membuat Struk",
+            description: "Terjadi kesalahan saat membuat gambar struk.",
+            variant: "destructive",
+        });
+    } finally {
+        document.body.removeChild(receiptElement);
+    }
   };
 
 
@@ -319,7 +298,7 @@ export default function POSPage() {
     const result = await handleProcessSaleAction(cartItems);
     
     if (result.success) {
-      generateReceiptPDF();
+      await generateReceiptImage(); // Changed from PDF to Image
       toast({
         title: "Pembayaran Berhasil",
         description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui. Struk diunduh.`,
