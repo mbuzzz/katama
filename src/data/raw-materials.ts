@@ -52,13 +52,17 @@ export const deleteMockRawMaterial = (id: string): boolean => {
 
 export const updateRawMaterialStock = (materialId: string, quantityChange: number): RawMaterial | undefined => {
   const materialIndex = mockRawMaterialsStore.findIndex(m => m.id === materialId);
-  if (materialIndex === -1) return undefined;
+  if (materialIndex === -1) {
+    // console.warn(`Raw material ${materialId} not found for stock update.`);
+    return undefined;
+  }
 
   mockRawMaterialsStore[materialIndex].stock += quantityChange;
   if (mockRawMaterialsStore[materialIndex].stock < 0) {
-    // This case should ideally be prevented by checks before calling updateProductStock
-    console.warn(`Raw material ${materialId} stock fell below zero.`);
+    // This case should ideally be prevented by checks before calling updateRawMaterialStock
+    // console.warn(`Raw material ${materialId} stock fell below zero.`);
     mockRawMaterialsStore[materialIndex].stock = 0; 
   }
   return mockRawMaterialsStore[materialIndex];
 };
+

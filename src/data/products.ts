@@ -94,7 +94,7 @@ export const updateProductStock = (productId: string, quantityChange: number): P
   mockProductsStore[productIndex].stock += quantityChange;
   if (mockProductsStore[productIndex].stock < 0) {
     // This case should ideally be prevented by checks before calling updateProductStock
-    console.warn(`Product ${productId} stock fell below zero.`);
+    // console.warn(`Product ${productId} stock fell below zero.`);
     mockProductsStore[productIndex].stock = 0; 
   }
   return mockProductsStore[productIndex];
@@ -108,15 +108,23 @@ export const processSaleTransaction = (
 
   // First, check if all items and their raw materials are in stock
   for (const item of items) {
-    const product = getMockProductById(item.productId);
-    if (!product || product.stock < item.quantity) {
-      return { success: false, message: `Stok produk ${product?.name || item.productId} tidak mencukupi.` };
+    const product = getMockProductById(item.productId); // Fetch current product details
+    if (!product) {
+      return { success: false, message: `Produk dengan ID ${item.productId} tidak ditemukan.` };
     }
-    if (product.ingredients) {
+    if (product.stock < item.quantity) {
+      return { success: false, message: `Stok produk ${product.name} tidak mencukupi.` };
+    }
+
+    if (product.ingredients && product.ingredients.length > 0) {
       for (const ing of product.ingredients) {
         const rawMat = currentRawMaterials.find(rm => rm.id === ing.rawMaterialId);
-        if (!rawMat || rawMat.stock < ing.quantity * item.quantity) {
-          return { success: false, message: `Stok bahan baku ${rawMat?.name || ing.rawMaterialId} untuk produk ${product.name} tidak mencukupi.` };
+        if (!rawMat) {
+          return { success: false, message: `Bahan baku dengan ID ${ing.rawMaterialId} untuk produk ${product.name} tidak ditemukan.` };
+        }
+        const requiredRawMaterialQuantity = ing.quantity * item.quantity;
+        if (rawMat.stock < requiredRawMaterialQuantity) {
+          return { success: false, message: `Stok bahan baku ${rawMat.name} untuk produk ${product.name} tidak mencukupi.` };
         }
       }
     }
@@ -124,13 +132,17 @@ export const processSaleTransaction = (
 
   // If all checks pass, proceed with stock deduction
   for (const item of items) {
-    updateProductStock(item.productId, -item.quantity);
-    const product = getMockProductById(item.productId); // Re-fetch to get ingredients
-    if (product && product.ingredients) {
+    updateProductStock(item.productId, -item.quantity); // Deduct product stock
+    
+    // Re-fetch product to ensure we use its definitive ingredients list for deduction
+    const product = getMockProductById(item.productId); 
+    if (product && product.ingredients && product.ingredients.length > 0) {
       product.ingredients.forEach(ingredient => {
-        updateRawMaterialStock(ingredient.rawMaterialId, -(ingredient.quantity * item.quantity));
+        const consumedRawMaterialQuantity = ingredient.quantity * item.quantity;
+        updateRawMaterialStock(ingredient.rawMaterialId, -consumedRawMaterialQuantity); // Deduct raw material stock
       });
     }
   }
   return { success: true };
 };
+

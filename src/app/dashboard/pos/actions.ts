@@ -14,7 +14,10 @@ export async function handleProcessSaleAction(cartItems: CartItem[]): Promise<{ 
   const itemsToProcess = cartItems.map(item => ({
     productId: item.id,
     quantity: item.quantity,
-    ingredients: item.ingredients, // Pass ingredients for raw material stock deduction
+    // The 'ingredients' field here is primarily for context if needed,
+    // but processSaleTransaction re-fetches product details including ingredients
+    // from the mock store to ensure it uses the most current recipe for deductions.
+    ingredients: item.ingredients, 
   }));
   return dataProcessSaleTransaction(itemsToProcess);
 }

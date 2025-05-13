@@ -52,38 +52,49 @@ export default function POSPage() {
   const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
 
   React.useEffect(() => {
-    // Fetch products from the centralized data source
+    // Fetch products from the centralized data source.
+    // This runs on initial mount and whenever cartItems change, ensuring the
+    // product list used for display and validation (e.g., stock checks) is fresh.
     setProducts(getMockProducts());
-  }, [cartItems]); // Re-fetch products if cartItems change, to reflect stock updates for display
+  }, [cartItems]); 
 
   const handleAddProductToCart = (product: Product) => {
-    if (product.stock <= 0) {
+    // Ensure we are checking against the latest stock info for the product from our 'products' state
+    const currentProductDetails = products.find(p => p.id === product.id);
+    if (!currentProductDetails) {
+        toast({ title: "Produk tidak ditemukan.", variant: "destructive"});
+        return;
+    }
+
+
+    if (currentProductDetails.stock <= 0) {
       toast({
         title: "Stok Habis",
-        description: `Produk "${product.name}" sudah habis.`,
+        description: `Produk "${currentProductDetails.name}" sudah habis.`,
         variant: "destructive",
       });
       return;
     }
 
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === product.id);
+      const existingItem = prevItems.find((item) => item.id === currentProductDetails.id);
       if (existingItem) {
-        if (existingItem.quantity >= product.stock) {
+        if (existingItem.quantity >= currentProductDetails.stock) {
           toast({
             title: "Stok Tidak Cukup",
-            description: `Jumlah "${product.name}" di keranjang melebihi stok yang tersedia (${product.stock}).`,
+            description: `Jumlah "${currentProductDetails.name}" di keranjang melebihi stok yang tersedia (${currentProductDetails.stock}).`,
             variant: "destructive",
           });
           return prevItems;
         }
         return prevItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === currentProductDetails.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prevItems, { ...product, quantity: 1 }];
+      // When adding a new item, spread currentProductDetails to get its latest stock and other info
+      return [...prevItems, { ...currentProductDetails, quantity: 1 }];
     });
-    toast({ title: `${product.name} ditambahkan ke keranjang.` });
+    toast({ title: `${currentProductDetails.name} ditambahkan ke keranjang.` });
   };
 
   const handleUpdateQuantity = (productId: string, change: number) => {
@@ -91,18 +102,23 @@ export default function POSPage() {
       const productInCart = prevItems.find((item) => item.id === productId);
       if (!productInCart) return prevItems;
 
-      const productDetails = products.find(p => p.id === productId);
-      if (!productDetails) return prevItems; 
+      // Get latest stock info from the 'products' state which is kept fresh
+      const productDetailsFromState = products.find(p => p.id === productId);
+      if (!productDetailsFromState) {
+          toast({ title: "Detail produk tidak ditemukan untuk pembaruan kuantitas.", variant: "destructive"});
+          return prevItems; // Should not happen if item is in cart
+      }
 
       const newQuantity = Math.max(0, productInCart.quantity + change);
 
-      if (change > 0 && newQuantity > productDetails.stock) {
+      if (change > 0 && newQuantity > productDetailsFromState.stock) {
          toast({
             title: "Stok Tidak Cukup",
-            description: `Jumlah "${productDetails.name}" di keranjang melebihi stok yang tersedia (${productDetails.stock}).`,
+            description: `Jumlah "${productDetailsFromState.name}" di keranjang melebihi stok yang tersedia (${productDetailsFromState.stock}).`,
             variant: "destructive",
           });
-        return prevItems.map(item => item.id === productId ? {...item, quantity: productDetails.stock} : item).filter(item => item.quantity > 0);
+        // Cap quantity at available stock if trying to increase beyond it
+        return prevItems.map(item => item.id === productId ? {...item, quantity: productDetailsFromState.stock} : item).filter(item => item.quantity > 0);
       }
       
       const updatedItems = prevItems.map((item) =>
@@ -123,9 +139,7 @@ export default function POSPage() {
   );
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  // const taxRate = 0.1; // Pajak dihapus
-  // const tax = subtotal * taxRate; // Pajak dihapus
-  const total = subtotal; // Total sekarang hanya subtotal
+  const total = subtotal; 
 
   const handlePayment = async () => {
     if (cartItems.length === 0) {
@@ -146,13 +160,20 @@ export default function POSPage() {
         description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
       });
       setCartItems([]); 
-      setProducts(getMockProducts()); 
+      // setProducts will be called by the useEffect due to cartItems changing,
+      // ensuring the product list reflects updated stock.
+      // Explicitly calling setProducts(getMockProducts()) here is also fine
+      // but the useEffect handles it.
+      setProducts(getMockProducts()); // Explicit refresh after sale
     } else {
       toast({
         title: "Pembayaran Gagal",
         description: result.message || "Terjadi kesalahan saat memproses penjualan.",
         variant: "destructive",
       });
+       // Even if payment fails, refresh product list as some pre-checks might have passed
+       // or to ensure UI consistency if partial changes were hypothetically made (not in this mock)
+      setProducts(getMockProducts());
     }
   }
 
@@ -341,10 +362,6 @@ export default function POSPage() {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium">Rp {subtotal.toLocaleString('id-ID')}</span>
                 </div>
-                {/* <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Pajak ({taxRate * 100}%)</span>
-                  <span className="font-medium">Rp {tax.toLocaleString('id-ID')}</span>
-                </div> */}
                 <div className="flex justify-between font-semibold text-sm sm:text-base">
                   <span>Total</span>
                   <span>Rp {total.toLocaleString('id-ID')}</span>
