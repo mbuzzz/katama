@@ -1,4 +1,5 @@
 
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +13,11 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
+  DropdownMenuSeparator, // Added missing import
 } from "@/components/ui/dropdown-menu";
 
-// Mock data
-const mockUsers = [
+// Mock data - Exported for use in shifts module
+export const mockUsers = [
   { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user1" },
   { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "Outlet Pusat", avatar: "https://picsum.photos/40/40?random=user2" },
   { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "Outlet Cabang A", avatar: "https://picsum.photos/40/40?random=user3" },

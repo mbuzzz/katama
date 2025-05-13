@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Mock data
-const mockOutlets = [
+// Mock data - Exported for use in shifts module
+export const mockOutlets = [
   { id: "1", name: "KATAMA Pusat", address: "Jl. Merdeka No. 1, Kota Bahagia", status: "Aktif", manager: "Budi Santoso" },
   { id: "2", name: "KATAMA Cabang Sudirman", address: "Jl. Jend. Sudirman Kav. 20, Kota Bahagia", status: "Aktif", manager: "Candra Wijaya" },
   { id: "3", name: "KATAMA Express Stasiun", address: "Stasiun Kota Lama Lt. 1, Kota Bahagia", status: "Tidak Aktif", manager: "-" },
@@ -59,7 +60,12 @@ export default function OutletsPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{outlet.manager}</TableCell>
                   <TableCell>
-                    <Badge variant={outlet.status === "Aktif" ? "default" : "secondary"}>
+                    <Badge variant={outlet.status === "Aktif" ? "default" : "secondary"}
+                     className={
+                        outlet.status === 'Aktif' ? "bg-green-500 hover:bg-green-600 text-primary-foreground" :
+                        outlet.status === 'Tidak Aktif' ? "bg-red-500 hover:bg-red-600 text-primary-foreground" : ""
+                      }
+                    >
                       {outlet.status}
                     </Badge>
                   </TableCell>

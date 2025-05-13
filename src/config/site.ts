@@ -22,6 +22,7 @@ import {
   ListTree, 
   Archive,
   PlusCircle, 
+  Clock, // Added Clock icon
 } from 'lucide-react';
 
 export type NavItem = {
@@ -54,7 +55,7 @@ export type SiteConfig = {
 const dashboardBaseUrl = "/dashboard";
 
 export const siteConfig: SiteConfig = {
-  name: "KATAMA POS",
+  name: "KATAMA",
   description: "Aplikasi Point of Sale KATAMA untuk usaha kecil dan menengah, dirancang dengan nuansa hangat dan mengundang.",
   url: "https://katama.example.com", 
   ogImage: "https://katama.example.com/og.jpg", 
@@ -78,11 +79,21 @@ export const siteConfig: SiteConfig = {
       description: "Proses penjualan dan transaksi.",
     },
     {
-      title: "Manajemen Produk", // Changed title for clarity
-      href: `${dashboardBaseUrl}/products`, // Main link to product list
+      title: "Manajemen Shift",
+      href: `${dashboardBaseUrl}/shifts`,
+      icon: Clock,
+      description: "Kelola sesi kerja kasir dan outlet.",
+      items: [
+        { title: "Daftar Shift", href: `${dashboardBaseUrl}/shifts`, icon: ListTree, description: "Lihat semua shift." },
+        { title: "Mulai Shift Baru", href: `${dashboardBaseUrl}/shifts/add`, icon: PlusCircle, description: "Mulai sesi shift baru." },
+      ]
+    },
+    {
+      title: "Manajemen Produk", 
+      href: `${dashboardBaseUrl}/products`, 
       icon: Package,
       description: "Kelola daftar produk, kategori, dan bahan baku.",
-      items: [ // Sub-items for better organization
+      items: [ 
         { title: "Daftar Produk", href: `${dashboardBaseUrl}/products`, icon: Package, description: "Lihat semua produk." },
         { title: "Tambah Produk", href: `${dashboardBaseUrl}/products/add`, icon: PlusCircle, description: "Buat produk baru." },
         { title: "Kategori Produk", href: `${dashboardBaseUrl}/categories`, icon: ListTree, description: "Kelola kategori produk." },
@@ -93,7 +104,7 @@ export const siteConfig: SiteConfig = {
      {
       title: "Pembelanjaan",
       href: `${dashboardBaseUrl}/purchases`,
-      icon: Truck, // Icon for purchases
+      icon: Truck, 
       description: "Catat dan kelola pembelanjaan bahan baku.",
     },
     {

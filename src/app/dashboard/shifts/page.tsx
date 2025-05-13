@@ -1,0 +1,304 @@
+
+"use client"; 
+
+import * as React from "react";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { PlusCircle, Edit, Trash2, MoreHorizontal, LogOut, XCircle, CheckCircle, PlayCircle } from "lucide-react";
+import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { Shift, EndShiftFormData } from "@/types/shift";
+import { getMockShifts, endMockShift, cancelMockShift } from "@/data/shifts";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+
+export default function ShiftsPage() {
+  const [shifts, setShifts] = React.useState<Shift[]>([]);
+  const [showEndShiftDialog, setShowEndShiftDialog] = React.useState(false);
+  const [showCancelShiftDialog, setShowCancelShiftDialog] = React.useState(false);
+  const [shiftToModify, setShiftToModify] = React.useState<Shift | null>(null);
+  const [endShiftForm, setEndShiftForm] = React.useState<EndShiftFormData>({ finalCash: 0, notes: "" });
+  const [cancelShiftNotes, setCancelShiftNotes] = React.useState<string>("");
+
+  const { toast } = useToast();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    setShifts(getMockShifts());
+  }, []);
+
+  const refreshShifts = () => {
+    setShifts(getMockShifts());
+    router.refresh();
+  }
+
+  const handleEndShift = async () => {
+    if (!shiftToModify) return;
+    try {
+      // Simulate server action
+      const updatedShift = endMockShift(shiftToModify.id, endShiftForm);
+      if (updatedShift) {
+        toast({
+          title: "Shift Diakhiri",
+          description: `Shift untuk ${updatedShift.userName} telah berhasil diakhiri.`,
+        });
+        refreshShifts();
+      } else {
+         throw new Error("Shift tidak ditemukan atau gagal diakhiri.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Gagal Mengakhiri Shift",
+        description: error.message || "Terjadi kesalahan.",
+        variant: "destructive",
+      });
+    }
+    setShowEndShiftDialog(false);
+    setShiftToModify(null);
+    setEndShiftForm({ finalCash: 0, notes: "" });
+  };
+
+  const handleCancelShift = async () => {
+    if (!shiftToModify) return;
+    try {
+        const updatedShift = cancelMockShift(shiftToModify.id, cancelShiftNotes);
+        if (updatedShift) {
+            toast({
+                title: "Shift Dibatalkan",
+                description: `Shift untuk ${updatedShift.userName} telah dibatalkan.`,
+            });
+            refreshShifts();
+        } else {
+            throw new Error("Shift tidak ditemukan atau gagal dibatalkan.");
+        }
+    } catch (error: any) {
+         toast({
+            title: "Gagal Membatalkan Shift",
+            description: error.message || "Terjadi kesalahan.",
+            variant: "destructive",
+        });
+    }
+    setShowCancelShiftDialog(false);
+    setShiftToModify(null);
+    setCancelShiftNotes("");
+  };
+
+
+  const openEndShiftDialog = (shift: Shift) => {
+    setShiftToModify(shift);
+    // Pre-fill final cash with initial cash as a starting point for user input
+    setEndShiftForm({ finalCash: shift.initialCash, notes: "" }); 
+    setShowEndShiftDialog(true);
+  };
+
+  const openCancelShiftDialog = (shift: Shift) => {
+    setShiftToModify(shift);
+    setShowCancelShiftDialog(true);
+  }
+
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) return "-";
+    return `Rp ${amount.toLocaleString('id-ID')}`;
+  };
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "-";
+    return format(new Date(dateString), "dd MMM yyyy, HH:mm", { locale: idLocale });
+  };
+  
+  const getStatusBadgeVariant = (status: Shift['status']) => {
+    switch (status) {
+      case 'Berjalan': return 'default'; // Blue or primary
+      case 'Selesai': return 'secondary'; // Green-ish or success
+      case 'Dibatalkan': return 'destructive'; // Red
+      default: return 'outline';
+    }
+  };
+
+
+  return (
+    <div>
+      <PageHeader title="Manajemen Shift" description="Kelola sesi kerja kasir dan operasional outlet.">
+        <Button asChild>
+          <Link href="/dashboard/shifts/add">
+            <PlayCircle className="mr-2 h-4 w-4" /> Mulai Shift Baru
+          </Link>
+        </Button>
+      </PageHeader>
+      
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Daftar Shift</CardTitle>
+          <CardDescription>Total {shifts.length} shift ditemukan.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Pengguna</TableHead>
+                <TableHead>Outlet</TableHead>
+                <TableHead>Mulai</TableHead>
+                <TableHead>Selesai</TableHead>
+                <TableHead className="text-right">Modal Awal</TableHead>
+                <TableHead className="text-right hidden md:table-cell">Kas Akhir</TableHead>
+                <TableHead className="text-right hidden md:table-cell">Total Penjualan</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>
+                  <span className="sr-only">Aksi</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {shifts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-10">
+                    Belum ada data shift.
+                  </TableCell>
+                </TableRow>
+              )}
+              {shifts.map((shift) => (
+                <TableRow key={shift.id}>
+                  <TableCell className="font-medium">{shift.userName}</TableCell>
+                  <TableCell>{shift.outletName}</TableCell>
+                  <TableCell>{formatDate(shift.startTime)}</TableCell>
+                  <TableCell>{formatDate(shift.endTime)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(shift.initialCash)}</TableCell>
+                  <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.finalCash)}</TableCell>
+                  <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.totalSales)}</TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusBadgeVariant(shift.status)}
+                     className={
+                        shift.status === 'Berjalan' ? "bg-blue-500 hover:bg-blue-600 text-primary-foreground" :
+                        shift.status === 'Selesai' ? "bg-green-500 hover:bg-green-600 text-primary-foreground" :
+                        shift.status === 'Dibatalkan' ? "bg-red-500 hover:bg-red-600 text-primary-foreground" : ""
+                      }
+                    >{shift.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {shift.status === 'Berjalan' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Menu Aksi</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Aksi Shift</DropdownMenuLabel>
+                           <DropdownMenuItem onClick={() => openEndShiftDialog(shift)}>
+                            <LogOut className="mr-2 h-4 w-4" /> Akhiri Shift
+                          </DropdownMenuItem>
+                           <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => openCancelShiftDialog(shift)}
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" /> Batalkan Shift
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Dialog untuk Mengakhiri Shift */}
+      <AlertDialog open={showEndShiftDialog} onOpenChange={setShowEndShiftDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Akhiri Shift</AlertDialogTitle>
+            <AlertDialogDescription>
+              Masukkan jumlah kas akhir dan catatan untuk shift <span className="font-semibold">{shiftToModify?.userName}</span> di <span className="font-semibold">{shiftToModify?.outletName}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="finalCash">Kas Akhir (Rp)</Label>
+              <Input 
+                id="finalCash" 
+                type="number" 
+                value={endShiftForm.finalCash}
+                onChange={(e) => setEndShiftForm(prev => ({ ...prev, finalCash: parseFloat(e.target.value) || 0 }))}
+                placeholder="Masukkan jumlah kas akhir"
+              />
+            </div>
+            <div>
+              <Label htmlFor="endNotes">Catatan Akhir Shift (Opsional)</Label>
+              <Textarea 
+                id="endNotes"
+                value={endShiftForm.notes}
+                onChange={(e) => setEndShiftForm(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Contoh: Semua transaksi cocok, sisa kembalian sesuai."
+                rows={3}
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShiftToModify(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEndShift}>
+              <CheckCircle className="mr-2 h-4 w-4" /> Ya, Akhiri Shift
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog untuk Membatalkan Shift */}
+      <AlertDialog open={showCancelShiftDialog} onOpenChange={setShowCancelShiftDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Batalkan Shift</AlertDialogTitle>
+                <AlertDialogDescription>
+                Anda yakin ingin membatalkan shift untuk <span className="font-semibold">{shiftToModify?.userName}</span> di <span className="font-semibold">{shiftToModify?.outletName}</span>?
+                Tindakan ini tidak dapat diurungkan.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-2">
+                <Label htmlFor="cancelNotes">Alasan Pembatalan (Opsional)</Label>
+                <Textarea
+                    id="cancelNotes"
+                    value={cancelShiftNotes}
+                    onChange={(e) => setCancelShiftNotes(e.target.value)}
+                    placeholder="Contoh: Ada kendala teknis pada sistem."
+                    rows={3}
+                />
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setShiftToModify(null)}>Tidak</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCancelShift} className="bg-destructive hover:bg-destructive/90">
+                    <XCircle className="mr-2 h-4 w-4" /> Ya, Batalkan Shift
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
