@@ -18,8 +18,8 @@ import { id as idLocale } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { getMockShiftsForSelect } from "@/data/shifts"; // Import shift data helper
 
-// Mock Data
-const mockSalesDataFull = [
+// Mock Data - Placed here for client component context
+const mockSalesDataFullStatic = [
   { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00.000Z", user: "Kasir Ana", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000, shiftId: "shift2" },
   { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00.000Z", user: "Kasir Budi", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000, shiftId: "shift1" },
   { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00.000Z", user: "Kasir Ana", productName: "Teh Melati", price: 15000, quantity: 3, total: 45000, shiftId: "shift1" },
@@ -28,10 +28,10 @@ const mockSalesDataFull = [
   { id: "S006", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Dewi Lestari", productName: "Es Teh Manis", price: 10000, quantity: 5, total: 50000, shiftId: "shift3" },
 ];
 
-type SaleRecord = typeof mockSalesDataFull[0];
+type SaleRecord = typeof mockSalesDataFullStatic[0];
 
-const uniqueUsers = Array.from(new Set(mockSalesDataFull.map(sale => sale.user)));
-const uniqueOutlets = Array.from(new Set(mockSalesDataFull.map(sale => sale.outlet)));
+const uniqueUsersStatic = Array.from(new Set(mockSalesDataFullStatic.map(sale => sale.user)));
+const uniqueOutletsStatic = Array.from(new Set(mockSalesDataFullStatic.map(sale => sale.outlet)));
 
 
 interface jsPDFWithAutoTable extends jsPDF {
@@ -40,15 +40,31 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function SalesReportPage() {
   const { toast } = useToast();
-  const [filteredSalesData, setFilteredSalesData] = React.useState<SaleRecord[]>(mockSalesDataFull);
+  const [mockSalesDataFull, setMockSalesDataFull] = React.useState<SaleRecord[]>([]);
+  const [filteredSalesData, setFilteredSalesData] = React.useState<SaleRecord[]>([]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [selectedUser, setSelectedUser] = React.useState<string>("all");
   const [selectedOutlet, setSelectedOutlet] = React.useState<string>("all");
   const [selectedShiftId, setSelectedShiftId] = React.useState<string>("all");
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const shiftsForSelect = React.useMemo(() => getMockShiftsForSelect(), []);
+  const [shiftsForSelect, setShiftsForSelect] = React.useState<{value: string; label: string}[]>([]);
+  const [uniqueUsers, setUniqueUsers] = React.useState<string[]>([]);
+  const [uniqueOutlets, setUniqueOutlets] = React.useState<string[]>([]);
+
 
   React.useEffect(() => {
+    // Simulate fetching or initializing data client-side
+    setMockSalesDataFull(mockSalesDataFullStatic);
+    setShiftsForSelect(getMockShiftsForSelect());
+    setUniqueUsers(uniqueUsersStatic);
+    setUniqueOutlets(uniqueOutletsStatic);
+    setIsLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (isLoading) return; // Don't filter until data is loaded
+
     let data = [...mockSalesDataFull];
 
     if (dateRange?.from) {
@@ -73,7 +89,7 @@ export default function SalesReportPage() {
     }
 
     setFilteredSalesData(data);
-  }, [dateRange, selectedUser, selectedOutlet, selectedShiftId]);
+  }, [dateRange, selectedUser, selectedOutlet, selectedShiftId, mockSalesDataFull, isLoading]);
 
 
   const handleDownloadReport = () => {
@@ -179,6 +195,17 @@ export default function SalesReportPage() {
       });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="Laporan Penjualan" description="Analisis detail penjualan Anda." />
+        <div className="flex justify-center items-center h-64">
+          <p>Memuat data laporan...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

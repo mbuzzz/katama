@@ -33,17 +33,23 @@ export default function ShiftReportPage() {
   const [selectedUserId, setSelectedUserId] = React.useState<string>("all");
   const [selectedOutletId, setSelectedOutletId] = React.useState<string>("all");
   const [selectedStatus, setSelectedStatus] = React.useState<string>("all");
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const usersForSelect = React.useMemo(() => getMockUsersForSelect(), []);
-  const outletsForSelect = React.useMemo(() => getMockOutletsForSelect(), []);
+  const [usersForSelect, setUsersForSelect] = React.useState<{value: string; label: string}[]>([]);
+  const [outletsForSelect, setOutletsForSelect] = React.useState<{value: string; label: string}[]>([]);
   const shiftStatuses = ["Berjalan", "Selesai", "Dibatalkan"];
 
   React.useEffect(() => {
+    // Simulate fetching or initializing data client-side
     const shiftsData = getMockShifts();
     setAllShifts(shiftsData);
+    setUsersForSelect(getMockUsersForSelect());
+    setOutletsForSelect(getMockOutletsForSelect());
+    setIsLoading(false);
   }, []);
 
   React.useEffect(() => {
+    if (isLoading) return; // Don't filter until data is loaded
     let data = [...allShifts];
 
     if (dateRange?.from) {
@@ -68,7 +74,7 @@ export default function ShiftReportPage() {
     }
 
     setFilteredShifts(data);
-  }, [dateRange, selectedUserId, selectedOutletId, selectedStatus, allShifts]);
+  }, [dateRange, selectedUserId, selectedOutletId, selectedStatus, allShifts, isLoading]);
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === null || amount === undefined) return "-";
@@ -189,6 +195,17 @@ export default function ShiftReportPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="Laporan Shift" description="Analisis detail aktivitas shift pengguna." />
+        <div className="flex justify-center items-center h-64">
+          <p>Memuat data laporan...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader title="Laporan Shift" description="Analisis detail aktivitas shift pengguna.">
@@ -277,7 +294,7 @@ export default function ShiftReportPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredShifts.length === 0 && (
+              {filteredShifts.length === 0 && !isLoading && (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center text-muted-foreground py-10">
                     Tidak ada data shift yang cocok dengan filter yang dipilih.

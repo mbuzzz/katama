@@ -19,8 +19,8 @@ import { id as idLocale } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { getMockShiftsForSelect } from "@/data/shifts"; // Import shift data helper
 
-// Mock Data
-const mockPurchaseReportDataFull = [
+// Mock Data - Placed here for client component context
+const mockPurchaseReportDataFullStatic = [
   { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000, shiftId: "shift1" },
   { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00.000Z", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000, shiftId: "shift1" },
   { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00.000Z", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000, shiftId: "shift1" },
@@ -28,7 +28,7 @@ const mockPurchaseReportDataFull = [
   { id: "P005", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Manajer Cabang", itemName: "Bubuk Es Teh", price: 50000, quantity: 10, unit: "kg", total: 500000, shiftId: "shift3" },
 ];
 
-type PurchaseRecord = typeof mockPurchaseReportDataFull[0];
+type PurchaseRecord = typeof mockPurchaseReportDataFullStatic[0];
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -36,14 +36,24 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function PurchaseReportPage() {
   const { toast } = useToast();
-  const [filteredPurchaseData, setFilteredPurchaseData] = React.useState<PurchaseRecord[]>(mockPurchaseReportDataFull);
+  const [mockPurchaseReportDataFull, setMockPurchaseReportDataFull] = React.useState<PurchaseRecord[]>([]);
+  const [filteredPurchaseData, setFilteredPurchaseData] = React.useState<PurchaseRecord[]>([]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [itemSearchTerm, setItemSearchTerm] = React.useState<string>("");
   const [selectedShiftId, setSelectedShiftId] = React.useState<string>("all");
-
-  const shiftsForSelect = React.useMemo(() => getMockShiftsForSelect(), []);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [shiftsForSelect, setShiftsForSelect] = React.useState<{value: string; label: string}[]>([]);
 
   React.useEffect(() => {
+    // Simulate fetching or initializing data client-side
+    setMockPurchaseReportDataFull(mockPurchaseReportDataFullStatic);
+    setShiftsForSelect(getMockShiftsForSelect());
+    setIsLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (isLoading) return; // Don't filter until data is loaded
+
     let data = [...mockPurchaseReportDataFull];
 
     if (dateRange?.from) {
@@ -66,7 +76,7 @@ export default function PurchaseReportPage() {
     }
 
     setFilteredPurchaseData(data);
-  }, [dateRange, itemSearchTerm, selectedShiftId]);
+  }, [dateRange, itemSearchTerm, selectedShiftId, mockPurchaseReportDataFull, isLoading]);
 
 
   const handleDownloadReport = () => {
@@ -168,6 +178,17 @@ export default function PurchaseReportPage() {
       });
     }
   };
+  
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="Laporan Pembelanjaan" description="Lacak semua pembelanjaan barang." />
+        <div className="flex justify-center items-center h-64">
+          <p>Memuat data laporan...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -238,7 +259,7 @@ export default function PurchaseReportPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPurchaseData.length === 0 && (
+              {filteredPurchaseData.length === 0 && !isLoading && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
                     Tidak ada data pembelanjaan yang cocok dengan filter yang dipilih.

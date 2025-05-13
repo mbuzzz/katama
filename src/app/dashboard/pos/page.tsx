@@ -84,6 +84,7 @@ export default function POSPage() {
   const [strukShowLogo, setStrukShowLogo] = React.useState<boolean>(true);
   const [strukShowAddress, setStrukShowAddress] = React.useState<boolean>(true);
   const [strukShowContact, setStrukShowContact] = React.useState<boolean>(true);
+  const [posSessionDisplayTime, setPosSessionDisplayTime] = React.useState<string | null>(null);
 
 
   React.useEffect(() => {
@@ -91,10 +92,8 @@ export default function POSPage() {
     // Load company and struk settings from localStorage
     if (typeof window !== 'undefined') {
       setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || "KATAMA POS");
-      // Assuming these keys are set by src/app/dashboard/settings/general/page.tsx
-      // If not, provide fallback or ensure they are set.
-      setCompanyAddress(localStorage.getItem('katama-pos-company-address') || "Jl. Contoh No. 123, Kota Contoh");
-      setCompanyContact(localStorage.getItem('katama-pos-company-contact') || "0812-3456-7890");
+      setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Contoh No. 123, Kota Contoh");
+      setCompanyContact(localStorage.getItem(COMPANY_CONTACT_STORAGE_KEY) || "0812-3456-7890");
       setCustomLogoUrl(localStorage.getItem(LOGO_STORAGE_KEY));
       
       setStrukHeaderText(localStorage.getItem(STRUK_HEADER_TEXT_KEY) || "Terima Kasih Atas Kunjungan Anda!");
@@ -103,7 +102,17 @@ export default function POSPage() {
       setStrukShowAddress(localStorage.getItem(STRUK_SHOW_ADDRESS_KEY) === 'true');
       setStrukShowContact(localStorage.getItem(STRUK_SHOW_CONTACT_KEY) === 'true');
     }
-  }, [cartItems]); 
+  }, []); 
+
+  React.useEffect(() => {
+    if (posSession) {
+      const formattedTime = `${posSession.startTime.toLocaleDateString('id-ID')} ${posSession.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+      setPosSessionDisplayTime(formattedTime);
+    } else {
+      setPosSessionDisplayTime(null);
+    }
+  }, [posSession]);
+
 
   const handleAddProductToCart = (product: Product) => {
     const currentProductDetails = products.find(p => p.id === product.id);
@@ -403,7 +412,7 @@ export default function POSPage() {
     <div className="flex flex-col h-full">
       <PageHeader 
         title="Point of Sale" 
-        description={`Sesi dimulai ${posSession.startTime.toLocaleDateString('id-ID')} ${posSession.startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} | Modal: Rp ${posSession.initialCash.toLocaleString('id-ID')}`} 
+        description={posSessionDisplayTime ? `Sesi dimulai ${posSessionDisplayTime} | Modal: Rp ${posSession.initialCash.toLocaleString('id-ID')}` : "Memuat info sesi..."}
         className="py-3 md:py-4" 
       />
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 flex-1 overflow-hidden">
