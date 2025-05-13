@@ -24,7 +24,7 @@ import {
   PlusCircle, 
   Clock,
   UserCheck,
-  CalendarClock, // Added CalendarClock icon
+  CalendarClock,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -100,7 +100,16 @@ export const siteConfig: SiteConfig = {
         { title: "Tambah Produk", href: `${dashboardBaseUrl}/products/add`, icon: PlusCircle, description: "Buat produk baru." },
         { title: "Kategori Produk", href: `${dashboardBaseUrl}/categories`, icon: ListTree, description: "Kelola kategori produk." },
         { title: "Bahan Baku", href: `${dashboardBaseUrl}/raw-materials`, icon: Archive, description: "Kelola stok bahan baku." },
-        { title: "Satuan Barang", href: `${dashboardBaseUrl}/units`, icon: Tags, description: "Kelola satuan barang." },
+        { 
+          title: "Satuan Barang", 
+          href: `${dashboardBaseUrl}/units`, 
+          icon: Tags, 
+          description: "Kelola satuan barang.",
+          // items: [ // Sub-menu for Satuan if needed for edit/add explicitly here
+          //   { title: "Daftar Satuan", href: `${dashboardBaseUrl}/units`, icon: ListTree, description: "Lihat semua satuan." },
+          //   { title: "Tambah Satuan", href: `${dashboardBaseUrl}/units/add`, icon: PlusCircle, description: "Buat satuan baru." },
+          // ]
+        },
       ]
     },
      {

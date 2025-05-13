@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlusCircle, Edit, Trash2, MoreHorizontal } from "lucide-react";
-import Link from "next/link"; // Added Link for future "Tambah Satuan"
+import Link from "next/link"; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Unit } from "@/types/unit";
-import { getMockUnits, deleteMockUnit } from "@/data/units"; // Use new data source
+import { getMockUnits, deleteMockUnit } from "@/data/units"; 
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
@@ -46,8 +46,8 @@ export default function UnitsPage() {
 
     // For now, delete is disabled as it might break raw material references.
     // In a real app, this would need more complex logic or be disallowed if in use.
-    // const success = deleteMockUnit(unitToDelete.id); 
     const success = false; // Temporarily disable actual deletion
+    // const success = deleteMockUnit(unitToDelete.id); 
     
     if (success) {
       // setUnits(units.filter(u => u.id !== unitToDelete.id));
@@ -58,7 +58,7 @@ export default function UnitsPage() {
     } else {
       toast({
         title: "Gagal Menghapus",
-        description: "Menghapus satuan yang sedang digunakan tidak diizinkan saat ini.", // Or other error
+        description: "Menghapus satuan yang sedang digunakan tidak diizinkan saat ini. Fitur ini sedang dalam pengembangan.",
         variant: "destructive",
       });
     }
@@ -76,9 +76,10 @@ export default function UnitsPage() {
   return (
     <div>
       <PageHeader title="Satuan Barang" description="Kelola satuan untuk produk dan pembelanjaan.">
-        {/* The "Tambah Satuan" functionality would require a new form and page, similar to categories/raw-materials */}
-        <Button disabled> 
-          <PlusCircle className="mr-2 h-4 w-4" /> Tambah Satuan (Segera Hadir)
+        <Button asChild>
+          <Link href="/dashboard/units/add">
+            <PlusCircle className="mr-2 h-4 w-4" /> Tambah Satuan
+          </Link>
         </Button>
       </PageHeader>
       
@@ -99,6 +100,13 @@ export default function UnitsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+               {units.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
+                    Belum ada satuan yang ditambahkan.
+                  </TableCell>
+                </TableRow>
+              )}
               {units.map((unit) => (
                 <TableRow key={unit.id}>
                   <TableCell className="font-medium">{unit.name}</TableCell>
@@ -113,7 +121,7 @@ export default function UnitsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                        <DropdownMenuItem disabled> {/* Editing also needs a form */}
+                        <DropdownMenuItem disabled> {/* Editing also needs a form and edit page */}
                             <Edit className="mr-2 h-4 w-4" /> Edit (Segera Hadir)
                         </DropdownMenuItem>
                         <DropdownMenuItem 
@@ -139,12 +147,12 @@ export default function UnitsPage() {
             <AlertDialogTitle>Anda yakin ingin menghapus satuan ini?</AlertDialogTitle>
             <AlertDialogDescription>
               Tindakan ini tidak dapat diurungkan. Satuan "{unitToDelete?.name}" akan dihapus.
-              Pastikan satuan ini tidak sedang digunakan oleh bahan baku atau produk.
+              Pastikan satuan ini tidak sedang digunakan oleh bahan baku atau produk. Fitur penghapusan dinonaktifkan untuk saat ini.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setUnitToDelete(null)}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUnit} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDeleteUnit} className="bg-destructive hover:bg-destructive/90" disabled>
               Ya, Hapus Satuan
             </AlertDialogAction>
           </AlertDialogFooter>
