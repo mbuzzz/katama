@@ -1,8 +1,16 @@
 
+export interface ShiftTemplate {
+  id: string; // ID unik untuk template shift, bisa uuid atau kombinasi
+  name: string; // e.g., "Pagi", "Siang", "Malam"
+  startTime: string; // "HH:mm" format
+  closeTime: string; // "HH:mm" format, diganti dari endTime agar konsisten dengan DayOperatingHours
+}
+
 export interface DayOperatingHours {
   isOpen: boolean;
   openTime: string; // "HH:mm" format
   closeTime: string; // "HH:mm" format
+  shiftTemplates?: ShiftTemplate[];
 }
 
 export type DaysOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";

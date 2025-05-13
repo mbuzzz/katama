@@ -5,42 +5,55 @@ import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Clock } from "lucide-react";
+import { Edit, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger, // Not used directly if button opens dialog programmatically
 } from "@/components/ui/dialog";
-import type { Outlet } from "@/app/dashboard/settings/outlets/page"; // Assuming Outlet type is exported
+import type { Outlet } from "@/app/dashboard/settings/outlets/page";
 import { mockOutlets } from "@/app/dashboard/settings/outlets/page";
-import type { OperatingHours, OperatingHoursFormData, DayOperatingHours } from "@/types/operating-hours";
+import type { OperatingHours, OperatingHoursFormData, DayOperatingHours, ShiftTemplate } from "@/types/operating-hours";
 import { ALL_DAYS, DAY_NAMES_ID } from "@/types/operating-hours";
 import { getMockOperatingHoursByOutletId, upsertMockOperatingHours } from "@/data/operating-hours";
 import OperatingHoursForm from "@/components/settings/operating-hours-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function OperatingHoursSettingsPage() {
   const [outlets, setOutlets] = React.useState<Outlet[]>([]);
   const [operatingHoursMap, setOperatingHoursMap] = React.useState<Record<string, OperatingHours | undefined>>({});
   const [showFormDialog, setShowFormDialog] = React.useState(false);
   const [selectedOperatingHours, setSelectedOperatingHours] = React.useState<OperatingHours | undefined>(undefined);
+  const [activeAccordionItem, setActiveAccordionItem] = React.useState<string | undefined>(undefined); // For expanding one outlet at a time
+
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const fetchedOutlets = mockOutlets; // In a real app, fetch from API
+    const fetchedOutlets = mockOutlets;
     setOutlets(fetchedOutlets);
     const hoursMap: Record<string, OperatingHours | undefined> = {};
     fetchedOutlets.forEach(outlet => {
       hoursMap[outlet.id] = getMockOperatingHoursByOutletId(outlet.id);
     });
     setOperatingHoursMap(hoursMap);
+    if (fetchedOutlets.length > 0) {
+      setActiveAccordionItem(`outlet-${fetchedOutlets[0].id}`); // Open first outlet by default
+    }
   }, []);
 
   const handleOpenFormDialog = (outletId: string) => {
+    const outlet = outlets.find(o => o.id === outletId);
     const hours = getMockOperatingHoursByOutletId(outletId);
-    setSelectedOperatingHours(hours);
+    setSelectedOperatingHours({
+        id: hours?.id || `ophr-${outletId}`,
+        outletId: outletId,
+        outletName: outlet?.name || "Outlet",
+        schedule: hours?.schedule || ALL_DAYS.reduce((acc, day) => {
+                acc[day] = { isOpen: true, openTime: "09:00", closeTime: "17:00", shiftTemplates: [] };
+                return acc;
+            }, {} as Record<string, DayOperatingHours>)
+    });
     setShowFormDialog(true);
   };
 
@@ -49,14 +62,12 @@ export default function OperatingHoursSettingsPage() {
       const updatedHours = upsertMockOperatingHours(outletId, data);
       if (updatedHours) {
         setOperatingHoursMap(prev => ({ ...prev, [outletId]: updatedHours }));
-        // toast({ title: "Sukses", description: "Jam operasional berhasil diperbarui." }); // Toast handled in form
       } else {
         throw new Error("Gagal menyimpan data jam operasional.");
       }
     } catch (error) {
       console.error("Error saving operating hours:", error);
-      // toast({ title: "Error", description: "Gagal menyimpan jam operasional.", variant: "destructive" }); // Toast handled in form
-      throw error; // Re-throw for form to handle
+      throw error; 
     }
   };
   
@@ -69,71 +80,96 @@ export default function OperatingHoursSettingsPage() {
   return (
     <div>
       <PageHeader 
-        title="Pengaturan Jam Operasional" 
-        description="Kelola jam buka dan tutup untuk setiap outlet Anda." 
+        title="Pengaturan Jam Operasional & Shift" 
+        description="Kelola jam buka-tutup dan template shift standar untuk setiap outlet Anda." 
       />
       
-      <Card className="shadow-lg">
+      <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle>Daftar Outlet & Jam Operasional</CardTitle>
-          <CardDescription>Pilih outlet untuk mengatur jam operasionalnya.</CardDescription>
+          <CardTitle>Daftar Outlet & Jadwalnya</CardTitle>
+          <CardDescription>Klik pada outlet untuk melihat detail dan mengatur jam operasional serta template shift.</CardDescription>
         </CardHeader>
         <CardContent>
           {outlets.length === 0 && (
             <p className="text-center text-muted-foreground py-10">Belum ada outlet yang terdaftar.</p>
           )}
-          <div className="space-y-6">
+          <Accordion 
+            type="single" 
+            collapsible 
+            className="w-full space-y-2"
+            value={activeAccordionItem}
+            onValueChange={setActiveAccordionItem}
+          >
             {outlets.map((outlet) => {
               const currentHours = operatingHoursMap[outlet.id];
               return (
-                <Card key={outlet.id} className="shadow-md overflow-hidden">
-                  <CardHeader className="bg-muted/30">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <CardTitle className="text-xl">{outlet.name}</CardTitle>
-                      <Button size="sm" variant="outline" onClick={() => handleOpenFormDialog(outlet.id)}>
-                        <Edit className="mr-2 h-4 w-4" /> Atur Jam Operasional
-                      </Button>
+                <AccordionItem value={`outlet-${outlet.id}`} key={outlet.id} className="border bg-card rounded-lg shadow-md overflow-hidden">
+                  <AccordionTrigger className="p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2 pr-2">
+                        <div className="text-left">
+                            <h3 className="text-lg font-semibold text-primary">{outlet.name}</h3>
+                            <p className="text-xs text-muted-foreground">{outlet.address}</p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleOpenFormDialog(outlet.id);}} className="mt-2 sm:mt-0 shrink-0">
+                            <Edit className="mr-2 h-4 w-4" /> Atur Jadwal
+                        </Button>
                     </div>
-                    <CardDescription>{outlet.address}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-4">
+                  </AccordionTrigger>
+                  <AccordionContent className="p-4 bg-muted/20">
                     {currentHours ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 text-sm">
+                      <div className="space-y-3">
                         {ALL_DAYS.map(dayKey => {
                           const daySchedule = currentHours.schedule[dayKey];
                           return (
-                            <div key={dayKey} className="p-2 border rounded-md bg-background">
-                              <p className="font-semibold text-center border-b pb-1 mb-1">{DAY_NAMES_ID[dayKey]}</p>
-                              {daySchedule.isOpen ? (
-                                <div className="text-center">
-                                   <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-primary-foreground mb-1 w-full justify-center">Buka</Badge>
-                                  <p className="text-xs tabular-nums">
-                                    {formatTime(daySchedule.openTime)} - {formatTime(daySchedule.closeTime)}
+                            <div key={dayKey} className="p-3 border rounded-md bg-background shadow-sm">
+                              <div className="flex justify-between items-center mb-1">
+                                <p className="font-medium">{DAY_NAMES_ID[dayKey]}</p>
+                                {daySchedule.isOpen ? (
+                                  <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-primary-foreground">Buka</Badge>
+                                ) : (
+                                  <Badge variant="destructive">Tutup</Badge>
+                                )}
+                              </div>
+                              {daySchedule.isOpen && (
+                                <>
+                                  <p className="text-sm text-muted-foreground tabular-nums">
+                                    <Clock className="inline h-3 w-3 mr-1" />
+                                    Outlet: {formatTime(daySchedule.openTime)} - {formatTime(daySchedule.closeTime)}
                                   </p>
-                                </div>
-                              ) : (
-                                <div className="text-center">
-                                  <Badge variant="destructive" className="w-full justify-center">Tutup</Badge>
-                                </div>
+                                  {daySchedule.shiftTemplates && daySchedule.shiftTemplates.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-dashed">
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Template Shift:</p>
+                                      <ul className="space-y-1">
+                                        {daySchedule.shiftTemplates.map(st => (
+                                          <li key={st.id} className="text-xs pl-2 tabular-nums">
+                                            - {st.name}: {formatTime(st.startTime)} - {formatTime(st.closeTime)}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {(!daySchedule.shiftTemplates || daySchedule.shiftTemplates.length === 0) && (
+                                      <p className="text-xs text-muted-foreground mt-1 pl-2">- Belum ada template shift.</p>
+                                  )}
+                                </>
                               )}
                             </div>
                           );
                         })}
                       </div>
                     ) : (
-                      <p className="text-muted-foreground">Jam operasional belum diatur.</p>
+                      <p className="text-muted-foreground text-center py-4">Jam operasional & shift belum diatur untuk outlet ini.</p>
                     )}
-                  </CardContent>
-                </Card>
+                  </AccordionContent>
+                </AccordionItem>
               );
             })}
-          </div>
+          </Accordion>
         </CardContent>
       </Card>
 
       <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
-        <DialogContent className="sm:max-w-2xl md:max-w-3xl">
-          {/* OperatingHoursForm will be rendered here */}
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
           {selectedOperatingHours && (
             <OperatingHoursForm 
               initialData={selectedOperatingHours}
