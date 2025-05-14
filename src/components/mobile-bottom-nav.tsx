@@ -11,10 +11,16 @@ interface AppBottomNavProps {
   navItems: SidebarNavItem[]; 
 }
 
+// Helper function to get shorter titles for specific bottom nav items
+const getShortTitle = (href: string, defaultTitle: string): string => {
+  if (href === "/dashboard/pos") return "POS";
+  if (href === "/dashboard/products") return "Produk";
+  return defaultTitle;
+};
+
 export function AppBottomNav({ navItems }: AppBottomNavProps) {
   const pathname = usePathname();
 
-  // Define specific hrefs for the main bottom navigation items
   const mainItemHrefs = [
     "/dashboard",
     "/dashboard/pos",
@@ -25,7 +31,6 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
     .map(href => navItems.find(item => item.href === href))
     .filter(item => item !== undefined) as SidebarNavItem[];
 
-  // Define hrefs that would make the "More" button active
   const morePageCandidateHrefs = [
     "/dashboard/settings", 
     "/dashboard/reports", 
@@ -36,10 +41,20 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
     "/dashboard/units"
     // Add any other hrefs that should activate the "More" button
   ];
+  
+  // Determine if any of the main bottom nav items are active
+  const isMainItemActive = bottomNavItems.some(item => {
+    if (!item.href) return false;
+    // The main "/dashboard" item is only active on its exact path
+    if (item.href === "/dashboard") {
+      return pathname === item.href;
+    }
+    // Other main items are active if the current path starts with their href
+    return pathname.startsWith(item.href);
+  });
+
+  // Determine if the current path is one of the "More" section pages
   const moreItemActive = morePageCandidateHrefs.some(href => pathname.startsWith(href));
-  // Ensure that if one of the main bottomNavItems is active, "More" is not also marked active,
-  // unless the active path *is* one of the morePageCandidateHrefs and *not* one of the mainItemHrefs.
-  const isMainItemActive = bottomNavItems.some(item => pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href)));
 
 
   return (
@@ -48,7 +63,14 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
         {bottomNavItems.map((item) => {
           if (!item.href) return null;
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href) && !item.items);
+          
+          // Corrected active state logic for individual main items
+          let isActive: boolean;
+          if (item.href === "/dashboard") {
+            isActive = pathname === item.href;
+          } else {
+            isActive = pathname.startsWith(item.href);
+          }
 
           return (
             <Link
@@ -65,7 +87,9 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
               tabIndex={item.disabled ? -1 : undefined}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] leading-tight tracking-tight font-medium truncate max-w-[70px]">{item.title}</span>
+              <span className="text-[10px] leading-tight tracking-tight font-medium truncate max-w-[70px]">
+                {getShortTitle(item.href, item.title)}
+              </span>
             </Link>
           );
         })}
