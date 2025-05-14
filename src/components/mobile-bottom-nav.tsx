@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { SidebarNavItem } from "@/config/site";
+import { siteConfig } from "@/config/site"; // Import siteConfig
 import { cn } from "@/lib/utils";
 import { Menu as MenuIcon } from "lucide-react"; 
 
@@ -21,56 +22,53 @@ const getShortTitle = (href: string, defaultTitle: string): string => {
 export function AppBottomNav({ navItems }: AppBottomNavProps) {
   const pathname = usePathname();
 
-  const mainItemHrefs = [
+  // Define the hrefs for the main visible tabs in the bottom nav
+  const mainTabHrefs = [
     "/dashboard",
     "/dashboard/pos",
     "/dashboard/products",
   ];
 
-  const bottomNavItems = mainItemHrefs
+  // Get the actual SidebarNavItem objects for these main tabs
+  // Ensure we use the 'navItems' prop which is siteConfig.sidebarNav
+  const mainTabNavItems = mainTabHrefs
     .map(href => navItems.find(item => item.href === href))
     .filter(item => item !== undefined) as SidebarNavItem[];
 
-  const morePageCandidateHrefs = [
-    "/dashboard/settings", 
-    "/dashboard/reports", 
-    "/dashboard/shifts", 
-    "/dashboard/purchases",
-    "/dashboard/categories",
-    "/dashboard/raw-materials",
-    "/dashboard/units"
-    // Add any other hrefs that should activate the "More" button
-  ];
-  
-  // Determine if any of the main bottom nav items are active
-  const isMainItemActive = bottomNavItems.some(item => {
-    if (!item.href) return false;
-    // The main "/dashboard" item is only active on its exact path
+  // Determine if any of the main tabs should be active
+  let isAnyMainTabActive = false;
+  const activeStatesForMainTabs: { [href: string]: boolean } = {};
+
+  mainTabNavItems.forEach(item => {
+    if (!item.href) return;
+    let isActive = false;
     if (item.href === "/dashboard") {
-      return pathname === item.href;
+      isActive = pathname === item.href;
+    } else if (item.href === "/dashboard/pos") {
+      isActive = pathname.startsWith(item.href);
+    } else if (item.href === "/dashboard/products") {
+      // "Produk" section includes its main href and all its sub-item hrefs
+      // 'item' here is the "Manajemen Produk" SidebarNavItem from navItems (siteConfig.sidebarNav)
+      const productSubItemHrefs = item.items?.map(sub => sub.href).filter(Boolean) as string[] || [];
+      const productSectionHrefs = [item.href, ...productSubItemHrefs];
+      isActive = productSectionHrefs.some(sectionHref => pathname.startsWith(sectionHref));
     }
-    // Other main items are active if the current path starts with their href
-    return pathname.startsWith(item.href);
+    activeStatesForMainTabs[item.href] = isActive;
+    if (isActive) {
+      isAnyMainTabActive = true;
+    }
   });
 
-  // Determine if the current path is one of the "More" section pages
-  const moreItemActive = morePageCandidateHrefs.some(href => pathname.startsWith(href));
-
+  // "Lainnya" (More) tab is active if no main tab is active
+  const isMoreTabActive = !isAnyMainTabActive;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 h-16 border-t bg-background/95 backdrop-blur-sm md:hidden">
       <div className="mx-auto grid h-full max-w-lg grid-cols-4 items-center px-2">
-        {bottomNavItems.map((item) => {
+        {mainTabNavItems.map((item) => {
           if (!item.href) return null;
           const Icon = item.icon;
-          
-          // Corrected active state logic for individual main items
-          let isActive: boolean;
-          if (item.href === "/dashboard") {
-            isActive = pathname === item.href;
-          } else {
-            isActive = pathname.startsWith(item.href);
-          }
+          const isActive = activeStatesForMainTabs[item.href] || false;
 
           return (
             <Link
@@ -94,11 +92,12 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
           );
         })}
         
+        {/* "Lainnya" (More) Tab */}
         <Link
-            href="/dashboard/settings" // "More" button links to settings page
+            href="/dashboard/settings" // "More" button links to settings page, or another general "more" page
             className={cn(
                 "flex h-full flex-col items-center justify-center gap-1 rounded-md p-1 text-center transition-colors",
-                moreItemActive && !isMainItemActive 
+                isMoreTabActive
                   ? "text-primary font-medium"
                   : "text-muted-foreground hover:text-primary hover:bg-primary/10"
               )}
