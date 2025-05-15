@@ -2,7 +2,7 @@
 "use client";
 
 import type { Product as ProductType } from "@/types/product";
-import type { RawMaterial } from "@/types/raw-material"; // For potential future direct raw material display if needed
+import type { RawMaterial } from "@/types/raw-material"; 
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Trash2, Download, CreditCard, QrCode, DollarSignIcon, PlayCircle, Search, CheckCircle, Printer } from "lucide-react";
+import { PlusCircle, MinusCircle, Trash2, Download, CreditCard, QrCode, DollarSignIcon, PlayCircle, Search, CheckCircle, Printer, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -42,6 +42,8 @@ const STRUK_SHOW_ADDRESS_KEY = 'katama-pos-struk-showAddress';
 const STRUK_SHOW_CONTACT_KEY = 'katama-pos-struk-showContact';
 const STRUK_PAPER_SIZE_KEY = 'katama-pos-struk-paperSize';
 
+const POS_SESSION_KEY = 'katama-pos-active-session';
+
 
 interface Product extends ProductType {
   // image field is already in ProductType if it's optional
@@ -69,8 +71,9 @@ export default function POSPage() {
   const { toast } = useToast();
   const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = React.useState<PaymentMethod>("Tunai");
+  const [isLoadingSession, setIsLoadingSession] = React.useState(true);
 
-  // States for receipt details from localStorage
+
   const [companyName, setCompanyName] = React.useState<string>("KATAMA POS");
   const [companyAddress, setCompanyAddress] = React.useState<string>("Alamat Perusahaan Anda");
   const [companyContact, setCompanyContact] = React.useState<string>("Kontak Perusahaan Anda");
@@ -83,14 +86,35 @@ export default function POSPage() {
   const [posSessionDisplayTime, setPosSessionDisplayTime] = React.useState<string | null>(null);
   const [strukPaperSize, setStrukPaperSize] = React.useState<string>("58mm");
 
-  // State for post-payment dialog and receipt HTML
   const [showPostPaymentDialog, setShowPostPaymentDialog] = React.useState(false);
   const [lastTransactionReceiptHtml, setLastTransactionReceiptHtml] = React.useState<string | null>(null);
   const [lastTransactionId, setLastTransactionId] = React.useState<string>("");
 
 
   React.useEffect(() => {
-    setProducts(getMockProducts());
+    setProducts(getMockProducts()); // Initial product load
+    
+    // Load POS session from localStorage
+    const storedSession = localStorage.getItem(POS_SESSION_KEY);
+    if (storedSession) {
+      try {
+        const parsedSession = JSON.parse(storedSession) as POSSession;
+        // Ensure startTime is a Date object
+        parsedSession.startTime = new Date(parsedSession.startTime); 
+        if (parsedSession.startTime && !isNaN(parsedSession.startTime.getTime())) {
+            setPosSession(parsedSession);
+        } else {
+            localStorage.removeItem(POS_SESSION_KEY); // Clear invalid session
+        }
+      } catch (error) {
+        console.error("Gagal memuat sesi POS dari localStorage:", error);
+        localStorage.removeItem(POS_SESSION_KEY); // Clear corrupted session
+      }
+    }
+    setIsLoadingSession(false);
+
+
+    // Load other settings from localStorage
     if (typeof window !== 'undefined') {
       setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || "KATAMA POS");
       setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Contoh No. 123, Kota Contoh");
@@ -199,12 +223,10 @@ export default function POSPage() {
     const transactionDate = new Date();
     const receiptId = `TXN-${Date.now().toString().slice(-6)}`;
 
-    // Logo
     if (strukShowLogo && customLogoUrl && customLogoUrl.startsWith("data:image/")) {
         htmlContent += `<div style="text-align: center; margin-bottom: 10px;"><img src="${customLogoUrl}" style="max-width: 100px; max-height: 50px; display: inline-block;" alt="logo"/></div>`;
     }
 
-    // Company Info
     htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '14px' : '16px'}; font-weight: bold; margin-bottom: 3px;">${companyName}</div>`;
     if (strukShowAddress && companyAddress) {
         htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 3px;">${companyAddress}</div>`;
@@ -214,12 +236,10 @@ export default function POSPage() {
     }
     htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
-    // Transaction Details
     htmlContent += `<div style="display: flex; justify-content: space-between; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 3px;"><span>No: ${receiptId}</span><span>${format(transactionDate, "dd/MM/yy HH:mm", { locale: idLocale })}</span></div>`;
-    htmlContent += `<div style="font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;">Kasir: POS Kasir</div>`; // Mock cashier
+    htmlContent += `<div style="font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;">Kasir: POS Kasir</div>`; 
     htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
-    // Items Table
     htmlContent += '<table><thead><tr><th style="text-align: left; padding-right: 5px;">Item</th><th style="text-align: right; padding-right: 5px;">Qty</th><th style="text-align: right; padding-right: 5px;">Harga</th><th style="text-align: right;">Total</th></tr></thead><tbody>';
     cartItems.forEach(item => {
         htmlContent += `
@@ -233,13 +253,11 @@ export default function POSPage() {
     htmlContent += '</tbody></table>';
     htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
-    // Summary
     htmlContent += `<div style="display: flex; justify-content: space-between; font-size: ${strukPaperSize === '58mm' ? '11px' : '12px'}; margin-bottom: 3px;"><span>Subtotal:</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>`;
     htmlContent += `<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: ${strukPaperSize === '58mm' ? '13px' : '14px'}; margin-bottom: 5px;"><span>TOTAL:</span><span>Rp ${total.toLocaleString('id-ID')}</span></div>`;
     htmlContent += `<div style="display: flex; justify-content: space-between; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;"><span>Pembayaran:</span><span>${selectedPaymentMethod}</span></div>`;
     htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
-    // Footer Text
     if (strukHeaderText) {
         htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '11px' : '12px'}; margin-top: 10px;">${strukHeaderText}</div>`;
     }
@@ -288,7 +306,7 @@ export default function POSPage() {
   };
 
   const printReceiptHtml = (htmlContent: string) => {
-    const printWindow = window.open('', '_blank', 'height=600,width=400'); // Adjusted width for typical receipt
+    const printWindow = window.open('', '_blank', 'height=600,width=400'); 
     if (printWindow) {
         printWindow.document.write('<html><head><title>Struk Pembayaran</title>');
         printWindow.document.write(`
@@ -298,14 +316,13 @@ export default function POSPage() {
                     font-size: ${strukPaperSize === '58mm' ? '10px' : '12px'}; 
                     margin: 0; 
                     padding: 5px; 
-                    width: ${strukPaperSize === '58mm' ? '270px' : '370px'}; /* Slightly less than element for printer margins */
+                    width: ${strukPaperSize === '58mm' ? '270px' : '370px'}; 
                 }
                 table { width: 100%; border-collapse: collapse; font-size: inherit; }
                 th, td { font-size: inherit; padding: 1px 0; }
                 img { max-width: 100px; max-height: 50px; display: block; margin-left: auto; margin-right: auto; }
                 @media print {
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 5px; }
-                    /* Additional print-specific styles can be added here */
                 }
             </style>
         `);
@@ -317,9 +334,6 @@ export default function POSPage() {
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
-            // Delay closing to allow print dialog to process.
-            // Some browsers might close the window immediately after the print dialog is closed by the user.
-            // setTimeout(() => printWindow.close(), 3000); // Close after 3 seconds for safety
         }, 250);
         toast({ title: "Siap Mencetak", description: "Jendela cetak struk telah dibuka." });
     } else {
@@ -355,7 +369,7 @@ export default function POSPage() {
       });
       setCartItems([]); 
       setProducts(getMockProducts()); 
-      setShowPostPaymentDialog(true); // Show dialog with download/print options
+      setShowPostPaymentDialog(true); 
     } else {
       toast({
         title: "Pembayaran Gagal",
@@ -371,14 +385,14 @@ export default function POSPage() {
     if (lastTransactionReceiptHtml && lastTransactionId) {
         await generateReceiptImage(lastTransactionReceiptHtml, lastTransactionId);
     }
-    setShowPostPaymentDialog(false); // Close dialog after action
+    setShowPostPaymentDialog(false); 
   };
 
   const handleDirectPrintReceipt = () => {
       if (lastTransactionReceiptHtml) {
           printReceiptHtml(lastTransactionReceiptHtml);
       }
-      setShowPostPaymentDialog(false); // Close dialog after action
+      setShowPostPaymentDialog(false); 
   };
 
 
@@ -392,7 +406,9 @@ export default function POSPage() {
       });
       return;
     }
-    setPosSession({ initialCash: cashAmount, startTime: new Date() });
+    const newSession = { initialCash: cashAmount, startTime: new Date() };
+    setPosSession(newSession);
+    localStorage.setItem(POS_SESSION_KEY, JSON.stringify(newSession));
     setShowOpenPOSDialog(false);
     setInitialCashInput("");
     toast({
@@ -400,6 +416,23 @@ export default function POSPage() {
       description: `Modal awal Rp ${cashAmount.toLocaleString('id-ID')} telah dicatat.`,
     });
   };
+
+  const handleClosePOSSession = () => {
+    localStorage.removeItem(POS_SESSION_KEY);
+    setPosSession(null);
+    setCartItems([]);
+    toast({ title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset." });
+  };
+
+  if (isLoadingSession) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Memuat sesi POS...</p>
+      </div>
+    );
+  }
+
 
   if (!posSession) {
     return (
@@ -486,7 +519,7 @@ export default function POSPage() {
                   >
                     <div className="relative w-full aspect-[4/3] bg-muted">
                        <Image 
-                        src={product.image || "https://picsum.photos/200/150?random=product"} 
+                        src={product.image || "https://placehold.co/200x150.png"} 
                         alt={product.name} 
                         fill={true}
                         style={{objectFit:"cover"}}
@@ -539,7 +572,7 @@ export default function POSPage() {
                   {cartItems.map((item) => (
                     <li key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-accent/50 transition-colors">
                       <div className="flex items-center flex-1 mr-2 min-w-0">
-                        <Image src={item.image || "https://picsum.photos/40/40?random=cart"} alt={item.name} width={32} height={32} className="rounded mr-2 aspect-square object-cover" data-ai-hint="cart item" />
+                        <Image src={item.image || "https://placehold.co/40x40.png"} alt={item.name} width={32} height={32} className="rounded mr-2 aspect-square object-cover" data-ai-hint="cart item" />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{item.name}</p>
                           <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString('id-ID')} x {item.quantity}</p>
@@ -602,11 +635,7 @@ export default function POSPage() {
               ) : <CreditCard className="mr-2 h-4 w-4" />}
               {isProcessingPayment ? "Memproses..." : "Proses Pembayaran"}
             </Button>
-            <Button size="sm" variant="ghost" className="w-full mt-1 h-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => {
-              setPosSession(null);
-              setCartItems([]); 
-              toast({title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset."})
-            }}>
+            <Button size="sm" variant="ghost" className="w-full mt-1 h-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={handleClosePOSSession}>
               Tutup Sesi POS
             </Button>
           </CardFooter>
@@ -640,3 +669,5 @@ export default function POSPage() {
     </div>
   );
 }
+
+    
