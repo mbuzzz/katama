@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Trash2, Download, CreditCard, QrCode, DollarSignIcon, PlayCircle, Search, CheckCircle } from "lucide-react";
+import { PlusCircle, MinusCircle, Trash2, Download, CreditCard, QrCode, DollarSignIcon, PlayCircle, Search, CheckCircle, Printer } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -83,10 +83,14 @@ export default function POSPage() {
   const [posSessionDisplayTime, setPosSessionDisplayTime] = React.useState<string | null>(null);
   const [strukPaperSize, setStrukPaperSize] = React.useState<string>("58mm");
 
+  // State for post-payment dialog and receipt HTML
+  const [showPostPaymentDialog, setShowPostPaymentDialog] = React.useState(false);
+  const [lastTransactionReceiptHtml, setLastTransactionReceiptHtml] = React.useState<string | null>(null);
+  const [lastTransactionId, setLastTransactionId] = React.useState<string>("");
+
 
   React.useEffect(() => {
     setProducts(getMockProducts());
-    // Load company and struk settings from localStorage
     if (typeof window !== 'undefined') {
       setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || "KATAMA POS");
       setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Contoh No. 123, Kota Contoh");
@@ -190,19 +194,10 @@ export default function POSPage() {
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = subtotal; 
 
-  const generateReceiptImage = async () => {
-    const receiptElement = document.createElement('div');
-    receiptElement.id = 'receipt-render-area';
-    receiptElement.style.width = strukPaperSize === '58mm' ? '280px' : '380px';
-    receiptElement.style.padding = '15px';
-    receiptElement.style.fontFamily = '"Courier New", Courier, monospace';
-    receiptElement.style.fontSize = strukPaperSize === '58mm' ? '11px' : '12px';
-    receiptElement.style.color = '#000000';
-    receiptElement.style.backgroundColor = '#ffffff';
-    receiptElement.style.border = '1px solid #ccc'; // Optional: for visibility if testing display
-    receiptElement.style.boxSizing = 'border-box';
-
+  const getReceiptHtmlContent = React.useCallback((): {html: string, transactionId: string} => {
     let htmlContent = '';
+    const transactionDate = new Date();
+    const receiptId = `TXN-${Date.now().toString().slice(-6)}`;
 
     // Logo
     if (strukShowLogo && customLogoUrl && customLogoUrl.startsWith("data:image/")) {
@@ -220,8 +215,6 @@ export default function POSPage() {
     htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
     // Transaction Details
-    const transactionDate = new Date();
-    const receiptId = `TXN-${Date.now().toString().slice(-6)}`;
     htmlContent += `<div style="display: flex; justify-content: space-between; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 3px;"><span>No: ${receiptId}</span><span>${format(transactionDate, "dd/MM/yy HH:mm", { locale: idLocale })}</span></div>`;
     htmlContent += `<div style="font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;">Kasir: POS Kasir</div>`; // Mock cashier
     htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
@@ -253,34 +246,88 @@ export default function POSPage() {
     if (strukFooterText) {
         htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-top: 5px;">${strukFooterText}</div>`;
     }
+    return { html: htmlContent, transactionId: receiptId };
+  }, [cartItems, companyAddress, companyContact, companyName, customLogoUrl, selectedPaymentMethod, strukFooterText, strukHeaderText, strukPaperSize, strukShowAddress, strukShowContact, strukShowLogo, subtotal, total]);
 
+
+  const generateReceiptImage = async (htmlContent: string, transactionId: string) => {
+    const receiptElement = document.createElement('div');
+    receiptElement.id = 'receipt-render-area';
+    receiptElement.style.width = strukPaperSize === '58mm' ? '280px' : '380px';
+    receiptElement.style.padding = '15px';
+    receiptElement.style.fontFamily = '"Courier New", Courier, monospace';
+    receiptElement.style.fontSize = strukPaperSize === '58mm' ? '11px' : '12px';
+    receiptElement.style.color = '#000000';
+    receiptElement.style.backgroundColor = '#ffffff';
+    receiptElement.style.border = '1px solid #ccc';
+    receiptElement.style.boxSizing = 'border-box';
     receiptElement.innerHTML = htmlContent;
     
-    // Temporarily append to body to render for html2canvas, then remove
     receiptElement.style.position = 'absolute';
-    receiptElement.style.left = '-9999px'; // Off-screen
+    receiptElement.style.left = '-9999px';
     document.body.appendChild(receiptElement);
 
     try {
-      const canvas = await html2canvas(receiptElement, { 
-        scale: 2, // Higher scale for better quality
-        useCORS: true, // For external images if any (logo from dataURI is fine)
-        logging: false // Disable console logging from html2canvas
-      });
+      const canvas = await html2canvas(receiptElement, { scale: 2, useCORS: true, logging: false });
       const image = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = image;
-      link.download = `Struk_${receiptId}_${format(transactionDate, "yyyyMMddHHmmss")}.png`;
+      link.download = `Struk_${transactionId}_${format(new Date(), "yyyyMMddHHmmss")}.png`;
       link.click();
+      toast({ title: "Struk Diunduh", description: "Gambar struk berhasil diunduh." });
     } catch (error) {
         console.error("Gagal membuat gambar struk:", error);
         toast({
-            title: "Gagal Membuat Struk",
+            title: "Gagal Mengunduh Struk",
             description: "Terjadi kesalahan saat membuat gambar struk.",
             variant: "destructive",
         });
     } finally {
         document.body.removeChild(receiptElement);
+    }
+  };
+
+  const printReceiptHtml = (htmlContent: string) => {
+    const printWindow = window.open('', '_blank', 'height=600,width=400'); // Adjusted width for typical receipt
+    if (printWindow) {
+        printWindow.document.write('<html><head><title>Struk Pembayaran</title>');
+        printWindow.document.write(`
+            <style>
+                body { 
+                    font-family: "Courier New", Courier, monospace; 
+                    font-size: ${strukPaperSize === '58mm' ? '10px' : '12px'}; 
+                    margin: 0; 
+                    padding: 5px; 
+                    width: ${strukPaperSize === '58mm' ? '270px' : '370px'}; /* Slightly less than element for printer margins */
+                }
+                table { width: 100%; border-collapse: collapse; font-size: inherit; }
+                th, td { font-size: inherit; padding: 1px 0; }
+                img { max-width: 100px; max-height: 50px; display: block; margin-left: auto; margin-right: auto; }
+                @media print {
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 5px; }
+                    /* Additional print-specific styles can be added here */
+                }
+            </style>
+        `);
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(htmlContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close(); 
+
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            // Delay closing to allow print dialog to process.
+            // Some browsers might close the window immediately after the print dialog is closed by the user.
+            // setTimeout(() => printWindow.close(), 3000); // Close after 3 seconds for safety
+        }, 250);
+        toast({ title: "Siap Mencetak", description: "Jendela cetak struk telah dibuka." });
+    } else {
+        toast({
+            title: "Gagal Membuka Jendela Cetak",
+            description: "Pastikan browser Anda mengizinkan pop-up.",
+            variant: "destructive",
+        });
     }
   };
 
@@ -298,13 +345,17 @@ export default function POSPage() {
     const result = await handleProcessSaleAction(cartItems);
     
     if (result.success) {
-      await generateReceiptImage(); // Changed from PDF to Image
+      const {html, transactionId} = getReceiptHtmlContent();
+      setLastTransactionReceiptHtml(html);
+      setLastTransactionId(transactionId);
+
       toast({
         title: "Pembayaran Berhasil",
-        description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui. Struk diunduh.`,
+        description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
       });
       setCartItems([]); 
       setProducts(getMockProducts()); 
+      setShowPostPaymentDialog(true); // Show dialog with download/print options
     } else {
       toast({
         title: "Pembayaran Gagal",
@@ -315,6 +366,21 @@ export default function POSPage() {
     }
     setIsProcessingPayment(false);
   }
+
+  const handleDownloadReceiptImage = async () => {
+    if (lastTransactionReceiptHtml && lastTransactionId) {
+        await generateReceiptImage(lastTransactionReceiptHtml, lastTransactionId);
+    }
+    setShowPostPaymentDialog(false); // Close dialog after action
+  };
+
+  const handleDirectPrintReceipt = () => {
+      if (lastTransactionReceiptHtml) {
+          printReceiptHtml(lastTransactionReceiptHtml);
+      }
+      setShowPostPaymentDialog(false); // Close dialog after action
+  };
+
 
   const handleOpenPOSSession = () => {
     const cashAmount = parseFloat(initialCashInput);
@@ -533,8 +599,8 @@ export default function POSPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-              ) : <Download className="mr-2 h-4 w-4" />}
-              {isProcessingPayment ? "Memproses..." : "Bayar & Unduh Struk"}
+              ) : <CreditCard className="mr-2 h-4 w-4" />}
+              {isProcessingPayment ? "Memproses..." : "Proses Pembayaran"}
             </Button>
             <Button size="sm" variant="ghost" className="w-full mt-1 h-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={() => {
               setPosSession(null);
@@ -546,7 +612,31 @@ export default function POSPage() {
           </CardFooter>
         </Card>
       </div>
+
+      <Dialog open={showPostPaymentDialog} onOpenChange={setShowPostPaymentDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pembayaran Berhasil!</DialogTitle>
+            <DialogDescription>
+              Pilih tindakan selanjutnya untuk struk Anda.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-3 py-4">
+            <Button onClick={handleDownloadReceiptImage}>
+              <Download className="mr-2 h-4 w-4" /> Unduh Struk (Gambar)
+            </Button>
+            <Button onClick={handleDirectPrintReceipt} variant="outline">
+              <Printer className="mr-2 h-4 w-4" /> Cetak Struk Langsung
+            </Button>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">Tutup</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
-
