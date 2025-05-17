@@ -30,12 +30,10 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
   ];
 
   // Get the actual SidebarNavItem objects for these main tabs
-  // Ensure we use the 'navItems' prop which is siteConfig.sidebarNav
   const mainTabNavItems = mainTabHrefs
     .map(href => navItems.find(item => item.href === href))
     .filter(item => item !== undefined) as SidebarNavItem[];
 
-  // Determine if any of the main tabs should be active
   let isAnyMainTabActive = false;
   const activeStatesForMainTabs: { [href: string]: boolean } = {};
 
@@ -48,10 +46,15 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
       isActive = pathname.startsWith(item.href);
     } else if (item.href === "/dashboard/products") {
       // "Produk" section includes its main href and all its sub-item hrefs
-      // 'item' here is the "Manajemen Produk" SidebarNavItem from navItems (siteConfig.sidebarNav)
+      const productMainHref = item.href; // e.g., /dashboard/products
       const productSubItemHrefs = item.items?.map(sub => sub.href).filter(Boolean) as string[] || [];
-      const productSectionHrefs = [item.href, ...productSubItemHrefs];
-      isActive = productSectionHrefs.some(sectionHref => pathname.startsWith(sectionHref));
+      
+      // isActive if pathname starts with the main product href, OR any of its defined sub-item hrefs
+      if (pathname.startsWith(productMainHref)) {
+        isActive = true;
+      } else {
+        isActive = productSubItemHrefs.some(subHref => pathname.startsWith(subHref));
+      }
     }
     activeStatesForMainTabs[item.href] = isActive;
     if (isActive) {
@@ -94,7 +97,7 @@ export function AppBottomNav({ navItems }: AppBottomNavProps) {
         
         {/* "Lainnya" (More) Tab */}
         <Link
-            href="/dashboard/settings" // "More" button links to settings page, or another general "more" page
+            href="/dashboard/settings" // "More" button links to settings page
             className={cn(
                 "flex h-full flex-col items-center justify-center gap-1 rounded-md p-1 text-center transition-colors",
                 isMoreTabActive
