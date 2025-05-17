@@ -4,22 +4,23 @@
 import * as React from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import * as XLSX from "xlsx"; // Import xlsx library
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, Filter } from "lucide-react";
+import { Download, Filter, FileSpreadsheet } from "lucide-react"; // Added FileSpreadsheet
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast"; 
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
-import { getMockShiftsForSelect } from "@/data/shifts"; // Import shift data helper
+import { getMockShiftsForSelect } from "@/data/shifts"; 
 
-// Mock Data - Placed here for client component context
+// Mock Data
 const mockPurchaseReportDataFullStatic = [
   { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000, shiftId: "shift1", supplier: "Supplier Kopi Jaya" },
   { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00.000Z", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000, shiftId: "shift1", supplier: "Distributor Susu Segar" },
@@ -78,7 +79,7 @@ export default function PurchaseReportPage() {
   }, [dateRange, itemSearchTerm, selectedShiftId, mockPurchaseReportDataFull, isLoading]);
 
 
-  const handleDownloadReport = () => {
+  const handleDownloadPdfReport = () => {
     if (filteredPurchaseData.length === 0) {
       toast({ title: "Tidak Ada Data", description: "Tidak ada data pembelanjaan untuk filter yang dipilih.", variant: "destructive" });
       return;
@@ -138,14 +139,9 @@ export default function PurchaseReportPage() {
         headStyles: { fillColor: [60, 56, 91], textColor: 255, fontSize: 8 }, 
         styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.5 },
         columnStyles: {
-          0: {cellWidth: 12}, // ID
-          1: {cellWidth: 20}, // Waktu
-          4: {cellWidth: 30}, // Nama Barang
-          5: {cellWidth: 25}, // Pemasok
-          6: { halign: 'right', cellWidth: 10 }, // Jml
-          7: {cellWidth: 12}, // Satuan
-          8: { halign: 'right', cellWidth: 20 }, // Harga Satuan
-          9: { halign: 'right', cellWidth: 20 }, // Total
+          0: {cellWidth: 12}, 1: {cellWidth: 20}, 4: {cellWidth: 30}, 5: {cellWidth: 25}, 
+          6: { halign: 'right', cellWidth: 10 }, 7: {cellWidth: 12}, 
+          8: { halign: 'right', cellWidth: 20 }, 9: { halign: 'right', cellWidth: 20 },
         }
       });
 
@@ -157,14 +153,76 @@ export default function PurchaseReportPage() {
       }
 
       doc.save(fileName);
-      toast({ title: "Unduh Berhasil", description: `Laporan pembelanjaan telah berhasil diunduh sebagai ${fileName}.` });
+      toast({ title: "Unduh PDF Berhasil", description: `Laporan pembelanjaan telah berhasil diunduh sebagai ${fileName}.` });
 
     } catch (error) {
       console.error("Gagal membuat PDF:", error);
-      toast({ title: "Unduh Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive" });
+      toast({ title: "Unduh PDF Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive" });
     }
   };
   
+  const handleDownloadExcelReport = () => {
+    if (filteredPurchaseData.length === 0) {
+      toast({ title: "Tidak Ada Data", description: "Tidak ada data pembelanjaan untuk filter yang dipilih.", variant: "destructive" });
+      return;
+    }
+    try {
+      const fileName = `Laporan_Pembelanjaan_${format(new Date(), "yyyyMMddHHmmss")}.xlsx`;
+      const header = ["ID", "Waktu", "Outlet", "Pengguna", "Nama Barang", "Pemasok", "Jumlah", "Satuan", "Harga Satuan (Rp)", "Total Pembelanjaan (Rp)"];
+      
+      const dataForExcel = filteredPurchaseData.map(purchase => [
+        purchase.id,
+        format(parseISO(purchase.timestamp), "dd/MM/yyyy HH:mm:ss", { locale: idLocale }),
+        purchase.outlet,
+        purchase.user,
+        purchase.itemName,
+        purchase.supplier,
+        purchase.quantity,
+        purchase.unit,
+        purchase.price,
+        purchase.total
+      ]);
+
+      const worksheetData = [header, ...dataForExcel];
+      
+      const totalRowIndex = worksheetData.length + 1; // Excel row number
+      const totalDataRow = [
+        "", "", "", "", "", "", "", "", "Total Keseluruhan:",
+        { t: 'n', f: `SUM(J2:J${totalRowIndex-1})` } // Total Pembelanjaan
+      ];
+      worksheetData.push(totalDataRow);
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Apply number formatting for currency columns (I, J)
+      const moneyCols = ['I', 'J'];
+      for (let R = 1; R < totalRowIndex; ++R) { // Data rows
+          moneyCols.forEach(C => {
+              const cellAddress = `${C}${R + 1}`;
+              if (ws[cellAddress] && typeof ws[cellAddress].v === 'number') {
+                  ws[cellAddress].z = '"Rp"#,##0';
+              }
+          });
+      }
+      if(ws[`J${totalRowIndex}`]) ws[`J${totalRowIndex}`].z = '"Rp"#,##0';
+
+      // Auto-fit columns
+      const colWidths = header.map((_, i) => ({
+        wch: Math.max(...worksheetData.map(row => row[i] ? String(row[i]).length : 0), header[i].length) + 2
+      }));
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Pembelanjaan");
+      XLSX.writeFile(wb, fileName);
+
+      toast({ title: "Unduh Excel Berhasil", description: `Laporan pembelanjaan telah berhasil diunduh sebagai ${fileName}.` });
+    } catch (error) {
+      console.error("Gagal membuat Excel:", error);
+      toast({ title: "Unduh Excel Gagal", description: "Terjadi kesalahan saat membuat laporan Excel.", variant: "destructive" });
+    }
+  };
+
   if (isLoading) {
     return (
       <div>
@@ -177,8 +235,11 @@ export default function PurchaseReportPage() {
   return (
     <div>
       <PageHeader title="Laporan Pembelanjaan" description="Lacak semua pembelanjaan barang.">
-        <Button variant="outline" onClick={handleDownloadReport}>
-          <Download className="mr-2 h-4 w-4" /> Unduh Laporan PDF
+        <Button variant="outline" onClick={handleDownloadPdfReport} className="mr-2">
+          <Download className="mr-2 h-4 w-4" /> Unduh PDF
+        </Button>
+        <Button variant="outline" onClick={handleDownloadExcelReport}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" /> Unduh Excel
         </Button>
       </PageHeader>
       
@@ -264,3 +325,4 @@ export default function PurchaseReportPage() {
     </div>
   );
 }
+

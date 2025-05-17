@@ -4,6 +4,7 @@
 import * as React from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import * as XLSX from "xlsx"; // Import xlsx library
 import type { jsPDFDocument } from "jspdf-autotable";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { Download, UserCheck, Filter, DollarSign, TrendingUp, ClockIcon } from "lucide-react";
+import { Download, UserCheck, Filter, DollarSign, TrendingUp, ClockIcon, FileSpreadsheet } from "lucide-react"; // Added FileSpreadsheet
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from "date-fns";
@@ -71,11 +72,21 @@ export default function ShiftReportPage() {
     if (amount === null || amount === undefined) return "-";
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };
+  const formatCurrencyForExcel = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) return null; // Return null for Excel if no value
+    return amount;
+  };
+
 
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return "-";
     const dateObj = parseISO(dateString);
     return isValid(dateObj) ? format(dateObj, "dd MMM yyyy, HH:mm", { locale: idLocale }) : "-";
+  };
+  const formatDateForExcel = (dateString?: string | null) => {
+    if (!dateString) return null;
+    const dateObj = parseISO(dateString);
+    return isValid(dateObj) ? format(dateObj, "dd/MM/yyyy HH:mm:ss", { locale: idLocale }) : null;
   };
   
   const getStatusBadgeVariant = (status: Shift['status']) => {
@@ -92,11 +103,12 @@ export default function ShiftReportPage() {
       totalShifts: filteredShifts.length,
       totalSalesFromShifts: filteredShifts.reduce((sum, shift) => sum + (shift.totalSales || 0), 0),
       totalInitialCash: filteredShifts.reduce((sum, shift) => sum + (shift.initialCash || 0), 0),
+      totalFinalCash: filteredShifts.reduce((sum, shift) => sum + (shift.finalCash || 0), 0),
     };
   }, [filteredShifts]);
 
 
-  const handleDownloadReport = () => {
+  const handleDownloadPdfReport = () => {
     if (filteredShifts.length === 0) {
       toast({ title: "Tidak Ada Data", description: "Tidak ada data shift untuk filter yang dipilih.", variant: "destructive" });
       return;
@@ -151,18 +163,9 @@ export default function ShiftReportPage() {
         headStyles: { fillColor: [60, 56, 91], textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
         styles: { font: "helvetica", fontSize: 7, cellPadding: 1.5 },
         columnStyles: {
-            0: {cellWidth: 12}, // ID
-            1: {cellWidth: 20}, // Pengguna
-            2: {cellWidth: 20}, // Outlet
-            3: {cellWidth: 20}, // Mulai
-            4: {cellWidth: 20}, // Selesai
-            5: {cellWidth: 15}, // Durasi
-            6: {cellWidth: 15}, // Status
-            7: { halign: 'right', cellWidth: 18 }, // Modal
-            8: { halign: 'right', cellWidth: 18 }, // Kas Akhir
-            9: { halign: 'right', cellWidth: 18 }, // Total Sales
-            10: { halign: 'right', cellWidth: 18 }, // Selisih
-            11: {cellWidth: 30} 
+            0: {cellWidth: 12}, 1: {cellWidth: 20}, 2: {cellWidth: 20}, 3: {cellWidth: 20}, 4: {cellWidth: 20}, 
+            5: {cellWidth: 15}, 6: {cellWidth: 15}, 7: { halign: 'right', cellWidth: 18 }, 8: { halign: 'right', cellWidth: 18 }, 
+            9: { halign: 'right', cellWidth: 18 }, 10: { halign: 'right', cellWidth: 18 }, 11: {cellWidth: 30} 
         }
       });
       
@@ -174,13 +177,83 @@ export default function ShiftReportPage() {
       }
 
       doc.save(fileName);
-      toast({ title: "Unduh Berhasil", description: `Laporan shift telah berhasil diunduh sebagai ${fileName}.`});
+      toast({ title: "Unduh PDF Berhasil", description: `Laporan shift telah berhasil diunduh sebagai ${fileName}.`});
 
     } catch (error) {
       console.error("Gagal membuat PDF laporan shift:", error);
-      toast({ title: "Unduh Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive" });
+      toast({ title: "Unduh PDF Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive" });
     }
   };
+
+  const handleDownloadExcelReport = () => {
+    if (filteredShifts.length === 0) {
+      toast({ title: "Tidak Ada Data", description: "Tidak ada data shift untuk filter yang dipilih.", variant: "destructive" });
+      return;
+    }
+    try {
+      const fileName = `Laporan_Shift_${format(new Date(), "yyyyMMddHHmmss")}.xlsx`;
+      const header = ["ID Shift", "Pengguna", "Outlet", "Waktu Mulai", "Waktu Selesai", "Durasi Shift", "Status Shift", "Modal Awal (Rp)", "Kas Akhir Aktual (Rp)", "Total Penjualan (Rp)", "Selisih Kas (Rp)", "Catatan"];
+      
+      const dataForExcel = filteredShifts.map(shift => {
+        const selisihKas = (shift.finalCash || 0) - (shift.initialCash || 0) - (shift.totalSales || 0);
+        return [
+          shift.id.slice(-6),
+          shift.userName,
+          shift.outletName,
+          formatDateForExcel(shift.startTime),
+          formatDateForExcel(shift.endTime),
+          shift.duration,
+          shift.status,
+          formatCurrencyForExcel(shift.initialCash),
+          formatCurrencyForExcel(shift.finalCash),
+          formatCurrencyForExcel(shift.totalSales),
+          formatCurrencyForExcel(selisihKas),
+          shift.notes
+        ];
+      });
+
+      const worksheetData = [header, ...dataForExcel];
+      const totalRowIndex = worksheetData.length + 1;
+      
+      const totals = [
+        "", "", "", "", "", "", "Total Keseluruhan:",
+        { t: 'n', f: `SUM(H2:H${totalRowIndex-1})` }, // Modal Awal
+        { t: 'n', f: `SUM(I2:I${totalRowIndex-1})` }, // Kas Akhir
+        { t: 'n', f: `SUM(J2:J${totalRowIndex-1})` }, // Total Sales
+        { t: 'n', f: `SUM(K2:K${totalRowIndex-1})` }, // Selisih Kas
+      ];
+      worksheetData.push(totals);
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+      
+      const moneyCols = ['H', 'I', 'J', 'K'];
+      for (let R = 1; R < worksheetData.length; ++R) { // Iterate through all data rows including total rows
+          moneyCols.forEach(C => {
+              const cellAddress = `${C}${R + 1}`;
+              if (ws[cellAddress] && (ws[cellAddress].v !== null && ws[cellAddress].v !== undefined)) {
+                  if (typeof ws[cellAddress].v === 'number' || (ws[cellAddress].t === 'n' && ws[cellAddress].f)) {
+                    ws[cellAddress].z = '"Rp"#,##0';
+                  }
+              }
+          });
+      }
+
+      const colWidths = header.map((_, i) => ({
+        wch: Math.max(...worksheetData.map(row => row[i] ? String(row[i]).length : 0), header[i].length) + 2
+      }));
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Shift");
+      XLSX.writeFile(wb, fileName);
+
+      toast({ title: "Unduh Excel Berhasil", description: `Laporan shift telah berhasil diunduh sebagai ${fileName}.` });
+    } catch (error) {
+      console.error("Gagal membuat Excel laporan shift:", error);
+      toast({ title: "Unduh Excel Gagal", description: "Terjadi kesalahan saat membuat laporan Excel.", variant: "destructive" });
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -194,8 +267,11 @@ export default function ShiftReportPage() {
   return (
     <div>
       <PageHeader title="Laporan Shift" description="Analisis detail aktivitas shift pengguna.">
-        <Button variant="outline" onClick={handleDownloadReport}>
-          <Download className="mr-2 h-4 w-4" /> Unduh Laporan PDF
+        <Button variant="outline" onClick={handleDownloadPdfReport} className="mr-2">
+          <Download className="mr-2 h-4 w-4" /> Unduh PDF
+        </Button>
+        <Button variant="outline" onClick={handleDownloadExcelReport}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" /> Unduh Excel
         </Button>
       </PageHeader>
 
@@ -326,17 +402,34 @@ export default function ShiftReportPage() {
                   <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.finalCash)}</TableCell>
                   <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.totalSales)}</TableCell>
                   <TableCell className="text-right hidden lg:table-cell">{formatCurrency(selisihKas)}</TableCell>
-                  <TableCell className="hidden xl:table-cell max-w-[150px] truncate" title={shift.notes}>{shift.notes || "-"}</TableCell>
+                  <TableCell className="hidden xl:table-cell max-w-[150px] truncate" title={shift.notes || undefined}>{shift.notes || "-"}</TableCell>
                 </TableRow>
               );
               })}
               {filteredShifts.length > 0 && (
-                <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={9} className="text-right">Total Penjualan dari Shift (Filtered)</TableCell>
-                  <TableCell className="text-right">{formatCurrency(summaryValues.totalSalesFromShifts)}</TableCell>
-                  <TableCell className="hidden lg:table-cell"></TableCell>
-                  <TableCell className="hidden xl:table-cell"></TableCell>
-                </TableRow>
+                <>
+                  <TableRow className="font-bold bg-muted/50">
+                    <TableCell colSpan={7} className="text-right">Total Modal Awal (Filtered)</TableCell>
+                    <TableCell className="text-right">{formatCurrency(summaryValues.totalInitialCash)}</TableCell>
+                    <TableCell className="hidden md:table-cell"></TableCell>
+                    <TableCell className="hidden md:table-cell"></TableCell>
+                    <TableCell className="hidden lg:table-cell"></TableCell>
+                    <TableCell className="hidden xl:table-cell"></TableCell>
+                  </TableRow>
+                  <TableRow className="font-bold bg-muted/50">
+                    <TableCell colSpan={8} className="text-right">Total Kas Akhir (Filtered)</TableCell>
+                    <TableCell className="text-right">{formatCurrency(summaryValues.totalFinalCash)}</TableCell>
+                    <TableCell className="hidden md:table-cell"></TableCell>
+                    <TableCell className="hidden lg:table-cell"></TableCell>
+                    <TableCell className="hidden xl:table-cell"></TableCell>
+                  </TableRow>
+                  <TableRow className="font-bold bg-muted/50">
+                    <TableCell colSpan={9} className="text-right">Total Penjualan dari Shift (Filtered)</TableCell>
+                    <TableCell className="text-right">{formatCurrency(summaryValues.totalSalesFromShifts)}</TableCell>
+                    <TableCell className="hidden lg:table-cell"></TableCell>
+                    <TableCell className="hidden xl:table-cell"></TableCell>
+                  </TableRow>
+                </>
               )}
             </TableBody>
           </Table>
@@ -345,3 +438,4 @@ export default function ShiftReportPage() {
     </div>
   );
 }
+

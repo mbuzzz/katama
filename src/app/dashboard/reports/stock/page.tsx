@@ -4,12 +4,13 @@
 import * as React from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import * as XLSX from "xlsx"; // Import xlsx library
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Download, Search, Package, Archive, DollarSign, TrendingUp } from "lucide-react";
+import { Download, Search, Package, Archive, DollarSign, TrendingUp, FileSpreadsheet } from "lucide-react"; // Added FileSpreadsheet
 import { Badge } from "@/components/ui/badge";
 import { getMockProducts } from "@/data/products";
 import { getMockRawMaterials } from "@/data/raw-materials";
@@ -30,11 +31,11 @@ interface StockItem {
   unit: string; 
   status: "Stok Aman" | "Stok Menipis" | "Stok Habis";
   icon: React.ElementType;
-  costOrHppPerUnit?: number; // Cost for Raw Material, HPP for Product
-  sellingPricePerUnit?: number; // For Product
+  costOrHppPerUnit?: number; 
+  sellingPricePerUnit?: number; 
   stockValueAtCostOrHpp?: number;
-  stockValueAtSellingPrice?: number; // For Product
-  potentialProfit?: number; // For Product
+  stockValueAtSellingPrice?: number; 
+  potentialProfit?: number; 
 }
 
 const LOW_STOCK_THRESHOLD_PRODUCT = 10; 
@@ -131,17 +132,18 @@ export default function StockReportPage() {
       totalProductStockValueAtSelling: productItems.reduce((sum, item) => sum + (item.stockValueAtSellingPrice || 0), 0),
       totalProductPotentialProfit: productItems.reduce((sum, item) => sum + (item.potentialProfit || 0), 0),
       totalRawMaterialValueAtCost: rawMaterialItems.reduce((sum, item) => sum + (item.stockValueAtCostOrHpp || 0), 0),
+      totalProductValueAtHpp: productItems.reduce((sum, item) => sum + (item.stockValueAtCostOrHpp || 0), 0),
     };
   }, [filteredStockItems]);
 
 
-  const handleDownloadReport = () => {
+  const handleDownloadPdfReport = () => {
      if (filteredStockItems.length === 0) {
       toast({ title: "Tidak Ada Data", description: "Tidak ada data stok untuk filter yang dipilih.", variant: "destructive" });
       return;
     }
      try {
-      const doc = new jsPDF('landscape') as jsPDFWithAutoTable; // Use landscape for more columns
+      const doc = new jsPDF('landscape') as jsPDFWithAutoTable; 
       const currentDate = format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale });
       const reportTitle = "Laporan Stok Rinci";
       const fileName = `Laporan_Stok_${format(new Date(), "yyyyMMddHHmmss")}.pdf`;
@@ -184,17 +186,11 @@ export default function StockReportPage() {
         headStyles: { fillColor: [60, 56, 91], textColor: 255, fontSize: 8 }, 
         styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.5 },
         columnStyles: {
-          0: { cellWidth: 20 }, // Tipe
-          1: { cellWidth: 35 }, // Nama
-          2: { cellWidth: 25 }, // Kategori
-          3: { cellWidth: 20 }, // Status
-          4: { halign: 'right', cellWidth: 12 }, // Jml
-          5: { cellWidth: 10 }, // Satuan
-          6: { halign: 'right', cellWidth: 22 }, // Biaya/HPP
-          7: { halign: 'right', cellWidth: 22 }, // Harga Jual
-          8: { halign: 'right', cellWidth: 25 }, // Nilai Stok HPP
-          9: { halign: 'right', cellWidth: 25 }, // Nilai Stok Jual
-          10: { halign: 'right', cellWidth: 22 }, // Potensi Profit
+          0: { cellWidth: 20 }, 1: { cellWidth: 35 }, 2: { cellWidth: 25 }, 3: { cellWidth: 20 }, 
+          4: { halign: 'right', cellWidth: 12 }, 5: { cellWidth: 10 }, 
+          6: { halign: 'right', cellWidth: 22 }, 7: { halign: 'right', cellWidth: 22 }, 
+          8: { halign: 'right', cellWidth: 25 }, 9: { halign: 'right', cellWidth: 25 }, 
+          10: { halign: 'right', cellWidth: 22 },
         }
       });
 
@@ -206,11 +202,92 @@ export default function StockReportPage() {
       }
 
       doc.save(fileName);
-      toast({ title: "Unduh Berhasil", description: `Laporan stok telah berhasil diunduh sebagai ${fileName}.`});
+      toast({ title: "Unduh PDF Berhasil", description: `Laporan stok telah berhasil diunduh sebagai ${fileName}.`});
 
     } catch (error) {
       console.error("Gagal membuat PDF:", error);
-      toast({ title: "Unduh Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive"});
+      toast({ title: "Unduh PDF Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive"});
+    }
+  };
+  
+  const handleDownloadExcelReport = () => {
+    if (filteredStockItems.length === 0) {
+      toast({ title: "Tidak Ada Data", description: "Tidak ada data stok untuk filter yang dipilih.", variant: "destructive" });
+      return;
+    }
+    try {
+      const fileName = `Laporan_Stok_${format(new Date(), "yyyyMMddHHmmss")}.xlsx`;
+      const header = [
+        "Tipe Barang", "Nama Barang", "Kategori/Jenis", "Status Stok", 
+        "Kuantitas", "Satuan", "Biaya/HPP per Unit (Rp)", "Harga Jual per Unit (Rp)",
+        "Total Nilai Stok (Biaya/HPP) (Rp)", "Total Nilai Stok (Harga Jual) (Rp)", "Total Potensi Profit (Rp)"
+      ];
+      
+      const dataForExcel = filteredStockItems.map(item => [
+        item.type,
+        item.name,
+        item.categoryOrType,
+        item.status,
+        item.quantity,
+        item.unit,
+        item.costOrHppPerUnit || 0,
+        item.type === "Produk Jadi" ? (item.sellingPricePerUnit || 0) : null, // Null for raw materials
+        item.stockValueAtCostOrHpp || 0,
+        item.type === "Produk Jadi" ? (item.stockValueAtSellingPrice || 0) : null,
+        item.type === "Produk Jadi" ? (item.potentialProfit || 0) : null
+      ]);
+
+      const worksheetData = [header, ...dataForExcel];
+      
+      const totalRowIndex = worksheetData.length + 1; 
+      const productItems = filteredStockItems.filter(item => item.type === "Produk Jadi");
+      const rawMaterialItems = filteredStockItems.filter(item => item.type === "Bahan Baku");
+
+      const totalDataRow = [
+        "", "", "", "", "", "Total Produk Jadi:", "", "",
+        { t: 'n', f: `SUM(I2:I${productItems.length + 1})` },          // Sum of Product HPP values (adjust range if only products)
+        { t: 'n', f: `SUM(J2:J${productItems.length + 1})` },          // Sum of Product Selling values
+        { t: 'n', f: `SUM(K2:K${productItems.length + 1})` }           // Sum of Product Profit
+      ];
+       worksheetData.push(totalDataRow);
+
+       const totalRawMaterialRow = [
+        "", "", "", "", "", "Total Bahan Baku:", "", "",
+        { t: 'n', f: `SUMIFS(I:I, A:A, "Bahan Baku")` }, // Sum of Raw Material Cost values
+        "", ""
+      ];
+      worksheetData.push(totalRawMaterialRow);
+
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Apply number formatting for currency columns (G, H, I, J, K)
+      const moneyCols = ['G', 'H', 'I', 'J', 'K'];
+      for (let R = 1; R < worksheetData.length; ++R) { // Iterate through all data rows including total rows
+          moneyCols.forEach(C => {
+              const cellAddress = `${C}${R + 1}`;
+              if (ws[cellAddress] && (ws[cellAddress].v !== null && ws[cellAddress].v !== undefined)) { // Check for null/undefined before formatting
+                  if (typeof ws[cellAddress].v === 'number' || (ws[cellAddress].t === 'n' && ws[cellAddress].f)) { // Is a number or a formula resulting in a number
+                    ws[cellAddress].z = '"Rp"#,##0';
+                  }
+              }
+          });
+      }
+      
+      // Auto-fit columns
+      const colWidths = header.map((_, i) => ({
+        wch: Math.max(...worksheetData.map(row => row[i] ? String(row[i]).length : 0), header[i].length) + 2
+      }));
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Stok");
+      XLSX.writeFile(wb, fileName);
+
+      toast({ title: "Unduh Excel Berhasil", description: `Laporan stok telah berhasil diunduh sebagai ${fileName}.` });
+    } catch (error) {
+      console.error("Gagal membuat Excel:", error);
+      toast({ title: "Unduh Excel Gagal", description: "Terjadi kesalahan saat membuat laporan Excel.", variant: "destructive" });
     }
   };
   
@@ -227,8 +304,11 @@ export default function StockReportPage() {
   return (
     <div>
       <PageHeader title="Laporan Stok" description="Monitor ketersediaan stok barang jadi dan bahan baku.">
-        <Button variant="outline" onClick={handleDownloadReport}>
-          <Download className="mr-2 h-4 w-4" /> Unduh Laporan PDF
+        <Button variant="outline" onClick={handleDownloadPdfReport} className="mr-2">
+          <Download className="mr-2 h-4 w-4" /> Unduh PDF
+        </Button>
+        <Button variant="outline" onClick={handleDownloadExcelReport}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" /> Unduh Excel
         </Button>
       </PageHeader>
 
@@ -350,3 +430,4 @@ export default function StockReportPage() {
     </div>
   );
 }
+

@@ -4,13 +4,14 @@
 import * as React from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import * as XLSX from "xlsx"; // Import xlsx library
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
-import { Download, Filter, DollarSign, ShoppingCart, TrendingUp, Percent } from "lucide-react";
+import { Download, Filter, DollarSign, ShoppingCart, TrendingUp, Percent, FileSpreadsheet } from "lucide-react"; // Added FileSpreadsheet
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from "date-fns";
@@ -22,7 +23,6 @@ import { getMockProducts } from "@/data/products";
 
 const paymentMethods = ["Tunai", "Kartu", "QRIS"];
 
-// Updated Mock Data with productId and paymentMethod
 const mockSalesDataFullStatic = [
   { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00.000Z", user: "Ana Maria", productId: "1", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000, shiftId: "shift2", paymentMethod: "QRIS" },
   { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00.000Z", user: "Budi Santoso", productId: "2", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000, shiftId: "shift1", paymentMethod: "Kartu" },
@@ -34,9 +34,9 @@ const mockSalesDataFullStatic = [
 
 type EnrichedSaleRecord = typeof mockSalesDataFullStatic[0] & {
   transactionId: string;
-  hppPerUnit: number; // HPP per unit produk saat transaksi
-  totalHpp: number; // Total HPP untuk kuantitas produk ini dalam transaksi
-  profit: number; // Keuntungan untuk baris item ini (total - totalHpp)
+  hppPerUnit: number; 
+  totalHpp: number; 
+  profit: number; 
 };
 
 const uniqueUsersStatic = Array.from(new Set(mockSalesDataFullStatic.map(sale => sale.user)));
@@ -63,7 +63,7 @@ export default function SalesReportPage() {
   const [uniqueOutlets, setUniqueOutlets] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    const products = getMockProducts(); // Mengambil produk dengan HPP terkini
+    const products = getMockProducts(); 
     setAllProducts(products);
     
     const enrichedStaticData = mockSalesDataFullStatic.map(sale => {
@@ -115,13 +115,13 @@ export default function SalesReportPage() {
   const totalProfit = React.useMemo(() => filteredSalesData.reduce((sum, item) => sum + item.profit, 0), [filteredSalesData]);
 
 
-  const handleDownloadReport = () => {
+  const handleDownloadPdfReport = () => {
     if (filteredSalesData.length === 0) {
       toast({ title: "Tidak Ada Data", description: "Tidak ada data penjualan untuk filter yang dipilih.", variant: "destructive" });
       return;
     }
     try {
-      const doc = new jsPDF('landscape') as jsPDFWithAutoTable; // Set to landscape for more columns
+      const doc = new jsPDF('landscape') as jsPDFWithAutoTable; 
       const currentDate = format(new Date(), "dd MMMM yyyy HH:mm", { locale: idLocale });
       const reportTitle = "Laporan Penjualan Rinci";
       const fileName = `Laporan_Penjualan_${format(new Date(), "yyyyMMddHHmmss")}.pdf`;
@@ -166,19 +166,18 @@ export default function SalesReportPage() {
         tableRows.push(saleData);
       });
 
-      // Summary rows
       tableRows.push([
         { content: "Total Keseluruhan", colSpan: 7, styles: { halign: 'right', fontStyle: 'bold' } },
         { content: `Rp ${totalRevenue.toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } },
-        { content: "" }, // HPP/Unit summary not applicable
+        { content: "" }, 
         { content: `Rp ${totalOverallHpp.toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } },
-        { content: "" }, // Metode summary not applicable
+        { content: "" }, 
         { content: `Rp ${totalProfit.toLocaleString('id-ID')}`, styles: { fontStyle: 'bold' } }
       ]);
        tableRows.push([
         { content: "Total Transaksi", colSpan: 7, styles: { halign: 'right', fontStyle: 'bold' } },
         { content: totalTransactions.toLocaleString('id-ID'), styles: { fontStyle: 'bold' } },
-        { content: "", colSpan: 4}, // Span across HPP/unit, Total HPP, Metode, Keuntungan
+        { content: "", colSpan: 4}, 
       ]);
       
       doc.autoTable({
@@ -186,21 +185,12 @@ export default function SalesReportPage() {
         body: tableRows,
         startY: filterInfoY + 3,
         theme: 'grid',
-        headStyles: { fillColor: [60, 56, 91], textColor: 255, fontSize: 7 }, // Adjusted font size
-        styles: { font: "helvetica", fontSize: 6.5, cellPadding: 1.5 }, // Adjusted font size
+        headStyles: { fillColor: [60, 56, 91], textColor: 255, fontSize: 7 }, 
+        styles: { font: "helvetica", fontSize: 6.5, cellPadding: 1.5 }, 
         columnStyles: {
-          0: { cellWidth: 15 }, // ID Trx
-          1: { cellWidth: 18 }, // Waktu
-          2: { cellWidth: 18 }, // Outlet
-          3: { cellWidth: 18 }, // Pengguna
-          4: { cellWidth: 25 }, // Produk
-          5: { halign: 'right', cellWidth: 8 }, // Qty
-          6: { halign: 'right', cellWidth: 17 }, // Harga
-          7: { halign: 'right', cellWidth: 17 }, // Total
-          8: { halign: 'right', cellWidth: 17 }, // HPP/Unit
-          9: { halign: 'right', cellWidth: 17 }, // Total HPP
-          10: { cellWidth: 15 }, // Metode
-          11: { halign: 'right', cellWidth: 17 }, // Keuntungan
+          0: { cellWidth: 15 }, 1: { cellWidth: 18 }, 2: { cellWidth: 18 }, 3: { cellWidth: 18 }, 4: { cellWidth: 25 }, 
+          5: { halign: 'right', cellWidth: 8 }, 6: { halign: 'right', cellWidth: 17 }, 7: { halign: 'right', cellWidth: 17 }, 
+          8: { halign: 'right', cellWidth: 17 }, 9: { halign: 'right', cellWidth: 17 }, 10: { cellWidth: 15 }, 11: { halign: 'right', cellWidth: 17 },
         }
       });
       
@@ -212,13 +202,93 @@ export default function SalesReportPage() {
       }
 
       doc.save(fileName);
-      toast({ title: "Unduh Berhasil", description: `Laporan penjualan telah berhasil diunduh sebagai ${fileName}.` });
+      toast({ title: "Unduh PDF Berhasil", description: `Laporan penjualan telah berhasil diunduh sebagai ${fileName}.` });
 
     } catch (error) {
       console.error("Gagal membuat PDF:", error);
-      toast({ title: "Unduh Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive" });
+      toast({ title: "Unduh PDF Gagal", description: "Terjadi kesalahan saat membuat laporan PDF.", variant: "destructive" });
     }
   };
+
+  const handleDownloadExcelReport = () => {
+    if (filteredSalesData.length === 0) {
+      toast({ title: "Tidak Ada Data", description: "Tidak ada data penjualan untuk filter yang dipilih.", variant: "destructive" });
+      return;
+    }
+    try {
+      const reportTitle = "Laporan Penjualan Rinci";
+      const fileName = `Laporan_Penjualan_${format(new Date(), "yyyyMMddHHmmss")}.xlsx`;
+      
+      const header = ["ID Transaksi", "Waktu", "Outlet", "Pengguna", "Nama Produk", "Kuantitas", "Harga Satuan (Rp)", "Total Penjualan (Rp)", "HPP/Unit (Rp)", "Total HPP (Rp)", "Metode Pembayaran", "Keuntungan (Rp)"];
+      
+      const dataForExcel = filteredSalesData.map(sale => [
+        sale.transactionId,
+        format(parseISO(sale.timestamp), "dd/MM/yyyy HH:mm:ss", { locale: idLocale }),
+        sale.outlet,
+        sale.user,
+        sale.productName,
+        sale.quantity,
+        sale.price,
+        sale.total,
+        sale.hppPerUnit,
+        sale.totalHpp,
+        sale.paymentMethod,
+        sale.profit
+      ]);
+
+      const worksheetData = [header, ...dataForExcel];
+      
+      const totalRowIndex = worksheetData.length + 1; // Excel row number for totals (1-based)
+      const totalDataRow = [
+        "", "", "", "", "", "Total Keseluruhan:", "",
+        { t: 'n', f: `SUM(H2:H${totalRowIndex-1})` }, // Total Penjualan
+        "",
+        { t: 'n', f: `SUM(J2:J${totalRowIndex-1})` }, // Total HPP
+        "",
+        { t: 'n', f: `SUM(L2:L${totalRowIndex-1})` }  // Keuntungan
+      ];
+      worksheetData.push(totalDataRow);
+      
+      const transactionsRow = ["", "", "", "", "", "Total Transaksi:", totalTransactions];
+      worksheetData.push(transactionsRow);
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Apply number formatting for currency columns (H, I, J, L)
+      const moneyCols = ['H', 'I', 'J', 'L'];
+      for (let R = 1; R < totalRowIndex; ++R) { // Data rows (0-indexed for loop, R+1 for Excel row)
+          moneyCols.forEach(C => {
+              const cellAddress = `${C}${R + 1}`;
+              if (ws[cellAddress] && typeof ws[cellAddress].v === 'number') {
+                  ws[cellAddress].z = '"Rp"#,##0';
+              }
+          });
+      }
+      // Format total cells
+      if(ws[`H${totalRowIndex}`]) ws[`H${totalRowIndex}`].z = '"Rp"#,##0';
+      if(ws[`J${totalRowIndex}`]) ws[`J${totalRowIndex}`].z = '"Rp"#,##0';
+      if(ws[`L${totalRowIndex}`]) ws[`L${totalRowIndex}`].z = '"Rp"#,##0';
+      
+
+      // Auto-fit columns (basic)
+      const colWidths = header.map((_, i) => ({
+        wch: Math.max(...worksheetData.map(row => row[i] ? String(row[i]).length : 0), header[i].length) + 2
+      }));
+      ws['!cols'] = colWidths;
+
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
+      XLSX.writeFile(wb, fileName);
+
+      toast({ title: "Unduh Excel Berhasil", description: `Laporan penjualan telah berhasil diunduh sebagai ${fileName}.` });
+
+    } catch (error) {
+      console.error("Gagal membuat Excel:", error);
+      toast({ title: "Unduh Excel Gagal", description: "Terjadi kesalahan saat membuat laporan Excel.", variant: "destructive" });
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -232,8 +302,11 @@ export default function SalesReportPage() {
   return (
     <div>
       <PageHeader title="Laporan Penjualan" description="Analisis detail penjualan, biaya, dan keuntungan Anda.">
-        <Button variant="outline" onClick={handleDownloadReport}>
-          <Download className="mr-2 h-4 w-4" /> Unduh Laporan PDF
+        <Button variant="outline" onClick={handleDownloadPdfReport} className="mr-2">
+          <Download className="mr-2 h-4 w-4" /> Unduh PDF
+        </Button>
+        <Button variant="outline" onClick={handleDownloadExcelReport}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" /> Unduh Excel
         </Button>
       </PageHeader>
 
