@@ -508,8 +508,8 @@ export default function POSPage() {
               />
             </div>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0 min-h-0">
-            <ScrollArea className="h-full p-2 sm:p-3 md:p-4">
+          <CardContent className="flex-1 overflow-hidden min-h-0 p-2 sm:p-3 md:p-4">
+            <ScrollArea className="h-full">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                 {filteredProducts.map((product) => (
                   <Card 
@@ -563,8 +563,8 @@ export default function POSPage() {
           <CardHeader className="p-3 sm:p-4">
             <CardTitle className="text-lg sm:text-xl">Detail Pesanan</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden min-h-0 p-0">
-            <ScrollArea className="h-full p-2 sm:p-3 pr-1 md:pr-2">
+          <CardContent className="flex-1 overflow-hidden min-h-0 p-2 sm:p-3 pr-1 md:pr-2">
+            <ScrollArea className="h-full">
               {cartItems.length === 0 ? (
                 <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Keranjang kosong.</p>
               ) : (
