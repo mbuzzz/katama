@@ -18,7 +18,7 @@ import {
   FileCog,
   UserCog,
   ShieldCheck,
-  Building2,
+  Building2, // Changed from Building to Building2 as Building is used in CompanySwitcher
   ListTree, 
   Archive,
   PlusCircle, 
@@ -105,10 +105,6 @@ export const siteConfig: SiteConfig = {
           href: `${dashboardBaseUrl}/units`, 
           icon: Tags, 
           description: "Kelola satuan barang.",
-          // items: [ // Sub-menu for Satuan if needed for edit/add explicitly here
-          //   { title: "Daftar Satuan", href: `${dashboardBaseUrl}/units`, icon: ListTree, description: "Lihat semua satuan." },
-          //   { title: "Tambah Satuan", href: `${dashboardBaseUrl}/units/add`, icon: PlusCircle, description: "Buat satuan baru." },
-          // ]
         },
       ]
     },

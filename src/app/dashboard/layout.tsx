@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { siteConfig, type SidebarNavItem } from "@/config/site";
 import { Logo } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { Menu as MenuIconLucide, Bell, UserCircle, LogOut, ChevronDown, ChevronUp } from 'lucide-react'; // Renamed Menu to avoid conflict
+import { Menu as MenuIconLucide, Bell, UserCircle, LogOut, ChevronDown, ChevronUp, Building } from 'lucide-react'; // Renamed Menu to avoid conflict
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { AppBottomNav } from "@/components/mobile-bottom-nav";
+import CompanySwitcher from "@/components/company-switcher"; // Import CompanySwitcher
 
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
 const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
@@ -126,11 +127,16 @@ function AppSidebar() {
   }, []);
 
   const handleLogout = () => {
+     // Clear sensitive localStorage items on logout
+    localStorage.removeItem('katama-pos-active-session');
+    localStorage.removeItem('katama-pos-selectedCompanyId');
+    // Potentially other user-specific data
+    
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    router.push("/login");
+    router.push("/login"); // Redirect to the new login page
   };
 
   if (!hasMounted) {
@@ -195,7 +201,17 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
   }, [pathname, item.items]);
 
   const isActive = item.href && pathname === item.href;
-  const isParentActive = item.items?.some(subItem => pathname?.startsWith(subItem.href));
+  
+  let isParentActive = false;
+  if (item.href && item.items && item.items.length > 0) {
+    // A parent is active if the current path starts with its href,
+    // OR if the current path matches any of its sub-items' hrefs.
+    isParentActive = pathname?.startsWith(item.href) || item.items.some(subItem => pathname?.startsWith(subItem.href));
+  } else if (item.href) {
+    // For items without sub-items, active state is a direct match.
+    isParentActive = isActive;
+  }
+
 
   const toggleSubmenu = () => {
     if (item.items) {
@@ -259,22 +275,57 @@ function AppHeader() {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const { toast } = useToast();
+  const [activeCompanyName, setActiveCompanyName] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleCompanySwitch = (event: Event) => {
+      const customEvent = event as CustomEvent<{ companyId: string, companyName: string }>;
+      setActiveCompanyName(customEvent.detail.companyName);
+    };
+
+    // Initial load of company name if already set
+    const initialCompanyId = localStorage.getItem('katama-pos-selectedCompanyId');
+    if (initialCompanyId) {
+        // This is a mock data example; in a real app, fetch company details by ID
+        // For now, let's assume we can derive it or it was set by CompanySwitcher itself
+        // This part can be improved if getMockCompanyById is accessible here or CompanySwitcher provides the name initially.
+        // A simpler approach is to let CompanySwitcher manage the display, but to show it here:
+        const companyData = localStorage.getItem(initialCompanyId); // Example, if you store company details
+        if (companyData) {
+            try {
+                // const parsed = JSON.parse(companyData); // if you stored an object
+                // setActiveCompanyName(parsed.name);
+            } catch(e) { /* ignore */ }
+        } else {
+            // If only ID is stored, and name is needed, CompanySwitcher should provide it.
+            // For now, a placeholder if just switched.
+        }
+    }
+
+
+    window.addEventListener('companySwitched', handleCompanySwitch);
+    return () => {
+      window.removeEventListener('companySwitched', handleCompanySwitch);
+    };
+  }, []);
 
   const handleLogout = () => {
+    // Clear sensitive localStorage items on logout
+    localStorage.removeItem('katama-pos-active-session');
+    localStorage.removeItem('katama-pos-selectedCompanyId');
+    // Potentially other user-specific data
+    
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    router.push("/login");
+    router.push("/login"); // Redirect to the new login page
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
       {isMobile ? (
-         // On mobile, the bottom nav is primary. This space is minimal.
-         // A page title could go here if needed, or actions specific to the current mobile view.
-         // For now, an empty div or a minimal placeholder if flex layout requires it.
-         <div className="w-5 h-5 md:hidden"></div>
+         <div className="w-5 h-5 md:hidden"></div> // Placeholder for mobile, consider title or actions
       ) : (
          <SidebarTrigger asChild>
           <Button size="icon" variant="outline" aria-label="Toggle Sidebar">
@@ -282,6 +333,16 @@ function AppHeader() {
           </Button>
         </SidebarTrigger>
       )}
+
+      {!isMobile && <CompanySwitcher />} {/* Show CompanySwitcher on desktop */}
+      
+      {activeCompanyName && !isMobile && (
+        <div className="ml-2 hidden items-center md:flex text-sm font-medium text-muted-foreground">
+          <Building className="mr-1.5 h-4 w-4" />
+          <span>{activeCompanyName}</span>
+        </div>
+      )}
+
       <div className="ml-auto flex items-center gap-2">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
@@ -312,3 +373,4 @@ function AppHeader() {
     </header>
   );
 }
+
