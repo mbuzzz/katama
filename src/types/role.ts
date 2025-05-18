@@ -17,6 +17,8 @@ export interface Role {
 
 export const availableFeatures: { key: string; name: string; description?: string }[] = [
   { key: "dashboard", name: "Dasbor", description: "Akses ke halaman dasbor utama." },
+  { key: "admin_overview", name: "Overview Administrasi", description: "Akses ke halaman ringkasan administrasi sistem." },
+  { key: "admin_companies", name: "Manajemen Perusahaan", description: "Mengelola daftar perusahaan dalam sistem." },
   { key: "pos", name: "Point of Sale", description: "Akses untuk melakukan transaksi penjualan." },
   { key: "shifts", name: "Manajemen Shift", description: "Mengelola sesi kerja kasir/pengguna." },
   { key: "products", name: "Produk", description: "Mengelola data produk jadi." },
@@ -45,3 +47,4 @@ export const permissionLabels: Record<PermissionAction, string> = {
   update: "Ubah",
   delete: "Hapus",
 };
+

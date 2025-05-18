@@ -26,6 +26,7 @@ import {
   UserCheck,
   CalendarClock,
   Briefcase,
+  Activity, // Added for Admin Overview
 } from 'lucide-react';
 
 export type NavItem = {
@@ -78,12 +79,13 @@ export const siteConfig: SiteConfig = {
     // Menu Superadmin - Administrasi Sistem
     {
       title: "Administrasi Sistem",
-      href: `${dashboardBaseUrl}/admin/companies`, 
+      href: `${dashboardBaseUrl}/admin/overview`, // Main link for this section
       icon: Briefcase,
       description: "Pengelolaan sistem tingkat lanjut (Superadmin).",
       items: [
+        { title: "Overview Administrasi", href: `${dashboardBaseUrl}/admin/overview`, icon: Activity, description: "Ringkasan dan statistik sistem." },
         { title: "Manajemen Perusahaan", href: `${dashboardBaseUrl}/admin/companies`, icon: Building2, description: "Kelola daftar perusahaan dalam sistem." },
-        // Future Superadmin items: Global Settings, System Logs, Subscription Management etc.
+        // Future Superadmin items: User Management (global), Global Settings, System Logs, Subscription Management etc.
       ]
     },
     // Menu Operasional untuk Tenant Admin (dan Superadmin jika melihat sebagai tenant)
@@ -158,3 +160,4 @@ export const siteConfig: SiteConfig = {
 };
 
 export type AddItemSidebarNavItem = SidebarNavItem & { icon: typeof PlusCircle };
+
