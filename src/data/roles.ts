@@ -21,17 +21,24 @@ const readOnlyPermissions = (featureKey: string): RolePermission => ({
 });
 
 let mockRolesStore: Role[] = [
-  { 
-    id: "1", 
-    name: "Admin", 
-    description: "Akses penuh ke semua fitur dan pengaturan.", 
+  {
+    id: "0", // ID untuk Super Admin
+    name: "Super Admin",
+    description: "Akses absolut ke semua fitur dan pengaturan sistem.",
+    userCount: 1, // Biasanya hanya ada satu atau beberapa Super Admin
+    permissions: availableFeatures.map(f => allPermissionsTrue(f.key)),
+  },
+  {
+    id: "1",
+    name: "Admin",
+    description: "Akses penuh ke semua fitur dan pengaturan.",
     userCount: 1,
     permissions: availableFeatures.map(f => allPermissionsTrue(f.key)),
   },
-  { 
-    id: "2", 
-    name: "Manajer", 
-    description: "Mengelola operasional outlet, laporan, dan staf.", 
+  {
+    id: "2",
+    name: "Manajer",
+    description: "Mengelola operasional outlet, laporan, dan staf.",
     userCount: 2,
     permissions: [
       ...["dashboard", "pos", "shifts", "products", "categories", "raw_materials", "units", "purchases", "settings_users", "settings_outlets", "settings_operating_hours"].map(fKey => allPermissionsTrue(fKey)),
@@ -41,10 +48,10 @@ let mockRolesStore: Role[] = [
       { feature: "settings_roles", create: false, read: true, update: false, delete: false }, // Manajer can view roles but not edit them
     ]
   },
-  { 
-    id: "3", 
-    name: "Kasir", 
-    description: "Akses ke fitur Point of Sale dan laporan penjualan pribadi.", 
+  {
+    id: "3",
+    name: "Kasir",
+    description: "Akses ke fitur Point of Sale dan laporan penjualan pribadi.",
     userCount: 5,
     permissions: [
       allPermissionsTrue("pos"), // Full POS access
@@ -55,10 +62,10 @@ let mockRolesStore: Role[] = [
       { feature: "dashboard", create: false, read: true, update: false, delete: false }, // Can view dashboard
     ].filter(p => availableFeatures.some(f => f.key === p.feature)) // Ensure features exist
   },
-  { 
-    id: "4", 
-    name: "Staf Dapur", 
-    description: "Melihat pesanan dan mengelola stok bahan.", 
+  {
+    id: "4",
+    name: "Staf Dapur",
+    description: "Melihat pesanan dan mengelola stok bahan.",
     userCount: 3,
     permissions: [
       readOnlyPermissions("products"), // Read products for recipes
@@ -95,18 +102,18 @@ export const updateMockRole = (id: string, updates: Partial<Omit<Role, 'id' | 'u
   if (roleIndex === -1) {
     return undefined;
   }
-  mockRolesStore[roleIndex] = { 
-    ...mockRolesStore[roleIndex], 
-    ...updates 
+  mockRolesStore[roleIndex] = {
+    ...mockRolesStore[roleIndex],
+    ...updates
   };
   return mockRolesStore[roleIndex];
 };
 
 export const deleteMockRole = (id: string): boolean => {
   const roleToDelete = mockRolesStore.find(role => role.id === id);
-  if (roleToDelete?.name === "Admin") {
-    console.warn("Tidak dapat menghapus peran Admin default.");
-    return false; 
+  if (roleToDelete?.name === "Admin" || roleToDelete?.name === "Super Admin") {
+    console.warn(`Tidak dapat menghapus peran default: ${roleToDelete.name}.`);
+    return false;
   }
 
   const initialLength = mockRolesStore.length;

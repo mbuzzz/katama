@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { AppBottomNav } from "@/components/mobile-bottom-nav"; 
+import { AppBottomNav } from "@/components/mobile-bottom-nav";
 
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
 const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
@@ -56,21 +56,21 @@ export default function DashboardLayout({
 }
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isMobile } = useSidebar(); 
+  const { isMobile } = useSidebar();
 
   return (
     <div className="flex min-h-screen w-full">
-      {!isMobile && <AppSidebar />} 
-      
+      {!isMobile && <AppSidebar />}
+
       <div className="flex flex-1 flex-col">
-        <AppHeader /> 
-        <SidebarInset className={cn(isMobile && "pb-20")}> 
+        <AppHeader />
+        <SidebarInset className={cn(isMobile && "pb-20")}>
           <ScrollArea className="h-full">
             <div className="h-full p-4 md:p-6 lg:p-8">{children}</div>
           </ScrollArea>
         </SidebarInset>
       </div>
-      {isMobile && <AppBottomNav navItems={siteConfig.sidebarNav} />} 
+      {isMobile && <AppBottomNav navItems={siteConfig.sidebarNav} />}
     </div>
   );
 }
@@ -81,44 +81,48 @@ function AppSidebar() {
   const { toast } = useToast();
   const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
   const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME);
+  const [hasMounted, setHasMounted] = React.useState(false);
 
   React.useEffect(() => {
-    const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
-    if (storedLogo) {
-      setCustomLogoUrl(storedLogo);
-    }
-    const storedCompanyName = localStorage.getItem(COMPANY_NAME_STORAGE_KEY);
-    if (storedCompanyName) {
-      setCompanyName(storedCompanyName);
-    }
-
-    const handleStorageChange = (event: StorageEvent | CustomEvent) => {
-      if (event instanceof StorageEvent) {
-        if (event.key === LOGO_STORAGE_KEY) {
-          setCustomLogoUrl(event.newValue);
-        }
-        if (event.key === COMPANY_NAME_STORAGE_KEY) {
-          setCompanyName(event.newValue || DEFAULT_COMPANY_NAME);
-        }
-      } else if (event instanceof CustomEvent) {
-        if (event.type === 'logoChanged') {
-          setCustomLogoUrl((event as CustomEvent<string>).detail);
-        }
-        if (event.type === 'companyNameChanged') {
-          setCompanyName((event as CustomEvent<string>).detail || DEFAULT_COMPANY_NAME);
-        }
+    setHasMounted(true);
+    if (typeof window !== 'undefined') {
+      const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+      if (storedLogo) {
+        setCustomLogoUrl(storedLogo);
       }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('logoChanged', handleStorageChange as EventListener);
-    window.addEventListener('companyNameChanged', handleStorageChange as EventListener);
+      const storedCompanyName = localStorage.getItem(COMPANY_NAME_STORAGE_KEY);
+      if (storedCompanyName) {
+        setCompanyName(storedCompanyName);
+      }
 
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('logoChanged', handleStorageChange as EventListener);
-      window.removeEventListener('companyNameChanged', handleStorageChange as EventListener);
-    };
+      const handleStorageChange = (event: StorageEvent | CustomEvent) => {
+        if (event instanceof StorageEvent) {
+          if (event.key === LOGO_STORAGE_KEY) {
+            setCustomLogoUrl(event.newValue);
+          }
+          if (event.key === COMPANY_NAME_STORAGE_KEY) {
+            setCompanyName(event.newValue || DEFAULT_COMPANY_NAME);
+          }
+        } else if (event instanceof CustomEvent) {
+          if (event.type === 'logoChanged') {
+            setCustomLogoUrl((event as CustomEvent<string>).detail);
+          }
+          if (event.type === 'companyNameChanged') {
+            setCompanyName((event as CustomEvent<string>).detail || DEFAULT_COMPANY_NAME);
+          }
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('logoChanged', handleStorageChange as EventListener);
+      window.addEventListener('companyNameChanged', handleStorageChange as EventListener);
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('logoChanged', handleStorageChange as EventListener);
+        window.removeEventListener('companyNameChanged', handleStorageChange as EventListener);
+      };
+    }
   }, []);
 
   const handleLogout = () => {
@@ -126,8 +130,29 @@ function AppSidebar() {
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    router.push("/"); 
+    router.push("/login");
   };
+
+  if (!hasMounted) {
+     // Return a placeholder or null during SSR to avoid hydration mismatch
+    return (
+       <Sidebar collapsible="icon" className="border-r">
+        <SidebarHeader className="p-4 flex items-center justify-center">
+           <div className="flex items-center gap-2">
+             {/* Placeholder for logo, ensure dimensions match */}
+            <div className="h-8 w-24 bg-muted rounded"></div>
+          </div>
+        </SidebarHeader>
+         <SidebarContent className="p-2">
+           {/* Skeleton loaders for menu items */}
+         </SidebarContent>
+        <SidebarFooter className="p-4 border-t">
+           {/* Placeholder for logout button */}
+        </SidebarFooter>
+      </Sidebar>
+    );
+  }
+
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -177,7 +202,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
       setIsSubmenuOpen(!isSubmenuOpen);
     }
   };
-  
+
   if (item.items && item.items.length > 0) {
     return (
       <SidebarMenuItem>
@@ -240,7 +265,7 @@ function AppHeader() {
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    router.push("/");
+    router.push("/login");
   };
 
   return (
@@ -249,7 +274,7 @@ function AppHeader() {
          // On mobile, the bottom nav is primary. This space is minimal.
          // A page title could go here if needed, or actions specific to the current mobile view.
          // For now, an empty div or a minimal placeholder if flex layout requires it.
-         <div className="w-5 h-5 md:hidden"></div> 
+         <div className="w-5 h-5 md:hidden"></div>
       ) : (
          <SidebarTrigger asChild>
           <Button size="icon" variant="outline" aria-label="Toggle Sidebar">
@@ -266,7 +291,7 @@ function AppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="https://picsum.photos/50/50" alt="Avatar Pengguna" data-ai-hint="user avatar" />
+                <AvatarImage src="https://placehold.co/50x50.png" alt="Avatar Pengguna" data-ai-hint="user avatar" />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
             </Button>

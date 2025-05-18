@@ -1,112 +1,118 @@
 
-"use client";
-
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import { Logo } from "@/components/icons";
-import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Package, BarChart3, Settings, Users, ShoppingCartIcon } from "lucide-react";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Mock authentication
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (email === "demo@tokolite.com" && password === "demo") {
-      toast({
-        title: "Login Berhasil",
-        description: "Selamat datang kembali!",
-      });
-      router.push('/dashboard');
-    } else {
-      toast({
-        title: "Login Gagal",
-        description: "Email atau password salah. (Petunjuk: demo@tokolite.com / demo)",
-        variant: "destructive",
-      });
-    }
-    setIsLoading(false);
-  };
-
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4">
-            {/* Pass companyName for styling consistency, though animation applies here too */}
-            <Logo className="h-12 w-auto" companyName="KATAMA" /> 
+    <div className="flex flex-col min-h-screen items-center bg-gradient-to-br from-background to-blue-100 dark:to-blue-900/30">
+      {/* Header */}
+      <header className="w-full py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-50 bg-background/80 backdrop-blur-md shadow-sm">
+        <Logo className="h-10 w-auto" companyName="KATAMA" />
+        <nav className="space-x-4">
+          <Button variant="ghost" asChild>
+            <Link href="#fitur">Fitur</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="#harga">Harga</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/login">Masuk</Link>
+          </Button>
+        </nav>
+      </header>
+
+      {/* Hero Section */}
+      <main className="flex-grow flex flex-col items-center justify-center text-center p-8">
+        <Logo className="h-24 w-auto mb-6 md:mb-8 animate-pulse" companyName="KATAMA" />
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary mb-4 md:mb-6">
+          Selamat Datang di KATAMA POS
+        </h1>
+        <p className="text-lg sm:text-xl text-foreground/80 mb-8 md:mb-10 max-w-3xl">
+          Solusi Point of Sale modern, intuitif, dan serbaguna untuk mengelola dan mengembangkan bisnis Anda dengan mudah dan efisien.
+        </p>
+        <div className="space-y-4 sm:space-y-0 sm:space-x-4">
+          <Button asChild size="lg" className="px-8 py-6 text-lg">
+            <Link href="/login">Mulai Sekarang</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="px-8 py-6 text-lg">
+            <Link href="#fitur">Pelajari Lebih Lanjut</Link>
+          </Button>
+        </div>
+      </main>
+
+      {/* Features Section */}
+      <section id="fitur" className="w-full py-16 px-6 md:px-12 bg-card">
+        <h2 className="text-3xl font-bold text-center mb-12 text-primary">Fitur Unggulan KATAMA POS</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {[
+            { icon: <ShoppingCartIcon className="h-10 w-10 text-accent" />, title: "Point of Sale Intuitif", desc: "Proses transaksi cepat dan mudah dengan antarmuka ramah pengguna." },
+            { icon: <Package className="h-10 w-10 text-accent" />, title: "Manajemen Produk & Stok", desc: "Kelola produk, kategori, bahan baku, dan pantau stok secara real-time." },
+            { icon: <BarChart3 className="h-10 w-10 text-accent" />, title: "Laporan Lengkap", desc: "Analisis penjualan, pembelanjaan, dan stok dengan laporan rinci." },
+            { icon: <Users className="h-10 w-10 text-accent" />, title: "Manajemen Pengguna & Peran", desc: "Atur hak akses untuk setiap pengguna dengan sistem peran yang fleksibel." },
+            { icon: <Settings className="h-10 w-10 text-accent" />, title: "Pengaturan Fleksibel", desc: "Kustomisasi pengaturan umum, struk, outlet, dan jam operasional." },
+            { icon: <Package className="h-10 w-10 text-accent" />, title: "Multi-Outlet Ready (Coming Soon)", desc: "Kelola beberapa cabang bisnis dari satu dasbor terpusat." },
+          ].map(item => (
+            <div key={item.title} className="p-6 border rounded-lg shadow-md hover:shadow-xl transition-shadow bg-background">
+              <div className="flex justify-center mb-4">{item.icon}</div>
+              <h3 className="text-xl font-semibold mb-2 text-center text-foreground">{item.title}</h3>
+              <p className="text-muted-foreground text-center text-sm">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      
+      {/* Pricing Section (Placeholder) */}
+      <section id="harga" className="w-full py-16 px-6 md:px-12 bg-secondary/30">
+        <h2 className="text-3xl font-bold text-center mb-12 text-primary">Paket Harga Fleksibel</h2>
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          {/* Basic Plan */}
+          <div className="border p-8 rounded-lg shadow-lg bg-card text-center">
+            <h3 className="text-2xl font-semibold mb-4 text-accent">Dasar</h3>
+            <p className="text-4xl font-bold mb-2">Rp 99rb<span className="text-lg font-normal text-muted-foreground">/bulan</span></p>
+            <ul className="text-left space-y-2 my-6 text-muted-foreground text-sm">
+              <li>✓ 1 Outlet</li>
+              <li>✓ Transaksi Tanpa Batas</li>
+              <li>✓ Manajemen Produk Dasar</li>
+              <li>✓ Laporan Penjualan</li>
+            </ul>
+            <Button size="lg" className="w-full">Pilih Paket Dasar</Button>
           </div>
-          <CardTitle className="text-2xl font-bold">Selamat Datang Kembali!</CardTitle>
-          <CardDescription>Masukkan email dan password Anda untuk masuk ke KATAMA POS.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="contoh@email.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input 
-                  id="password" 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="********"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required 
-                />
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : <LogIn className="mr-2 h-4 w-4" /> }
-              {isLoading ? "Memproses..." : "Masuk"}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex-col text-center text-sm">
-          <p>Belum punya akun? <a href="#" className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent))] brightness-90 underline">Hubungi Admin</a></p>
-          <p className="mt-2 text-xs text-muted-foreground">Akun Demo: demo@tokolite.com / demo</p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} KATAMA POS. Hak cipta dilindungi.
-          </p>
-        </CardFooter>
-      </Card>
+          {/* Pro Plan */}
+          <div className="border-2 border-primary p-8 rounded-lg shadow-2xl bg-card text-center relative">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-sm font-semibold rounded-full">Populer</div>
+            <h3 className="text-2xl font-semibold mb-4 text-primary">Profesional</h3>
+            <p className="text-4xl font-bold mb-2">Rp 199rb<span className="text-lg font-normal text-muted-foreground">/bulan</span></p>
+            <ul className="text-left space-y-2 my-6 text-muted-foreground text-sm">
+              <li>✓ Hingga 3 Outlet</li>
+              <li>✓ Semua Fitur Paket Dasar</li>
+              <li>✓ Manajemen Stok Bahan Baku</li>
+              <li>✓ Laporan Lanjutan</li>
+              <li>✓ Manajemen Shift</li>
+            </ul>
+            <Button size="lg" className="w-full">Pilih Paket Profesional</Button>
+          </div>
+          {/* Enterprise Plan */}
+          <div className="border p-8 rounded-lg shadow-lg bg-card text-center">
+            <h3 className="text-2xl font-semibold mb-4 text-accent">Enterprise</h3>
+            <p className="text-4xl font-bold mb-2">Hubungi Kami</p>
+            <ul className="text-left space-y-2 my-6 text-muted-foreground text-sm">
+              <li>✓ Outlet Tanpa Batas</li>
+              <li>✓ Semua Fitur Paket Profesional</li>
+              <li>✓ Fitur Kustom</li>
+              <li>✓ Dukungan Prioritas</li>
+            </ul>
+            <Button variant="outline" size="lg" className="w-full">Hubungi Sales</Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="w-full py-8 px-6 md:px-12 text-center text-muted-foreground bg-card border-t">
+        <p>&copy; {new Date().getFullYear()} KATAMA POS. Hak Cipta Dilindungi.</p>
+        <p className="text-xs mt-1">Dirancang dengan ❤️ untuk bisnis Anda.</p>
+      </footer>
     </div>
   );
 }
