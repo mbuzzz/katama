@@ -8,10 +8,14 @@ export default function AddCategoryPage() {
 
   const handleSaveCategory = async (data: CategoryFormData) => {
     "use server";
-    // In a real app, this would be an API call or database operation.
-    // For now, we use our mock function.
+    // DI SINI KITA PERLU MENDAPATKAN companyId AKTIF
+    // Untuk sekarang, kita akan hardcode atau asumsikan sudah ada di 'data' jika CategoryFormData diubah
+    // Dalam implementasi nyata, ini akan datang dari sesi pengguna atau state global
+    const MOCK_ACTIVE_COMPANY_ID = "comp_es_teh_jaya"; // Ganti dengan logika sebenarnya
+
     try {
-      const newCategory = addMockCategory(data);
+      // Pastikan addMockCategory dipanggil dengan companyId
+      const newCategory = addMockCategory(data, MOCK_ACTIVE_COMPANY_ID);
       console.log("Kategori ditambahkan:", newCategory);
       // Redirect or toast is handled in CategoryForm
       return newCategory;
@@ -30,6 +34,8 @@ export default function AddCategoryPage() {
       <CategoryForm
         onSave={handleSaveCategory}
         isEditing={false}
+        // Anda mungkin perlu meneruskan companyId ke CategoryForm jika ia perlu melakukan sesuatu dengannya
+        // atau memodifikasi onSave untuk mendapatkan companyId dari server action context.
       />
     </div>
   );

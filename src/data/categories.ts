@@ -3,34 +3,48 @@ import type { Category } from "@/types/category";
 
 // In-memory store for mock categories
 let mockCategoriesStore: Category[] = [
-  { id: "1", name: "Minuman Dingin", description: "Berbagai minuman dingin penyegar." },
-  { id: "2", name: "Minuman Panas", description: "Minuman hangat untuk menemani." },
-  { id: "3", name: "Makanan Berat", description: "Pilihan makanan utama yang mengenyangkan." },
-  { id: "4", name: "Makanan Ringan", description: "Camilan lezat untuk setiap saat." },
-  { id: "5", name: "Hidangan Penutup", description: "Hidangan penutup yang manis dan nikmat." },
-  { id: "6", name: "Roti & Pastri", description: "Produk bakery segar setiap hari." },
-  { id: "7", name: "Tambahan", description: "Ekstra topping atau item pelengkap." },
+  { id: "1", name: "Minuman Dingin", description: "Berbagai minuman dingin penyegar.", companyId: "comp_es_teh_jaya" },
+  { id: "2", name: "Minuman Panas", description: "Minuman hangat untuk menemani.", companyId: "comp_es_teh_jaya" },
+  { id: "3", name: "Makanan Berat", description: "Pilihan makanan utama yang mengenyangkan.", companyId: "comp_kopi_maju" },
+  { id: "4", name: "Makanan Ringan", description: "Camilan lezat untuk setiap saat.", companyId: "comp_es_teh_jaya" },
+  { id: "5", name: "Hidangan Penutup", description: "Hidangan penutup yang manis dan nikmat.", companyId: "comp_kopi_maju" },
+  { id: "6", name: "Roti & Pastri", description: "Produk bakery segar setiap hari.", companyId: "comp_roti_lezat_selalu" },
+  { id: "7", name: "Tambahan", description: "Ekstra topping atau item pelengkap.", companyId: "comp_es_teh_jaya" },
 ];
 
-export const getMockCategories = (): Category[] => {
-  return [...mockCategoriesStore];
+// Fungsi getMockCategories sekarang idealnya menerima companyId untuk filter
+// Untuk saat ini, kita bisa membiarkannya mengembalikan semua, atau memfilter berdasarkan companyId jika disediakan
+export const getMockCategories = (companyId?: string): Category[] => {
+  if (companyId) {
+    return [...mockCategoriesStore].filter(category => category.companyId === companyId);
+  }
+  return [...mockCategoriesStore]; // Kembalikan semua jika tidak ada companyId (perilaku sementara)
 };
 
-export const getMockCategoryById = (id: string): Category | undefined => {
-  return mockCategoriesStore.find(category => category.id === id);
+// getMockCategoryById juga idealnya mempertimbangkan companyId, tapi ID kategori harus unik global atau per company
+export const getMockCategoryById = (id: string, companyId?: string): Category | undefined => {
+  const category = mockCategoriesStore.find(category => category.id === id);
+  if (category && companyId && category.companyId !== companyId) {
+    // Jika companyId diberikan dan tidak cocok, anggap tidak ditemukan untuk perusahaan ini
+    return undefined; 
+  }
+  return category;
 };
 
-export const addMockCategory = (categoryData: Omit<Category, 'id'>): Category => {
+// addMockCategory sekarang membutuhkan companyId
+export const addMockCategory = (categoryData: Omit<Category, 'id'>, companyId: string): Category => {
   const newCategory: Category = {
-    id: (mockCategoriesStore.length + 1).toString(), // Simple ID generation
+    id: (mockCategoriesStore.length + 1).toString(), // Simple ID generation, perlu strategi ID yang lebih baik untuk multi-tenant
     ...categoryData,
+    companyId: companyId, // Simpan companyId
   };
   mockCategoriesStore.push(newCategory);
   return newCategory;
 };
 
-export const updateMockCategory = (id: string, updates: Partial<Omit<Category, 'id'>>): Category | undefined => {
-  const categoryIndex = mockCategoriesStore.findIndex(category => category.id === id);
+// updateMockCategory idealnya juga menggunakan companyId untuk memastikan update pada data yang benar
+export const updateMockCategory = (id: string, updates: Partial<Omit<Category, 'id' | 'companyId'>>, companyId: string): Category | undefined => {
+  const categoryIndex = mockCategoriesStore.findIndex(category => category.id === id && category.companyId === companyId);
   if (categoryIndex === -1) {
     return undefined;
   }
@@ -38,13 +52,14 @@ export const updateMockCategory = (id: string, updates: Partial<Omit<Category, '
   return mockCategoriesStore[categoryIndex];
 };
 
-export const deleteMockCategory = (id: string): boolean => {
+// deleteMockCategory idealnya juga menggunakan companyId
+export const deleteMockCategory = (id: string, companyId: string): boolean => {
   const initialLength = mockCategoriesStore.length;
-  mockCategoriesStore = mockCategoriesStore.filter(category => category.id !== id);
+  mockCategoriesStore = mockCategoriesStore.filter(category => !(category.id === id && category.companyId === companyId));
   return mockCategoriesStore.length < initialLength;
 };
 
-// This export is for ProductForm, which expects an array of strings for categories.
-// We can adapt ProductForm later or provide a getter for names only.
-// For now, let's keep ProductForm as is, and this can be used for display purposes.
-export const mockCategoryNames: string[] = mockCategoriesStore.map(c => c.name);
+// Untuk ProductForm, kita mungkin perlu menyediakan daftar kategori yang sudah difilter berdasarkan companyId aktif
+export const getMockCategoryNamesForCompany = (companyId: string): string[] => {
+    return mockCategoriesStore.filter(c => c.companyId === companyId).map(c => c.name);
+};

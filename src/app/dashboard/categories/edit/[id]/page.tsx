@@ -13,21 +13,22 @@ interface EditCategoryPageProps {
 }
 
 export default async function EditCategoryPage({ params }: EditCategoryPageProps) {
-  // "use server" is not needed here as data fetching can be done directly
-
   const categoryId = params.id;
-  // In a real app, fetch this from a database.
-  const category = getMockCategoryById(categoryId);
+  // DI SINI KITA PERLU MENDAPATKAN companyId AKTIF
+  const MOCK_ACTIVE_COMPANY_ID = "comp_es_teh_jaya"; // Ganti dengan logika sebenarnya
+  
+  // getMockCategoryById sekarang idealnya menerima companyId
+  const category = getMockCategoryById(categoryId, MOCK_ACTIVE_COMPANY_ID);
 
   const handleUpdateCategory = async (data: CategoryFormData) => {
     "use server";
+    // Pastikan updateMockCategory dipanggil dengan companyId
     try {
-      const updatedCategory = updateMockCategory(categoryId, data);
+      const updatedCategory = updateMockCategory(categoryId, data, MOCK_ACTIVE_COMPANY_ID);
       if (!updatedCategory) {
         throw new Error("Kategori tidak ditemukan untuk diperbarui.");
       }
       console.log("Kategori diperbarui:", updatedCategory);
-      // Redirect or toast is handled in CategoryForm
       return updatedCategory;
     } catch (error) {
       console.error("Gagal memperbarui kategori:", error);
@@ -46,7 +47,7 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Kategori yang Anda coba edit tidak ada atau mungkin telah dihapus.</p>
+            <p>Kategori yang Anda coba edit tidak ada atau mungkin telah dihapus dari perusahaan ini.</p>
             <Button asChild className="mt-4">
               <Link href="/dashboard/categories">Kembali ke Daftar Kategori</Link>
             </Button>
@@ -63,7 +64,7 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
         description={`Perbarui detail untuk kategori "${category.name}".`}
       />
       <CategoryForm
-        initialData={category}
+        initialData={category} // initialData sekarang menyertakan companyId
         onSave={handleUpdateCategory}
         isEditing={true}
       />

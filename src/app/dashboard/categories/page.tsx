@@ -1,5 +1,5 @@
 
-"use client"; // For useState, useEffect, and event handlers
+"use client"; 
 
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
@@ -24,13 +24,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { Category } from "@/types/category";
 import { getMockCategories, deleteMockCategory } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId'; // Asumsi ini adalah kunci localStorage untuk companyId
 
 export default function CategoriesPage() {
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -38,18 +38,33 @@ export default function CategoriesPage() {
   const [categoryToDelete, setCategoryToDelete] = React.useState<Category | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    // In a real app, fetch from API
-    setCategories(getMockCategories());
+    // Ambil companyId yang aktif dari localStorage atau state management lain
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
   }, []);
 
-  const handleDeleteCategory = () => {
-    if (!categoryToDelete) return;
+  React.useEffect(() => {
+    if (activeCompanyId) {
+      // Panggil getMockCategories dengan companyId yang aktif
+      setCategories(getMockCategories(activeCompanyId));
+    } else {
+      // Jika tidak ada companyId, mungkin tampilkan pesan atau daftar kosong
+      setCategories([]);
+    }
+  }, [activeCompanyId]);
 
-    const success = deleteMockCategory(categoryToDelete.id);
+
+  const handleDeleteCategory = () => {
+    if (!categoryToDelete || !activeCompanyId) return;
+
+    // Panggil deleteMockCategory dengan companyId
+    const success = deleteMockCategory(categoryToDelete.id, activeCompanyId);
     if (success) {
-      setCategories(categories.filter(cat => cat.id !== categoryToDelete.id));
+      // Perbarui state dengan memfilter berdasarkan companyId yang aktif
+      setCategories(prevCategories => prevCategories.filter(cat => cat.id !== categoryToDelete.id));
       toast({
         title: "Kategori Dihapus",
         description: `Kategori "${categoryToDelete.name}" telah berhasil dihapus.`,
@@ -63,7 +78,7 @@ export default function CategoriesPage() {
     }
     setShowDeleteDialog(false);
     setCategoryToDelete(null);
-    router.refresh(); // To reflect changes if data source is external or complex
+    router.refresh(); 
   };
 
   const openDeleteDialog = (category: Category) => {
@@ -84,7 +99,9 @@ export default function CategoriesPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Daftar Kategori</CardTitle>
-          <CardDescription>Total {categories.length} kategori ditemukan.</CardDescription>
+          <CardDescription>
+            Total {categories.length} kategori ditemukan {activeCompanyId ? `untuk perusahaan ini` : ''}.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -98,14 +115,21 @@ export default function CategoriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.length === 0 && (
+              {!activeCompanyId && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
-                    Belum ada kategori yang ditambahkan.
+                    Pilih perusahaan terlebih dahulu untuk melihat kategori.
                   </TableCell>
                 </TableRow>
               )}
-              {categories.map((category) => (
+              {activeCompanyId && categories.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
+                    Belum ada kategori yang ditambahkan untuk perusahaan ini.
+                  </TableCell>
+                </TableRow>
+              )}
+              {activeCompanyId && categories.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
@@ -122,6 +146,7 @@ export default function CategoriesPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
+                          {/* Link edit juga idealnya membawa companyId atau mengambilnya dari context */}
                           <Link href={`/dashboard/categories/edit/${category.id}`}>
                             <Edit className="mr-2 h-4 w-4" /> Edit
                           </Link>
