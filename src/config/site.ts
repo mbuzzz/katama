@@ -18,13 +18,14 @@ import {
   FileCog,
   UserCog,
   ShieldCheck,
-  Building2, // Changed from Building to Building2 as Building is used in CompanySwitcher
+  Building2, 
   ListTree, 
   Archive,
   PlusCircle, 
   Clock,
   UserCheck,
   CalendarClock,
+  Briefcase, // New icon for System Administration
 } from 'lucide-react';
 
 export type NavItem = {
@@ -132,12 +133,23 @@ export const siteConfig: SiteConfig = {
       icon: SettingsIcon,
       description: "Konfigurasi aplikasi dan outlet.",
       items: [
-        { title: "Umum", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan." },
+        { title: "Umum", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan (aktif)." },
         { title: "Struk", href: `${dashboardBaseUrl}/settings/struk`, icon: FileCog, description: "Pengaturan struk belanja." },
         { title: "Pengguna", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna." },
         { title: "Peran", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola peran pengguna." },
         { title: "Outlet", href: `${dashboardBaseUrl}/settings/outlets`, icon: Store, description: "Kelola outlet." },
         { title: "Jam Operasional", href: `${dashboardBaseUrl}/settings/operating-hours`, icon: CalendarClock, description: "Atur jam buka outlet." },
+      ]
+    },
+    // Menu baru untuk Superadmin
+    {
+      title: "Administrasi Sistem",
+      href: `${dashboardBaseUrl}/admin/companies`, // Default ke manajemen perusahaan
+      icon: Briefcase,
+      description: "Pengelolaan sistem tingkat lanjut (Superadmin).",
+      items: [
+        { title: "Manajemen Perusahaan", href: `${dashboardBaseUrl}/admin/companies`, icon: Building2, description: "Kelola daftar perusahaan dalam sistem." },
+        // Tambahkan item lain untuk Superadmin di sini nanti, mis. Pengaturan Global, Log, dll.
       ]
     },
   ],
