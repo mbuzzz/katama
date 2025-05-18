@@ -73,20 +73,20 @@ export const siteConfig: SiteConfig = {
       title: "Dasbor",
       href: `${dashboardBaseUrl}`,
       icon: LayoutDashboard,
-      description: "Gambaran umum sistem.", // Updated description
+      description: "Gambaran umum sistem.", 
     },
     // Menu Superadmin - Administrasi Sistem
     {
       title: "Administrasi Sistem",
       href: `${dashboardBaseUrl}/admin/companies`, 
       icon: Briefcase,
-      description: "Pengelolaan sistem tingkat lanjut.",
+      description: "Pengelolaan sistem tingkat lanjut (Superadmin).",
       items: [
         { title: "Manajemen Perusahaan", href: `${dashboardBaseUrl}/admin/companies`, icon: Building2, description: "Kelola daftar perusahaan dalam sistem." },
         // Future Superadmin items: Global Settings, System Logs, Subscription Management etc.
       ]
     },
-    /* Operational menus hidden for Superadmin view
+    // Menu Operasional untuk Tenant Admin (dan Superadmin jika melihat sebagai tenant)
     {
       title: "Point of Sale",
       href: `${dashboardBaseUrl}/pos`,
@@ -139,12 +139,11 @@ export const siteConfig: SiteConfig = {
         { title: "Shift", href: `${dashboardBaseUrl}/reports/shifts`, icon: UserCheck, description: "Laporan aktivitas shift pengguna." },
       ],
     },
-    */
     {
       title: "Pengaturan",
       href: `${dashboardBaseUrl}/settings`,
       icon: SettingsIcon,
-      description: "Konfigurasi sistem dan default.", // Updated description
+      description: "Konfigurasi sistem dan default.", 
       items: [
         // These settings might need to be adapted or made global for Superadmin
         { title: "Umum (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan yang dipilih." },
