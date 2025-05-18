@@ -1,3 +1,4 @@
+"use client"; // Ditambahkan untuk menjadikan ini Client Component
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
