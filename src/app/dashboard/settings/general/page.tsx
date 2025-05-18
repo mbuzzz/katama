@@ -17,6 +17,7 @@ const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
 const COMPANY_ADDRESS_STORAGE_KEY = 'katama-pos-company-address';
 const COMPANY_CONTACT_STORAGE_KEY = 'katama-pos-company-contact';
 const DEFAULT_LOGO_PLACEHOLDER = "https://picsum.photos/100/100?random=logo-placeholder"; // smaller placeholder
+const DEFAULT_COMPANY_NAME = "KATAMA"; // Consistent default
 
 export default function GeneralSettingsPage() {
   const [companyName, setCompanyName] = useState(""); // Initial empty, load from LS
@@ -31,7 +32,7 @@ export default function GeneralSettingsPage() {
     if (storedLogo) {
       setCustomLogo(storedLogo);
     }
-    setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || "KATAMA Es Teh");
+    setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || DEFAULT_COMPANY_NAME);
     setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Kesegaran No. 1, Kota Sejuk");
     setCompanyContact(localStorage.getItem(COMPANY_CONTACT_STORAGE_KEY) || "0812-0000-3333");
   }, []);

@@ -43,6 +43,7 @@ const STRUK_SHOW_CONTACT_KEY = 'katama-pos-struk-showContact';
 const STRUK_PAPER_SIZE_KEY = 'katama-pos-struk-paperSize';
 
 const POS_SESSION_KEY = 'katama-pos-active-session';
+const DEFAULT_COMPANY_NAME_FALLBACK = "KATAMA";
 
 
 interface Product extends ProductType {
@@ -74,7 +75,7 @@ export default function POSPage() {
   const [isLoadingSession, setIsLoadingSession] = React.useState(true);
 
 
-  const [companyName, setCompanyName] = React.useState<string>("KATAMA POS");
+  const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME_FALLBACK);
   const [companyAddress, setCompanyAddress] = React.useState<string>("Alamat Perusahaan Anda");
   const [companyContact, setCompanyContact] = React.useState<string>("Kontak Perusahaan Anda");
   const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
@@ -116,7 +117,7 @@ export default function POSPage() {
 
     // Load other settings from localStorage
     if (typeof window !== 'undefined') {
-      setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || "KATAMA POS");
+      setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || DEFAULT_COMPANY_NAME_FALLBACK);
       setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Contoh No. 123, Kota Contoh");
       setCompanyContact(localStorage.getItem(COMPANY_CONTACT_STORAGE_KEY) || "0812-3456-7890");
       setCustomLogoUrl(localStorage.getItem(LOGO_STORAGE_KEY));
@@ -309,8 +310,8 @@ export default function POSPage() {
     const printWindow = window.open('', '_blank', 'height=600,width=400'); 
     if (printWindow) {
         printWindow.document.write('<html><head><title>Struk Pembayaran</title>');
-        printWindow.document.write(`
-            <style>
+        printWindow.document.write(
+            `<style>
                 body { 
                     font-family: "Courier New", Courier, monospace; 
                     font-size: ${strukPaperSize === '58mm' ? '10px' : '12px'}; 
@@ -324,8 +325,8 @@ export default function POSPage() {
                 @media print {
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 5px; }
                 }
-            </style>
-        `);
+            </style>`
+        );
         printWindow.document.write('</head><body>');
         printWindow.document.write(htmlContent);
         printWindow.document.write('</body></html>');
@@ -669,5 +670,7 @@ export default function POSPage() {
     </div>
   );
 }
+
+    
 
     
