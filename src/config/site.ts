@@ -25,7 +25,7 @@ import {
   Clock,
   UserCheck,
   CalendarClock,
-  Briefcase, // New icon for System Administration
+  Briefcase,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -73,8 +73,20 @@ export const siteConfig: SiteConfig = {
       title: "Dasbor",
       href: `${dashboardBaseUrl}`,
       icon: LayoutDashboard,
-      description: "Gambaran umum bisnis Anda.",
+      description: "Gambaran umum sistem.", // Updated description
     },
+    // Menu Superadmin - Administrasi Sistem
+    {
+      title: "Administrasi Sistem",
+      href: `${dashboardBaseUrl}/admin/companies`, 
+      icon: Briefcase,
+      description: "Pengelolaan sistem tingkat lanjut.",
+      items: [
+        { title: "Manajemen Perusahaan", href: `${dashboardBaseUrl}/admin/companies`, icon: Building2, description: "Kelola daftar perusahaan dalam sistem." },
+        // Future Superadmin items: Global Settings, System Logs, Subscription Management etc.
+      ]
+    },
+    /* Operational menus hidden for Superadmin view
     {
       title: "Point of Sale",
       href: `${dashboardBaseUrl}/pos`,
@@ -127,29 +139,20 @@ export const siteConfig: SiteConfig = {
         { title: "Shift", href: `${dashboardBaseUrl}/reports/shifts`, icon: UserCheck, description: "Laporan aktivitas shift pengguna." },
       ],
     },
+    */
     {
       title: "Pengaturan",
       href: `${dashboardBaseUrl}/settings`,
       icon: SettingsIcon,
-      description: "Konfigurasi aplikasi dan outlet.",
+      description: "Konfigurasi sistem dan default.", // Updated description
       items: [
-        { title: "Umum", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan (aktif)." },
-        { title: "Struk", href: `${dashboardBaseUrl}/settings/struk`, icon: FileCog, description: "Pengaturan struk belanja." },
-        { title: "Pengguna", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna." },
-        { title: "Peran", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola peran pengguna." },
-        { title: "Outlet", href: `${dashboardBaseUrl}/settings/outlets`, icon: Store, description: "Kelola outlet." },
-        { title: "Jam Operasional", href: `${dashboardBaseUrl}/settings/operating-hours`, icon: CalendarClock, description: "Atur jam buka outlet." },
-      ]
-    },
-    // Menu baru untuk Superadmin
-    {
-      title: "Administrasi Sistem",
-      href: `${dashboardBaseUrl}/admin/companies`, // Default ke manajemen perusahaan
-      icon: Briefcase,
-      description: "Pengelolaan sistem tingkat lanjut (Superadmin).",
-      items: [
-        { title: "Manajemen Perusahaan", href: `${dashboardBaseUrl}/admin/companies`, icon: Building2, description: "Kelola daftar perusahaan dalam sistem." },
-        // Tambahkan item lain untuk Superadmin di sini nanti, mis. Pengaturan Global, Log, dll.
+        // These settings might need to be adapted or made global for Superadmin
+        { title: "Umum (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan yang dipilih." },
+        { title: "Struk (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/struk`, icon: FileCog, description: "Pengaturan struk belanja perusahaan yang dipilih." },
+        { title: "Pengguna (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna perusahaan yang dipilih." },
+        { title: "Peran (Global/Template)", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola peran pengguna (global atau template)." },
+        { title: "Outlet (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/outlets`, icon: Store, description: "Kelola outlet perusahaan yang dipilih." },
+        { title: "Jam Operasional (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/operating-hours`, icon: CalendarClock, description: "Atur jam buka outlet perusahaan yang dipilih." },
       ]
     },
   ],
