@@ -44,6 +44,7 @@ const STRUK_PAPER_SIZE_KEY = 'katama-pos-struk-paperSize';
 
 const POS_SESSION_KEY = 'katama-pos-active-session';
 const DEFAULT_COMPANY_NAME_FALLBACK = "KATAMA";
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 
 interface Product extends ProductType {
@@ -57,6 +58,7 @@ interface CartItem extends Product {
 interface POSSession {
   initialCash: number;
   startTime: Date;
+  companyId: string; // Tambahkan companyId ke sesi POS
 }
 
 type PaymentMethod = "Tunai" | "Kartu" | "QRIS";
@@ -73,6 +75,7 @@ export default function POSPage() {
   const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = React.useState<PaymentMethod>("Tunai");
   const [isLoadingSession, setIsLoadingSession] = React.useState(true);
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
 
 
   const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME_FALLBACK);
@@ -93,29 +96,33 @@ export default function POSPage() {
 
 
   React.useEffect(() => {
-    setProducts(getMockProducts()); // Initial product load
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
     
-    // Load POS session from localStorage
+    if (storedCompanyId) {
+      setProducts(getMockProducts(storedCompanyId)); 
+    } else {
+      setProducts([]);
+    }
+    
     const storedSession = localStorage.getItem(POS_SESSION_KEY);
     if (storedSession) {
       try {
         const parsedSession = JSON.parse(storedSession) as POSSession;
-        // Ensure startTime is a Date object
         parsedSession.startTime = new Date(parsedSession.startTime); 
-        if (parsedSession.startTime && !isNaN(parsedSession.startTime.getTime())) {
+        // Pastikan sesi POS yang dimuat adalah untuk companyId yang aktif
+        if (parsedSession.startTime && !isNaN(parsedSession.startTime.getTime()) && parsedSession.companyId === storedCompanyId) {
             setPosSession(parsedSession);
         } else {
-            localStorage.removeItem(POS_SESSION_KEY); // Clear invalid session
+            localStorage.removeItem(POS_SESSION_KEY); 
         }
       } catch (error) {
         console.error("Gagal memuat sesi POS dari localStorage:", error);
-        localStorage.removeItem(POS_SESSION_KEY); // Clear corrupted session
+        localStorage.removeItem(POS_SESSION_KEY); 
       }
     }
     setIsLoadingSession(false);
 
-
-    // Load other settings from localStorage
     if (typeof window !== 'undefined') {
       setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || DEFAULT_COMPANY_NAME_FALLBACK);
       setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Contoh No. 123, Kota Contoh");
@@ -129,7 +136,7 @@ export default function POSPage() {
       setStrukShowContact(localStorage.getItem(STRUK_SHOW_CONTACT_KEY) === 'true');
       setStrukPaperSize(localStorage.getItem(STRUK_PAPER_SIZE_KEY) || "58mm");
     }
-  }, []); 
+  }, [activeCompanyId]); // Tambahkan activeCompanyId sebagai dependency
 
   React.useEffect(() => {
     if (posSession) {
@@ -142,6 +149,11 @@ export default function POSPage() {
 
 
   const handleAddProductToCart = (product: Product) => {
+    if (!activeCompanyId) {
+        toast({ title: "Perusahaan tidak dipilih.", description: "Pilih perusahaan aktif terlebih dahulu.", variant: "destructive"});
+        return;
+    }
+    // Produk sudah difilter berdasarkan companyId saat diambil, jadi pengecekan ulang companyId produk tidak terlalu krusial di sini
     const currentProductDetails = products.find(p => p.id === product.id);
     if (!currentProductDetails) {
         toast({ title: "Produk tidak ditemukan.", variant: "destructive"});
@@ -356,8 +368,12 @@ export default function POSPage() {
       });
       return;
     }
+    if (!activeCompanyId) {
+        toast({ title: "Perusahaan Tidak Dipilih", description: "Pilih perusahaan aktif untuk melanjutkan pembayaran.", variant: "destructive" });
+        return;
+    }
     setIsProcessingPayment(true);
-    const result = await handleProcessSaleAction(cartItems);
+    const result = await handleProcessSaleAction(cartItems, activeCompanyId);
     
     if (result.success) {
       const {html, transactionId} = getReceiptHtmlContent();
@@ -369,7 +385,7 @@ export default function POSPage() {
         description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
       });
       setCartItems([]); 
-      setProducts(getMockProducts()); 
+      setProducts(getMockProducts(activeCompanyId)); // Perbarui daftar produk setelah penjualan
       setShowPostPaymentDialog(true); 
     } else {
       toast({
@@ -377,7 +393,7 @@ export default function POSPage() {
         description: result.message || "Terjadi kesalahan saat memproses penjualan.",
         variant: "destructive",
       });
-      setProducts(getMockProducts());
+      setProducts(getMockProducts(activeCompanyId)); // Perbarui juga jika gagal, mungkin stok berubah
     }
     setIsProcessingPayment(false);
   }
@@ -398,6 +414,10 @@ export default function POSPage() {
 
 
   const handleOpenPOSSession = () => {
+    if (!activeCompanyId) {
+        toast({ title: "Perusahaan Tidak Dipilih", description: "Pilih perusahaan aktif untuk memulai sesi POS.", variant: "destructive" });
+        return;
+    }
     const cashAmount = parseFloat(initialCashInput);
     if (isNaN(cashAmount) || cashAmount < 0) {
       toast({
@@ -407,21 +427,21 @@ export default function POSPage() {
       });
       return;
     }
-    const newSession = { initialCash: cashAmount, startTime: new Date() };
+    const newSession: POSSession = { initialCash: cashAmount, startTime: new Date(), companyId: activeCompanyId };
     setPosSession(newSession);
     localStorage.setItem(POS_SESSION_KEY, JSON.stringify(newSession));
     setShowOpenPOSDialog(false);
     setInitialCashInput("");
     toast({
       title: "Sesi POS Dibuka",
-      description: `Modal awal Rp ${cashAmount.toLocaleString('id-ID')} telah dicatat.`,
+      description: `Modal awal Rp ${cashAmount.toLocaleString('id-ID')} telah dicatat untuk perusahaan ini.`,
     });
   };
 
   const handleClosePOSSession = () => {
     localStorage.removeItem(POS_SESSION_KEY);
     setPosSession(null);
-    setCartItems([]);
+    setCartItems([]); // Kosongkan keranjang saat sesi ditutup
     toast({ title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset." });
   };
 
@@ -434,6 +454,20 @@ export default function POSPage() {
     );
   }
 
+  if (!activeCompanyId) {
+    return (
+       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl">Pilih Perusahaan</CardTitle>
+            <CardContent className="text-center text-muted-foreground pt-4">
+              Anda harus memilih perusahaan aktif terlebih dahulu dari menu dropdown di header sebelum dapat menggunakan Point of Sale.
+            </CardContent>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   if (!posSession) {
     return (
@@ -442,7 +476,7 @@ export default function POSPage() {
           <CardHeader>
             <CardTitle className="text-center text-2xl">Buka Sesi POS</CardTitle>
             <CardContent className="text-center text-muted-foreground pt-4">
-              Anda perlu membuka sesi Point of Sale dan memasukkan modal awal kasir sebelum dapat melakukan transaksi.
+              Anda perlu membuka sesi Point of Sale dan memasukkan modal awal kasir sebelum dapat melakukan transaksi untuk perusahaan ini.
             </CardContent>
           </CardHeader>
           <CardFooter>
@@ -526,7 +560,7 @@ export default function POSPage() {
                         style={{objectFit:"cover"}}
                         className="rounded-t-md group-hover:scale-105 transition-transform duration-300"
                         sizes="(max-width: 639px) 50vw, (max-width: 767px) 33vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
-                        data-ai-hint={`${product.category} product`} 
+                        data-ai-hint={product.dataAiHint || `${product.category} product`}
                       />
                       {product.stock === 0 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-t-md">
@@ -554,7 +588,7 @@ export default function POSPage() {
                 ))}
               </div>
               {filteredProducts.length === 0 && (
-                <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Produk tidak ditemukan atau belum ada produk.</p>
+                <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Produk tidak ditemukan atau belum ada produk untuk perusahaan ini.</p>
               )}
             </ScrollArea>
           </CardContent>
@@ -573,7 +607,7 @@ export default function POSPage() {
                   {cartItems.map((item) => (
                     <li key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-accent/50 transition-colors">
                       <div className="flex items-center flex-1 mr-2 min-w-0">
-                        <Image src={item.image || "https://placehold.co/40x40.png"} alt={item.name} width={32} height={32} className="rounded mr-2 aspect-square object-cover" data-ai-hint="cart item" />
+                        <Image src={item.image || "https://placehold.co/40x40.png"} alt={item.name} width={32} height={32} className="rounded mr-2 aspect-square object-cover" data-ai-hint={item.dataAiHint || "cart item"} />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{item.name}</p>
                           <p className="text-xs text-muted-foreground">Rp {item.price.toLocaleString('id-ID')} x {item.quantity}</p>
@@ -670,7 +704,3 @@ export default function POSPage() {
     </div>
   );
 }
-
-    
-
-    

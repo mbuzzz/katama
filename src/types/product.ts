@@ -7,6 +7,7 @@ export interface ProductIngredient {
 
 export interface Product {
   id: string;
+  companyId: string; // Ditambahkan untuk isolasi data SaaS
   name: string;
   hpp?: number; // Harga Pokok Penjualan (Cost Price)
   price: number; // Harga Jual (Selling Price)

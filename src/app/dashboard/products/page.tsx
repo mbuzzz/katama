@@ -1,5 +1,5 @@
 
-"use client"; // For useState, useEffect, and event handlers for delete dialog
+"use client"; 
 
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
@@ -28,9 +28,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Product } from "@/types/product";
-import { getMockProducts, deleteMockProduct } from "@/data/products"; // Use new data source
+import { getMockProducts, deleteMockProduct } from "@/data/products"; 
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 export default function ProductsPage() {
   const [products, setProducts] = React.useState<Product[]>([]);
@@ -38,17 +40,27 @@ export default function ProductsPage() {
   const [productToDelete, setProductToDelete] = React.useState<Product | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    setProducts(getMockProducts());
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
   }, []);
 
-  const handleDeleteProduct = () => {
-    if (!productToDelete) return;
+  React.useEffect(() => {
+    if (activeCompanyId) {
+      setProducts(getMockProducts(activeCompanyId));
+    } else {
+      setProducts([]);
+    }
+  }, [activeCompanyId]);
 
-    const success = deleteMockProduct(productToDelete.id);
+  const handleDeleteProduct = () => {
+    if (!productToDelete || !activeCompanyId) return;
+
+    const success = deleteMockProduct(productToDelete.id, activeCompanyId);
     if (success) {
-      setProducts(products.filter(prod => prod.id !== productToDelete.id));
+      setProducts(prevProducts => prevProducts.filter(prod => prod.id !== productToDelete.id));
       toast({
         title: "Produk Dihapus",
         description: `Produk "${productToDelete.name}" telah berhasil dihapus.`,
@@ -62,7 +74,7 @@ export default function ProductsPage() {
     }
     setShowDeleteDialog(false);
     setProductToDelete(null);
-    router.refresh(); // To reflect changes
+    router.refresh(); 
   };
 
   const openDeleteDialog = (product: Product) => {
@@ -83,7 +95,9 @@ export default function ProductsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Daftar Produk</CardTitle>
-          <CardDescription>Total {products.length} produk ditemukan.</CardDescription>
+          <CardDescription>
+            Total {products.length} produk ditemukan {activeCompanyId ? `untuk perusahaan ini` : ''}.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -102,14 +116,21 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.length === 0 && (
+              {!activeCompanyId && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
-                    Belum ada produk yang ditambahkan.
+                    Pilih perusahaan terlebih dahulu untuk melihat produk.
                   </TableCell>
                 </TableRow>
               )}
-              {products.map((product) => {
+              {activeCompanyId && products.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
+                    Belum ada produk yang ditambahkan untuk perusahaan ini.
+                  </TableCell>
+                </TableRow>
+              )}
+              {activeCompanyId && products.map((product) => {
                 const margin = product.price - (product.hpp || 0);
                 return (
                   <TableRow key={product.id}>
@@ -118,9 +139,9 @@ export default function ProductsPage() {
                         alt={product.name}
                         className="aspect-square rounded-md object-cover"
                         height="40"
-                        src={product.image || "https://picsum.photos/40/40?random=placeholder"}
+                        src={product.image || "https://placehold.co/40x40.png"}
                         width="40"
-                        data-ai-hint={`${product.category} produk`}
+                        data-ai-hint={product.dataAiHint || `${product.category} product`}
                       />
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>

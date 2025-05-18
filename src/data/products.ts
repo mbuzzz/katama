@@ -2,25 +2,30 @@
 import type { Product, ProductIngredient } from "@/types/product";
 import type { RawMaterial } from "@/types/raw-material";
 import { getMockRawMaterials, updateRawMaterialStock } from "@/data/raw-materials"; // For HPP calc and stock updates
+import { getMockCompanyById } from "./companies"; // Untuk mendapatkan detail perusahaan (jika diperlukan)
 
 // In-memory store for mock products
+// Asumsi companyId untuk produk yang sudah ada:
+// comp_es_teh_jaya: Kopi Susu Aren, Teh Melati, Americano, Cappuccino, Red Velvet, Matcha, Es Teh Lemon, Air Mineral, Es Teh Manis
+// comp_kopi_maju: Croissant Coklat, Nasi Goreng, Kentang Goreng, Mie Ayam
+// comp_roti_lezat_selalu: Donat Gula, Roti Bakar, Muffin Blueberry
 let mockProductsStore: Product[] = [
-  { id: "1", name: "Kopi Susu Aren", price: 18000, stock: 48, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 100}, {rawMaterialId: "rm3", quantity: 15}], image: "https://picsum.photos/150/150?random=1" , hpp: 0 },
-  { id: "2", name: "Croissant Coklat", price: 22000, stock: 28, category: "Roti & Pastry", image: "https://picsum.photos/150/150?random=2", hpp: 0 },
-  { id: "3", name: "Teh Melati Panas", price: 15000, stock: 97, category: "Minuman Panas", ingredients: [{rawMaterialId: "rm6", quantity: 5}], image: "https://picsum.photos/150/150?random=3", hpp: 0 },
-  { id: "4", name: "Nasi Goreng Spesial", price: 35000, stock: 25, category: "Makanan Berat", image: "https://picsum.photos/150/150?random=4", hpp: 0 },
-  { id: "5", name: "Americano", price: 16000, stock: 100, category: "Minuman Dingin", image: "https://picsum.photos/150/150?random=5", ingredients: [{rawMaterialId: "rm1", quantity: 25}], hpp: 0 },
-  { id: "6", name: "Donat Gula", price: 10000, stock: 80, category: "Makanan Ringan", image: "https://picsum.photos/150/150?random=6", hpp: 0 },
-  { id: "7", name: "Cappuccino", price: 20000, stock: 100, category: "Minuman Dingin", image: "https://picsum.photos/150/150?random=7", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 120}], hpp: 0 },
-  { id: "8", name: "Red Velvet Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://picsum.photos/150/150?random=8", hpp: 0 },
-  { id: "9", name: "Matcha Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://picsum.photos/150/150?random=9", hpp: 0 },
-  { id: "10", name: "Kentang Goreng", price: 18000, stock: 120, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm10", quantity: 150}], image: "https://picsum.photos/150/150?random=10", hpp: 0 },
-  { id: "11", name: "Roti Bakar Coklat Keju", price: 20000, stock: 60, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm11", quantity: 2}, {rawMaterialId: "rm5", quantity: 30}, {rawMaterialId: "rm12", quantity: 1}], image: "https://picsum.photos/150/150?random=11", hpp: 0 },
-  { id: "12", name: "Es Teh Lemon", price: 12000, stock: 150, category: "Minuman Dingin", image: "https://picsum.photos/150/150?random=12", hpp: 0 },
-  { id: "13", name: "Muffin Blueberry", price: 18000, stock: 40, category: "Makanan Ringan", image: "https://picsum.photos/150/150?random=13", hpp: 0 },
-  { id: "14", name: "Air Mineral", price: 5000, stock: 200, category: "Minuman Dingin", image: "https://picsum.photos/150/150?random=14", hpp: 0 },
-  { id: "15", name: "Mie Ayam", price: 28000, stock: 25, category: "Makanan Berat", image: "https://picsum.photos/150/150?random=15", hpp: 0 },
-  { id: "16", name: "Es Teh Manis", price: 10000, stock: 150, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm6", quantity: 3}, {rawMaterialId: "rm7", quantity: 200}], image: "https://picsum.photos/150/150?random=16", hpp: 0 },
+  { id: "1", companyId: "comp_es_teh_jaya", name: "Kopi Susu Aren", price: 18000, stock: 48, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 100}, {rawMaterialId: "rm3", quantity: 15}], image: "https://placehold.co/150x150.png?text=Kopi+Susu" , dataAiHint:"coffee milk", hpp: 0 },
+  { id: "2", companyId: "comp_kopi_maju", name: "Croissant Coklat", price: 22000, stock: 28, category: "Roti & Pastry", image: "https://placehold.co/150x150.png?text=Croissant", dataAiHint:"croissant chocolate", hpp: 0 },
+  { id: "3", companyId: "comp_es_teh_jaya", name: "Teh Melati Panas", price: 15000, stock: 97, category: "Minuman Panas", ingredients: [{rawMaterialId: "rm6", quantity: 5}], image: "https://placehold.co/150x150.png?text=Teh+Melati", dataAiHint:"jasmine tea", hpp: 0 },
+  { id: "4", companyId: "comp_kopi_maju", name: "Nasi Goreng Spesial", price: 35000, stock: 25, category: "Makanan Berat", image: "https://placehold.co/150x150.png?text=Nasi+Goreng", dataAiHint:"fried rice", hpp: 0 },
+  { id: "5", companyId: "comp_es_teh_jaya", name: "Americano", price: 16000, stock: 100, category: "Minuman Dingin", image: "https://placehold.co/150x150.png?text=Americano", dataAiHint:"americano coffee", ingredients: [{rawMaterialId: "rm1", quantity: 25}], hpp: 0 },
+  { id: "6", companyId: "comp_roti_lezat_selalu", name: "Donat Gula", price: 10000, stock: 80, category: "Makanan Ringan", image: "https://placehold.co/150x150.png?text=Donat", dataAiHint:"donut sugar", hpp: 0 },
+  { id: "7", companyId: "comp_es_teh_jaya", name: "Cappuccino", price: 20000, stock: 100, category: "Minuman Dingin", image: "https://placehold.co/150x150.png?text=Cappuccino", dataAiHint:"cappuccino coffee", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 120}], hpp: 0 },
+  { id: "8", companyId: "comp_es_teh_jaya", name: "Red Velvet Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://placehold.co/150x150.png?text=Red+Velvet", dataAiHint:"red velvet", hpp: 0 },
+  { id: "9", companyId: "comp_es_teh_jaya", name: "Matcha Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://placehold.co/150x150.png?text=Matcha", dataAiHint:"matcha latte", hpp: 0 },
+  { id: "10", companyId: "comp_kopi_maju", name: "Kentang Goreng", price: 18000, stock: 120, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm10", quantity: 150}], image: "https://placehold.co/150x150.png?text=Kentang", dataAiHint:"french fries", hpp: 0 },
+  { id: "11", companyId: "comp_roti_lezat_selalu", name: "Roti Bakar Coklat Keju", price: 20000, stock: 60, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm11", quantity: 2}, {rawMaterialId: "rm5", quantity: 30}, {rawMaterialId: "rm12", quantity: 1}], image: "https://placehold.co/150x150.png?text=Roti+Bakar", dataAiHint:"toast bread", hpp: 0 },
+  { id: "12", companyId: "comp_es_teh_jaya", name: "Es Teh Lemon", price: 12000, stock: 150, category: "Minuman Dingin", image: "https://placehold.co/150x150.png?text=Es+Teh+Lemon", dataAiHint:"lemon tea", hpp: 0 },
+  { id: "13", companyId: "comp_roti_lezat_selalu", name: "Muffin Blueberry", price: 18000, stock: 40, category: "Makanan Ringan", image: "https://placehold.co/150x150.png?text=Muffin", dataAiHint:"muffin blueberry", hpp: 0 },
+  { id: "14", companyId: "comp_es_teh_jaya", name: "Air Mineral", price: 5000, stock: 200, category: "Minuman Dingin", image: "https://placehold.co/150x150.png?text=Air+Mineral", dataAiHint:"mineral water", hpp: 0 },
+  { id: "15", companyId: "comp_kopi_maju", name: "Mie Ayam", price: 28000, stock: 25, category: "Makanan Berat", image: "https://placehold.co/150x150.png?text=Mie+Ayam", dataAiHint:"chicken noodle", hpp: 0 },
+  { id: "16", companyId: "comp_es_teh_jaya", name: "Es Teh Manis", price: 10000, stock: 150, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm6", quantity: 3}, {rawMaterialId: "rm7", quantity: 200}], image: "https://placehold.co/150x150.png?text=Es+Teh", dataAiHint:"sweet tea", hpp: 0 },
 ];
 
 // Initialize HPPs
@@ -35,6 +40,8 @@ export function _calculateHPP(ingredients: ProductIngredient[] | undefined, allR
   if (!ingredients || ingredients.length === 0) {
     return 0;
   }
+  // Pastikan bahan baku yang digunakan untuk perhitungan HPP juga idealnya tersaring per companyId jika bahan baku diisolasi
+  // Untuk saat ini, kita anggap allRawMaterials sudah sesuai atau global (perlu penyesuaian jika bahan baku juga per company)
   return ingredients.reduce((totalHPP, ingredient) => {
     const rawMaterial = allRawMaterials.find(rm => rm.id === ingredient.rawMaterialId);
     if (rawMaterial && rawMaterial.costPerUnit) {
@@ -44,37 +51,49 @@ export function _calculateHPP(ingredients: ProductIngredient[] | undefined, allR
   }, 0);
 }
 
-export const getMockProducts = (): Product[] => {
-  return [...mockProductsStore].map(p => ({ // Recalculate HPP on get to ensure it's fresh if raw material costs change
+export const getMockProducts = (companyId?: string): Product[] => {
+  const products = companyId 
+    ? mockProductsStore.filter(p => p.companyId === companyId) 
+    : []; // Jika tidak ada companyId, kembalikan array kosong, karena produk harus terikat ke perusahaan
+
+  return [...products].map(p => ({ 
     ...p,
-    hpp: _calculateHPP(p.ingredients, getMockRawMaterials()) 
+    hpp: _calculateHPP(p.ingredients, getMockRawMaterials(companyId)) // HPP dihitung dengan bahan baku perusahaan terkait
   }));
 };
 
-export const getMockProductById = (id: string): Product | undefined => {
-  const product = mockProductsStore.find(product => product.id === id);
+export const getMockProductById = (id: string, companyId?: string): Product | undefined => {
+  const product = mockProductsStore.find(p => p.id === id);
   if (product) {
+    // Jika companyId disediakan dan tidak cocok, anggap tidak ditemukan untuk perusahaan ini
+    if (companyId && product.companyId !== companyId) {
+        return undefined;
+    }
     return {
       ...product,
-      hpp: _calculateHPP(product.ingredients, getMockRawMaterials())
+      hpp: _calculateHPP(product.ingredients, getMockRawMaterials(product.companyId))
     };
   }
   return undefined;
 };
 
-export const addMockProduct = (productData: Omit<Product, 'id' | 'hpp'>, allRawMaterials: RawMaterial[]): Product => {
-  const hpp = _calculateHPP(productData.ingredients, allRawMaterials);
+export const addMockProduct = (productData: Omit<Product, 'id' | 'hpp'>, companyId: string, allRawMaterialsForCompany: RawMaterial[]): Product => {
+  if (!companyId) {
+    throw new Error("companyId harus disediakan untuk menambahkan produk.");
+  }
+  const hpp = _calculateHPP(productData.ingredients, allRawMaterialsForCompany);
   const newProduct: Product = {
     id: `prod${mockProductsStore.length + 1 + Date.now().toString().slice(-3)}`, 
     ...productData,
+    companyId: companyId, // Pastikan companyId disimpan
     hpp: hpp,
   };
   mockProductsStore.push(newProduct);
   return newProduct;
 };
 
-export const updateMockProduct = (id: string, updates: Partial<Omit<Product, 'id' | 'hpp'>>, allRawMaterials: RawMaterial[]): Product | undefined => {
-  const productIndex = mockProductsStore.findIndex(product => product.id === id);
+export const updateMockProduct = (id: string, updates: Partial<Omit<Product, 'id' | 'hpp' | 'companyId'>>, companyId: string, allRawMaterialsForCompany: RawMaterial[]): Product | undefined => {
+  const productIndex = mockProductsStore.findIndex(product => product.id === id && product.companyId === companyId);
   if (productIndex === -1) {
     return undefined;
   }
@@ -82,7 +101,7 @@ export const updateMockProduct = (id: string, updates: Partial<Omit<Product, 'id
   const existingProduct = mockProductsStore[productIndex];
   const updatedProductData = { ...existingProduct, ...updates };
   
-  const hpp = _calculateHPP(updatedProductData.ingredients, allRawMaterials);
+  const hpp = _calculateHPP(updatedProductData.ingredients, allRawMaterialsForCompany);
   
   mockProductsStore[productIndex] = {
     ...updatedProductData,
@@ -91,14 +110,14 @@ export const updateMockProduct = (id: string, updates: Partial<Omit<Product, 'id
   return mockProductsStore[productIndex];
 };
 
-export const deleteMockProduct = (id: string): boolean => {
+export const deleteMockProduct = (id: string, companyId: string): boolean => {
   const initialLength = mockProductsStore.length;
-  mockProductsStore = mockProductsStore.filter(product => product.id !== id);
+  mockProductsStore = mockProductsStore.filter(product => !(product.id === id && product.companyId === companyId));
   return mockProductsStore.length < initialLength;
 };
 
-export const updateProductStock = (productId: string, quantityChange: number): Product | undefined => {
-  const productIndex = mockProductsStore.findIndex(p => p.id === productId);
+export const updateProductStock = (productId: string, companyId: string, quantityChange: number): Product | undefined => {
+  const productIndex = mockProductsStore.findIndex(p => p.id === productId && p.companyId === companyId);
   if (productIndex === -1) return undefined;
 
   mockProductsStore[productIndex].stock += quantityChange;
@@ -108,15 +127,21 @@ export const updateProductStock = (productId: string, quantityChange: number): P
   return mockProductsStore[productIndex];
 };
 
+// processSaleTransaction perlu dimodifikasi secara signifikan untuk SaaS
+// Ini hanya contoh penyesuaian dasar, perlu penanganan companyId yang lebih robust
 export const processSaleTransaction = (
-  items: Array<{ productId: string; quantity: number; ingredients?: ProductIngredient[] }>
+  items: Array<{ productId: string; quantity: number; ingredients?: ProductIngredient[] }>,
+  companyId: string // Tambahkan companyId
 ): { success: boolean; message?: string } => {
-  const currentRawMaterials = getMockRawMaterials(); 
+  if (!companyId) {
+    return { success: false, message: "ID Perusahaan tidak valid untuk proses transaksi." };
+  }
+  const currentRawMaterialsForCompany = getMockRawMaterials(companyId); 
 
   for (const item of items) {
-    const product = getMockProductById(item.productId); 
+    const product = getMockProductById(item.productId, companyId); // Pastikan produk dari company yang benar
     if (!product) {
-      return { success: false, message: `Produk dengan ID ${item.productId} tidak ditemukan.` };
+      return { success: false, message: `Produk dengan ID ${item.productId} tidak ditemukan untuk perusahaan ini.` };
     }
     if (product.stock < item.quantity) {
       return { success: false, message: `Stok produk ${product.name} tidak mencukupi.` };
@@ -124,9 +149,9 @@ export const processSaleTransaction = (
 
     if (product.ingredients && product.ingredients.length > 0) {
       for (const ing of product.ingredients) {
-        const rawMat = currentRawMaterials.find(rm => rm.id === ing.rawMaterialId);
+        const rawMat = currentRawMaterialsForCompany.find(rm => rm.id === ing.rawMaterialId);
         if (!rawMat) {
-          return { success: false, message: `Bahan baku dengan ID ${ing.rawMaterialId} untuk produk ${product.name} tidak ditemukan.` };
+          return { success: false, message: `Bahan baku dengan ID ${ing.rawMaterialId} untuk produk ${product.name} tidak ditemukan di perusahaan ini.` };
         }
         const requiredRawMaterialQuantity = ing.quantity * item.quantity;
         if (rawMat.stock < requiredRawMaterialQuantity) {
@@ -137,13 +162,13 @@ export const processSaleTransaction = (
   }
 
   for (const item of items) {
-    updateProductStock(item.productId, -item.quantity); 
+    updateProductStock(item.productId, companyId, -item.quantity); 
     
-    const product = getMockProductById(item.productId); 
+    const product = getMockProductById(item.productId, companyId); 
     if (product && product.ingredients && product.ingredients.length > 0) {
       product.ingredients.forEach(ingredient => {
         const consumedRawMaterialQuantity = ingredient.quantity * item.quantity;
-        updateRawMaterialStock(ingredient.rawMaterialId, -consumedRawMaterialQuantity); 
+        updateRawMaterialStock(ingredient.rawMaterialId, companyId, -consumedRawMaterialQuantity); 
       });
     }
   }

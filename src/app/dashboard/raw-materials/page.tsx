@@ -28,9 +28,11 @@ import {
 import type { RawMaterial } from "@/types/raw-material";
 import type { Unit } from "@/types/unit";
 import { getMockRawMaterials, deleteMockRawMaterial } from "@/data/raw-materials";
-import { getMockUnits, getMockUnitById } from "@/data/units";
+import { getMockUnits } from "@/data/units"; // Mengganti getMockUnitById
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 interface DisplayRawMaterial extends RawMaterial {
   unitName?: string;
@@ -44,26 +46,38 @@ export default function RawMaterialsPage() {
   const [materialToDelete, setMaterialToDelete] = React.useState<DisplayRawMaterial | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const fetchedUnits = getMockUnits();
     setUnits(fetchedUnits);
-
-    const fetchedMaterials = getMockRawMaterials().map(material => {
-      const unit = fetchedUnits.find(u => u.id === material.unitId);
-      return {
-        ...material,
-        unitName: unit?.name || 'N/A',
-        unitAbbreviation: unit?.abbreviation || '-',
-      };
-    });
-    setRawMaterials(fetchedMaterials);
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
   }, []);
 
-  const handleDeleteMaterial = () => {
-    if (!materialToDelete) return;
+  React.useEffect(() => {
+    if (activeCompanyId) {
+      // Untuk SaaS, getMockRawMaterials perlu companyId
+      const fetchedMaterials = getMockRawMaterials(activeCompanyId).map(material => {
+        const unit = units.find(u => u.id === material.unitId);
+        return {
+          ...material,
+          unitName: unit?.name || 'N/A',
+          unitAbbreviation: unit?.abbreviation || '-',
+        };
+      });
+      setRawMaterials(fetchedMaterials);
+    } else {
+      setRawMaterials([]);
+    }
+  }, [activeCompanyId, units]);
 
-    const success = deleteMockRawMaterial(materialToDelete.id);
+
+  const handleDeleteMaterial = () => {
+    if (!materialToDelete || !activeCompanyId) return;
+
+    // Untuk SaaS, deleteMockRawMaterial perlu companyId
+    const success = deleteMockRawMaterial(materialToDelete.id, activeCompanyId);
     if (success) {
       setRawMaterials(prevMaterials => prevMaterials.filter(mat => mat.id !== materialToDelete.id));
       toast({
@@ -89,7 +103,7 @@ export default function RawMaterialsPage() {
 
   return (
     <div>
-      <PageHeader title="Bahan Baku" description="Kelola daftar bahan baku dan stoknya.">
+      <PageHeader title="Bahan Baku" description="Kelola daftar bahan baku dan stoknya untuk perusahaan yang aktif.">
         <Button asChild>
           <Link href="/dashboard/raw-materials/add">
             <PlusCircle className="mr-2 h-4 w-4" /> Tambah Bahan Baku
@@ -100,7 +114,9 @@ export default function RawMaterialsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Daftar Bahan Baku</CardTitle>
-          <CardDescription>Total {rawMaterials.length} bahan baku ditemukan.</CardDescription>
+          <CardDescription>
+            Total {rawMaterials.length} bahan baku ditemukan {activeCompanyId ? `untuk perusahaan ini` : ''}.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -116,14 +132,21 @@ export default function RawMaterialsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rawMaterials.length === 0 && (
+              {!activeCompanyId && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                    Belum ada bahan baku yang ditambahkan.
+                    Pilih perusahaan terlebih dahulu untuk melihat bahan baku.
                   </TableCell>
                 </TableRow>
               )}
-              {rawMaterials.map((material) => (
+              {activeCompanyId && rawMaterials.length === 0 && (
+                 <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
+                    Belum ada bahan baku yang ditambahkan untuk perusahaan ini.
+                  </TableCell>
+                </TableRow>
+              )}
+              {activeCompanyId && rawMaterials.map((material) => (
                 <TableRow key={material.id}>
                   <TableCell className="font-medium">{material.name}</TableCell>
                   <TableCell className="text-right">{material.stock.toLocaleString('id-ID')}</TableCell>
