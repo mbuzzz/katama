@@ -37,35 +37,35 @@ export default function CompaniesAdminPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchCompanies = () => {
+  const fetchCompanies = React.useCallback(() => {
     setCompanies(getMockCompanies());
-  };
+  }, []);
 
   React.useEffect(() => {
     fetchCompanies();
     
     const handleCompanyListChanged = () => {
       fetchCompanies();
-      router.refresh(); // To potentially update CompanySwitcher as well
+      // router.refresh(); // router.refresh() might not be needed if state update re-renders correctly
     };
 
     window.addEventListener('companyListChanged', handleCompanyListChanged);
     return () => {
       window.removeEventListener('companyListChanged', handleCompanyListChanged);
     };
-  }, [router]);
+  }, [fetchCompanies, router]); // Added fetchCompanies to dependencies
 
   const handleDeleteCompany = () => {
     if (!companyToDelete) return;
 
     const success = deleteMockCompany(companyToDelete.id);
     if (success) {
-      fetchCompanies(); // Re-fetch to update the list
+      // fetchCompanies(); // Already handled by companyListChanged event
       toast({
         title: "Perusahaan Dihapus",
         description: `Perusahaan "${companyToDelete.name}" telah berhasil dihapus.`,
       });
-      window.dispatchEvent(new CustomEvent('companyListChanged')); // Notify switcher
+      // window.dispatchEvent(new CustomEvent('companyListChanged')); // Event is dispatched from deleteMockCompany
     } else {
       toast({
         title: "Gagal Menghapus",
@@ -75,7 +75,6 @@ export default function CompaniesAdminPage() {
     }
     setShowDeleteDialog(false);
     setCompanyToDelete(null);
-    // router.refresh(); // Not strictly needed if fetchCompanies updates state and re-renders
   };
 
   const openDeleteDialog = (company: Company) => {
@@ -106,7 +105,6 @@ export default function CompaniesAdminPage() {
               <TableRow>
                 <TableHead>ID Perusahaan</TableHead>
                 <TableHead>Nama Perusahaan</TableHead>
-                {/* Tambahkan kolom lain di sini jika perlu, mis. Status Langganan, Tanggal Daftar, dll. */}
                 <TableHead className="text-right">
                   <span className="sr-only">Aksi</span>
                 </TableHead>

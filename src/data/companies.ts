@@ -37,16 +37,21 @@ export const updateMockCompany = (id: string, updates: CompanyFormData): Company
 export const deleteMockCompany = (id: string): boolean => {
   const initialLength = mockCompaniesStore.length;
   mockCompaniesStore = mockCompaniesStore.filter(company => company.id !== id);
-  // Perlu juga menghapus ID perusahaan yang dipilih jika itu yang dihapus
+  
   if (typeof window !== 'undefined') {
     const selectedCompanyIdKey = 'katama-pos-selectedCompanyId';
+    let companyListChanged = false;
+
     if (localStorage.getItem(selectedCompanyIdKey) === id) {
         localStorage.removeItem(selectedCompanyIdKey);
-        // Mungkin default ke perusahaan pertama jika ada, atau kosongkan
         if (mockCompaniesStore.length > 0) {
             localStorage.setItem(selectedCompanyIdKey, mockCompaniesStore[0].id);
         }
-         // Memberi tahu CompanySwitcher untuk memperbarui
+        companyListChanged = true; 
+    }
+    // Dispatch event if the list actually changed, regardless of selection
+    // This ensures CompanySwitcher and CompaniesAdminPage update their lists
+    if (mockCompaniesStore.length !== initialLength || companyListChanged) {
         window.dispatchEvent(new CustomEvent('companyListChanged'));
     }
   }
