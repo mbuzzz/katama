@@ -30,8 +30,10 @@ export default function SuperAdminLoginPage() {
         title: "Login Super Admin Berhasil",
         description: "Selamat datang, Super Admin!",
       });
-      // Di aplikasi nyata, Anda akan mengatur state/session khusus Super Admin
-      router.push('/dashboard'); 
+      // Set flag to indicate this IS a superadmin login
+      localStorage.setItem('isSuperAdmin', 'true');
+      localStorage.setItem('katama-pos-active-session', 'true'); // Tandai sesi aktif
+      router.push('/dashboard/admin/overview'); 
     } else {
       toast({
         title: "Login Gagal",
@@ -48,7 +50,7 @@ export default function SuperAdminLoginPage() {
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto mb-4 flex flex-col items-center">
             <ShieldAlert className="h-12 w-12 text-destructive mb-2" />
-            <Logo className="h-10 w-auto" companyName="KATAMA" />
+            <Logo className="h-10 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold">Login Super Admin</CardTitle>
           <CardDescription>Halaman ini khusus untuk Super Administrator sistem.</CardDescription>

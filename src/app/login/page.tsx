@@ -30,6 +30,9 @@ export default function LoginPage() {
         title: "Login Berhasil",
         description: "Selamat datang kembali!",
       });
+      // Set flag to indicate this is NOT a superadmin login
+      localStorage.setItem('isSuperAdmin', 'false');
+      localStorage.setItem('katama-pos-active-session', 'true'); // Tandai sesi aktif
       router.push('/dashboard');
     } else {
       toast({
@@ -42,11 +45,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-blue-100 dark:to-blue-900/30 p-4">
       <Card className="w-full max-w-md shadow-xl bg-card/80 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto mb-4">
-            <Logo className="h-12 w-auto" companyName="KATAMA" />
+            <Logo className="h-12 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold">Selamat Datang Kembali!</CardTitle>
           <CardDescription>Masukkan email dan password Anda untuk masuk ke KATAMA POS.</CardDescription>
@@ -99,7 +102,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex-col text-center text-sm">
-          <p>Belum punya akun? <a href="#" className="text-[hsl(var(--accent))] hover:text-[hsl(var(--accent))] brightness-90 underline">Hubungi Admin</a></p>
+          <p>Belum punya akun? <a href="#" className="text-accent hover:brightness-90 underline">Hubungi Admin</a></p>
           <p className="mt-2 text-xs text-muted-foreground">Akun Demo: demo@tokolite.com / demo</p>
           <p className="mt-2 text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} KATAMA POS. Hak cipta dilindungi.

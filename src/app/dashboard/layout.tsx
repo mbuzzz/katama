@@ -130,6 +130,7 @@ function AppSidebar() {
      // Clear sensitive localStorage items on logout
     localStorage.removeItem('katama-pos-active-session');
     localStorage.removeItem('katama-pos-selectedCompanyId');
+    localStorage.removeItem('isSuperAdmin'); // Remove superadmin flag
     // Potentially other user-specific data
     
     toast({
@@ -276,6 +277,17 @@ function AppHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const [activeCompanyName, setActiveCompanyName] = React.useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+  const [hasMounted, setHasMounted] = React.useState(false);
+
+
+  React.useEffect(() => {
+    setHasMounted(true);
+    if (typeof window !== 'undefined') {
+        setIsSuperAdmin(localStorage.getItem('isSuperAdmin') === 'true');
+    }
+  }, []);
+
 
   React.useEffect(() => {
     const handleCompanySwitch = (event: Event) => {
@@ -286,19 +298,9 @@ function AppHeader() {
     // Initial load of company name if already set
     const initialCompanyId = localStorage.getItem('katama-pos-selectedCompanyId');
     if (initialCompanyId) {
-        // This is a mock data example; in a real app, fetch company details by ID
-        // For now, let's assume we can derive it or it was set by CompanySwitcher itself
-        // This part can be improved if getMockCompanyById is accessible here or CompanySwitcher provides the name initially.
-        // A simpler approach is to let CompanySwitcher manage the display, but to show it here:
-        const companyData = localStorage.getItem(initialCompanyId); // Example, if you store company details
+        const companyData = getMockCompanyById(initialCompanyId); 
         if (companyData) {
-            try {
-                // const parsed = JSON.parse(companyData); // if you stored an object
-                // setActiveCompanyName(parsed.name);
-            } catch(e) { /* ignore */ }
-        } else {
-            // If only ID is stored, and name is needed, CompanySwitcher should provide it.
-            // For now, a placeholder if just switched.
+            setActiveCompanyName(companyData.name);
         }
     }
 
@@ -310,22 +312,31 @@ function AppHeader() {
   }, []);
 
   const handleLogout = () => {
-    // Clear sensitive localStorage items on logout
     localStorage.removeItem('katama-pos-active-session');
     localStorage.removeItem('katama-pos-selectedCompanyId');
-    // Potentially other user-specific data
+    localStorage.removeItem('isSuperAdmin'); // Remove superadmin flag
     
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    router.push("/login"); // Redirect to the new login page
+    router.push("/login"); 
   };
+
+  if (!hasMounted) {
+    // Return a simplified header or null during SSR to avoid hydration mismatch
+    return (
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
+        {/* Placeholder content */}
+      </header>
+    );
+  }
+
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
       {isMobile ? (
-         <div className="w-5 h-5 md:hidden"></div> // Placeholder for mobile, consider title or actions
+         <div className="w-5 h-5 md:hidden"></div> 
       ) : (
          <SidebarTrigger asChild>
           <Button size="icon" variant="outline" aria-label="Toggle Sidebar">
@@ -334,7 +345,7 @@ function AppHeader() {
         </SidebarTrigger>
       )}
 
-      {!isMobile && <CompanySwitcher />} {/* Show CompanySwitcher on desktop */}
+      {!isMobile && isSuperAdmin && <CompanySwitcher />}
       
       {activeCompanyName && !isMobile && (
         <div className="ml-2 hidden items-center md:flex text-sm font-medium text-muted-foreground">
@@ -372,5 +383,18 @@ function AppHeader() {
       </div>
     </header>
   );
+}
+
+// Helper to get company details by ID, as CompanySwitcher might not always be mounted.
+// This function can be moved to a utils file if needed elsewhere.
+function getMockCompanyById(companyId: string): { id: string; name: string } | null {
+    // In a real app, this would fetch from a data source. For mock data:
+    const companies = [ // This should ideally come from a shared data source like `src/data/companies.ts`
+        { id: 'comp_es_teh_jaya', name: 'Perusahaan Es Teh Jaya' },
+        { id: 'comp_kopi_maju', name: 'Kedai Kopi Maju Jaya' },
+        { id: 'comp_roti_lezat', name: 'Toko Roti Lezat Selalu' },
+    ];
+    const company = companies.find(c => c.id === companyId);
+    return company || null;
 }
 
