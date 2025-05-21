@@ -58,7 +58,7 @@ interface CartItem extends Product {
 interface POSSession {
   initialCash: number;
   startTime: Date;
-  companyId: string; // Tambahkan companyId ke sesi POS
+  companyId: string; 
 }
 
 type PaymentMethod = "Tunai" | "Kartu" | "QRIS";
@@ -108,16 +108,36 @@ export default function POSPage() {
     const storedSession = localStorage.getItem(POS_SESSION_KEY);
     if (storedSession) {
       try {
-        const parsedSession = JSON.parse(storedSession) as POSSession;
-        parsedSession.startTime = new Date(parsedSession.startTime); 
-        // Pastikan sesi POS yang dimuat adalah untuk companyId yang aktif
-        if (parsedSession.startTime && !isNaN(parsedSession.startTime.getTime()) && parsedSession.companyId === storedCompanyId) {
-            setPosSession(parsedSession);
-        } else {
+        const potentialSessionData = JSON.parse(storedSession);
+        
+        // Ensure parsed data is an object and has the necessary properties
+        if (typeof potentialSessionData === 'object' && 
+            potentialSessionData !== null && 
+            'startTime' in potentialSessionData && 
+            'companyId' in potentialSessionData &&
+            typeof potentialSessionData.startTime === 'string') { // Ensure startTime is a string from JSON
+          
+          const validSessionData = potentialSessionData as Omit<POSSession, 'startTime'> & { startTime: string };
+          const sessionStartTime = new Date(validSessionData.startTime);
+
+          // Check if startTime is valid and session companyId matches active companyId
+          if (sessionStartTime && !isNaN(sessionStartTime.getTime()) && validSessionData.companyId === storedCompanyId) {
+            setPosSession({ 
+              ...validSessionData, 
+              startTime: sessionStartTime // Store as Date object in state
+            });
+          } else {
+            // Invalid session data (e.g., old session for a different company) or invalid date
             localStorage.removeItem(POS_SESSION_KEY); 
+          }
+        } else {
+          // Data in localStorage is not a valid POSSession object or properties are missing/wrong type
+          console.error("Format data sesi POS di localStorage tidak valid atau tidak lengkap:", potentialSessionData);
+          localStorage.removeItem(POS_SESSION_KEY);
         }
       } catch (error) {
-        console.error("Gagal memuat sesi POS dari localStorage:", error);
+        // Catch JSON parsing errors
+        console.error("Gagal memuat sesi POS dari localStorage (parsing error):", error);
         localStorage.removeItem(POS_SESSION_KEY); 
       }
     }
@@ -136,7 +156,7 @@ export default function POSPage() {
       setStrukShowContact(localStorage.getItem(STRUK_SHOW_CONTACT_KEY) === 'true');
       setStrukPaperSize(localStorage.getItem(STRUK_PAPER_SIZE_KEY) || "58mm");
     }
-  }, [activeCompanyId]); // Tambahkan activeCompanyId sebagai dependency
+  }, [activeCompanyId]);
 
   React.useEffect(() => {
     if (posSession) {
@@ -704,3 +724,4 @@ export default function POSPage() {
     </div>
   );
 }
+
