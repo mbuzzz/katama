@@ -1,40 +1,63 @@
 
+"use client";
+
+import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import CategoryForm from "@/components/categories/category-form";
 import type { CategoryFormData } from "@/components/categories/category-form";
-import { getMockCategoryById, updateMockCategory } from "@/data/categories";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getMockCategoryById } from "@/data/categories";
+import { updateCategoryAction } from "../actions"; // Use the new server action
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import type { Category } from "@/types/category";
+
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 interface EditCategoryPageProps {
   params: { id: string };
 }
 
-export default async function EditCategoryPage({ params }: EditCategoryPageProps) {
+export default function EditCategoryPage({ params }: EditCategoryPageProps) {
   const categoryId = params.id;
-  // DI SINI KITA PERLU MENDAPATKAN companyId AKTIF
-  const MOCK_ACTIVE_COMPANY_ID = "comp_es_teh_jaya"; // Ganti dengan logika sebenarnya
+  const [category, setCategory] = React.useState<Category | null | undefined>(undefined); // undefined for loading
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   
-  // getMockCategoryById sekarang idealnya menerima companyId
-  const category = getMockCategoryById(categoryId, MOCK_ACTIVE_COMPANY_ID);
+  React.useEffect(() => {
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    if (storedCompanyId) {
+      setActiveCompanyId(storedCompanyId);
+      const fetchedCategory = getMockCategoryById(categoryId, storedCompanyId);
+      setCategory(fetchedCategory);
+    } else {
+      setCategory(null); // No active company, so category cannot be determined
+    }
+    setIsLoading(false);
+  }, [categoryId]);
 
   const handleUpdateCategory = async (data: CategoryFormData) => {
-    "use server";
-    // Pastikan updateMockCategory dipanggil dengan companyId
-    try {
-      const updatedCategory = updateMockCategory(categoryId, data, MOCK_ACTIVE_COMPANY_ID);
-      if (!updatedCategory) {
-        throw new Error("Kategori tidak ditemukan untuk diperbarui.");
-      }
-      console.log("Kategori diperbarui:", updatedCategory);
-      return updatedCategory;
-    } catch (error) {
-      console.error("Gagal memperbarui kategori:", error);
-      throw error;
+    // This function is now a client-side function that calls the server action
+    if (!activeCompanyId) {
+      console.error("Gagal memperbarui kategori: ID Perusahaan aktif tidak ditemukan.");
+      throw new Error("ID Perusahaan aktif tidak ditemukan.");
     }
+    return updateCategoryAction(categoryId, data, activeCompanyId);
   };
+
+  if (isLoading || category === undefined) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Edit Kategori" description="Memuat data kategori..." />
+        <Card className="shadow-lg">
+          <CardContent className="pt-6 flex justify-center items-center h-64">
+            <p>Memuat...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!category) {
     return (
@@ -47,7 +70,7 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Kategori yang Anda coba edit tidak ada atau mungkin telah dihapus dari perusahaan ini.</p>
+            <p>Kategori yang Anda coba edit tidak ada untuk perusahaan yang aktif, atau Anda belum memilih perusahaan.</p>
             <Button asChild className="mt-4">
               <Link href="/dashboard/categories">Kembali ke Daftar Kategori</Link>
             </Button>
@@ -61,10 +84,10 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
     <div className="space-y-6">
       <PageHeader 
         title="Edit Kategori" 
-        description={`Perbarui detail untuk kategori "${category.name}".`}
+        description={`Perbarui detail untuk kategori "${category.name}" pada perusahaan yang aktif.`}
       />
       <CategoryForm
-        initialData={category} // initialData sekarang menyertakan companyId
+        initialData={category}
         onSave={handleUpdateCategory}
         isEditing={true}
       />
