@@ -78,7 +78,7 @@ export default function AddPurchasePage() {
     );
   }
 
-  if (rawMaterialsForCompany.length === 0 && !isLoading && activeCompanyId) {
+  if (activeCompanyId && rawMaterialsForCompany.length === 0 && !isLoading) {
      return (
       <div className="space-y-6">
         <PageHeader
@@ -88,7 +88,7 @@ export default function AddPurchasePage() {
         <Card className="shadow-lg">
           <CardContent className="pt-6 flex flex-col justify-center items-center h-64 text-center">
             <p className="text-destructive font-semibold">Tidak Ada Bahan Baku.</p>
-            <p className="text-muted-foreground text-sm">Perusahaan ini belum memiliki data bahan baku. Tambahkan bahan baku terlebih dahulu sebelum mencatat pembelanjaan.</p>
+            <p className="text-muted-foreground text-sm">Perusahaan yang aktif saat ini belum memiliki data bahan baku. Silakan tambahkan bahan baku terlebih dahulu sebelum mencatat pembelanjaan.</p>
              <Button asChild className="mt-4">
               <Link href="/dashboard/raw-materials/add">Tambah Bahan Baku</Link>
             </Button>
