@@ -7,10 +7,12 @@ import PurchaseForm from "@/components/purchases/purchase-form";
 import type { PurchaseFormData } from "@/types/purchase";
 import { getMockRawMaterials } from "@/data/raw-materials";
 import { getMockUsers } from "@/data/users";
-import { addMockPurchase as serverAddMockPurchase } from "@/data/purchases"; // Renamed for clarity
+import { createPurchaseAction } from "../actions"; // Corrected import path
 import type { RawMaterial } from "@/types/raw-material";
 import type { User } from "@/types/user";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
@@ -32,27 +34,23 @@ export default function AddPurchasePage() {
     setIsLoading(false);
   }, []);
 
-  const handleSavePurchase = async (data: PurchaseFormData) => {
-    "use server";
+  // This function is passed to PurchaseForm's onSave prop
+  // It calls the imported server action.
+  const handleFormSubmit = async (data: PurchaseFormData) => {
+    // No "use server" here.
     if (!activeCompanyId) {
       console.error("Gagal menyimpan pembelanjaan: ID Perusahaan aktif tidak ditemukan.");
       throw new Error("ID Perusahaan aktif tidak ditemukan.");
     }
-    try {
-      const newPurchase = serverAddMockPurchase(data, activeCompanyId);
-      return newPurchase;
-    } catch (error: any) {
-      console.error("Gagal menambahkan pembelanjaan:", error.message);
-      throw error;
-    }
+    return createPurchaseAction(data, activeCompanyId);
   };
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader 
-          title="Catat Pembelanjaan Baru" 
-          description="Memuat data..." 
+        <PageHeader
+          title="Catat Pembelanjaan Baru"
+          description="Memuat data..."
         />
         <Card className="shadow-lg">
           <CardContent className="pt-6 flex justify-center items-center h-64">
@@ -66,9 +64,9 @@ export default function AddPurchasePage() {
   if (!activeCompanyId && !isLoading) {
      return (
       <div className="space-y-6">
-        <PageHeader 
-          title="Catat Pembelanjaan Baru" 
-          description="Tidak dapat mencatat pembelanjaan." 
+        <PageHeader
+          title="Catat Pembelanjaan Baru"
+          description="Tidak dapat mencatat pembelanjaan."
         />
         <Card className="shadow-lg">
           <CardContent className="pt-6 flex flex-col justify-center items-center h-64 text-center">
@@ -79,13 +77,13 @@ export default function AddPurchasePage() {
       </div>
     );
   }
-  
+
   if (rawMaterialsForCompany.length === 0 && !isLoading && activeCompanyId) {
      return (
       <div className="space-y-6">
-        <PageHeader 
-          title="Catat Pembelanjaan Baru" 
-          description="Tidak dapat mencatat pembelanjaan." 
+        <PageHeader
+          title="Catat Pembelanjaan Baru"
+          description="Tidak dapat mencatat pembelanjaan."
         />
         <Card className="shadow-lg">
           <CardContent className="pt-6 flex flex-col justify-center items-center h-64 text-center">
@@ -103,14 +101,14 @@ export default function AddPurchasePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Catat Pembelanjaan Baru" 
-        description="Isi detail pembelanjaan bahan baku. Stok akan otomatis diperbarui." 
+      <PageHeader
+        title="Catat Pembelanjaan Baru"
+        description="Isi detail pembelanjaan bahan baku. Stok akan otomatis diperbarui."
       />
       <PurchaseForm
         rawMaterialsForCompany={rawMaterialsForCompany}
         users={users}
-        onSave={handleSavePurchase}
+        onSave={handleFormSubmit} // Pass the new handler
       />
     </div>
   );
