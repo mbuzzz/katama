@@ -83,6 +83,9 @@ function AppSidebar() {
   const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
   const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME);
   const [hasMounted, setHasMounted] = React.useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+  const [filteredSidebarNav, setFilteredSidebarNav] = React.useState<SidebarNavItem[]>(siteConfig.sidebarNav);
+
 
   React.useEffect(() => {
     setHasMounted(true);
@@ -95,6 +98,17 @@ function AppSidebar() {
       if (storedCompanyName) {
         setCompanyName(storedCompanyName);
       }
+      
+      const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+      setIsSuperAdmin(currentIsSuperAdmin);
+
+      // Filter sidebar nav items based on superadmin status
+      if (!currentIsSuperAdmin) {
+        setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== `${process.env.NEXT_PUBLIC_DASHBOARD_BASE_URL || '/dashboard'}/admin/overview`));
+      } else {
+        setFilteredSidebarNav(siteConfig.sidebarNav);
+      }
+
 
       const handleStorageChange = (event: StorageEvent | CustomEvent) => {
         if (event instanceof StorageEvent) {
@@ -103,6 +117,15 @@ function AppSidebar() {
           }
           if (event.key === COMPANY_NAME_STORAGE_KEY) {
             setCompanyName(event.newValue || DEFAULT_COMPANY_NAME);
+          }
+          if (event.key === 'isSuperAdmin') {
+            const newIsSuperAdmin = event.newValue === 'true';
+            setIsSuperAdmin(newIsSuperAdmin);
+            if (!newIsSuperAdmin) {
+                setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== `${process.env.NEXT_PUBLIC_DASHBOARD_BASE_URL || '/dashboard'}/admin/overview`));
+            } else {
+                setFilteredSidebarNav(siteConfig.sidebarNav);
+            }
           }
         } else if (event instanceof CustomEvent) {
           if (event.type === 'logoChanged') {
@@ -171,7 +194,7 @@ function AppSidebar() {
       <SidebarContent className="p-2">
         <ScrollArea className="h-full">
           <SidebarMenu>
-            {siteConfig.sidebarNav.map((item, index) => (
+            {filteredSidebarNav.map((item, index) => (
               <NavItem key={index} item={item} pathname={pathname} />
             ))}
           </SidebarMenu>
@@ -284,7 +307,16 @@ function AppHeader() {
   React.useEffect(() => {
     setHasMounted(true);
     if (typeof window !== 'undefined') {
-        setIsSuperAdmin(localStorage.getItem('isSuperAdmin') === 'true');
+        const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+        setIsSuperAdmin(currentIsSuperAdmin);
+
+        const handleStorageChange = (event: StorageEvent) => {
+          if (event.key === 'isSuperAdmin') {
+            setIsSuperAdmin(event.newValue === 'true');
+          }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }
   }, []);
 
