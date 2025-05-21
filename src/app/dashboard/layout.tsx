@@ -212,27 +212,25 @@ function AppSidebar() {
 
 function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | null }) {
   const { open, state } = useSidebar();
+  
   const [isSubmenuOpen, setIsSubmenuOpen] = React.useState(
-    item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false
+    () => item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false
   );
 
   React.useEffect(() => {
     const shouldBeOpen = item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false;
     if (shouldBeOpen !== isSubmenuOpen) {
-      setIsSubmenuOpen(shouldBeOpen);
+        setIsSubmenuOpen(shouldBeOpen);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, item.items]);
+  }, [pathname, item.items, isSubmenuOpen]); // isSubmenuOpen added to dep array
 
   const isActive = item.href && pathname === item.href;
   
   let isParentActive = false;
   if (item.href && item.items && item.items.length > 0) {
-    // A parent is active if the current path starts with its href,
-    // OR if the current path matches any of its sub-items' hrefs.
     isParentActive = pathname?.startsWith(item.href) || item.items.some(subItem => pathname?.startsWith(subItem.href));
   } else if (item.href) {
-    // For items without sub-items, active state is a direct match.
     isParentActive = isActive;
   }
 
@@ -248,8 +246,11 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
       <SidebarMenuItem>
         <SidebarMenuButton
           onClick={toggleSubmenu}
-          className="justify-between"
-          isActive={!!isParentActive}
+          className={cn(
+            "justify-between",
+            isParentActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+          )}
+          isActive={!!isParentActive} // This sets data-active for internal styling (e.g. accent)
           tooltip={item.title}
         >
           <div className="flex items-center gap-2">
