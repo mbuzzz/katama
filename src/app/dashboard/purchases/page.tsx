@@ -64,7 +64,9 @@ export default function PurchasesPage() {
       <PageHeader title="Pembelanjaan" description="Catat dan kelola pembelanjaan barang untuk perusahaan yang aktif.">
         <Button asChild disabled> {/* Tambah Pembelian akan diarahkan ke form, saat ini disabled */}
           <Link href="/dashboard/purchases/add">
-            <PlusCircle className="mr-2 h-4 w-4" /> Tambah Pembelanjaan (Segera Hadir)
+            <span>
+              <PlusCircle className="mr-2 h-4 w-4" /> Tambah Pembelanjaan (Segera Hadir)
+            </span>
           </Link>
         </Button>
       </PageHeader>
