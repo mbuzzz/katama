@@ -110,33 +110,28 @@ export default function POSPage() {
       try {
         const potentialSessionData = JSON.parse(storedSession);
         
-        // Ensure parsed data is an object and has the necessary properties
         if (typeof potentialSessionData === 'object' && 
             potentialSessionData !== null && 
             'startTime' in potentialSessionData && 
             'companyId' in potentialSessionData &&
-            typeof potentialSessionData.startTime === 'string') { // Ensure startTime is a string from JSON
+            typeof potentialSessionData.startTime === 'string') { 
           
           const validSessionData = potentialSessionData as Omit<POSSession, 'startTime'> & { startTime: string };
           const sessionStartTime = new Date(validSessionData.startTime);
 
-          // Check if startTime is valid and session companyId matches active companyId
           if (sessionStartTime && !isNaN(sessionStartTime.getTime()) && validSessionData.companyId === storedCompanyId) {
             setPosSession({ 
               ...validSessionData, 
-              startTime: sessionStartTime // Store as Date object in state
+              startTime: sessionStartTime 
             });
           } else {
-            // Invalid session data (e.g., old session for a different company) or invalid date
             localStorage.removeItem(POS_SESSION_KEY); 
           }
         } else {
-          // Data in localStorage is not a valid POSSession object or properties are missing/wrong type
           console.error("Format data sesi POS di localStorage tidak valid atau tidak lengkap:", potentialSessionData);
           localStorage.removeItem(POS_SESSION_KEY);
         }
       } catch (error) {
-        // Catch JSON parsing errors
         console.error("Gagal memuat sesi POS dari localStorage (parsing error):", error);
         localStorage.removeItem(POS_SESSION_KEY); 
       }
@@ -173,7 +168,6 @@ export default function POSPage() {
         toast({ title: "Perusahaan tidak dipilih.", description: "Pilih perusahaan aktif terlebih dahulu.", variant: "destructive"});
         return;
     }
-    // Produk sudah difilter berdasarkan companyId saat diambil, jadi pengecekan ulang companyId produk tidak terlalu krusial di sini
     const currentProductDetails = products.find(p => p.id === product.id);
     if (!currentProductDetails) {
         toast({ title: "Produk tidak ditemukan.", variant: "destructive"});
@@ -405,7 +399,7 @@ export default function POSPage() {
         description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
       });
       setCartItems([]); 
-      setProducts(getMockProducts(activeCompanyId)); // Perbarui daftar produk setelah penjualan
+      setProducts(getMockProducts(activeCompanyId)); 
       setShowPostPaymentDialog(true); 
     } else {
       toast({
@@ -413,7 +407,7 @@ export default function POSPage() {
         description: result.message || "Terjadi kesalahan saat memproses penjualan.",
         variant: "destructive",
       });
-      setProducts(getMockProducts(activeCompanyId)); // Perbarui juga jika gagal, mungkin stok berubah
+      setProducts(getMockProducts(activeCompanyId)); 
     }
     setIsProcessingPayment(false);
   }
@@ -461,7 +455,7 @@ export default function POSPage() {
   const handleClosePOSSession = () => {
     localStorage.removeItem(POS_SESSION_KEY);
     setPosSession(null);
-    setCartItems([]); // Kosongkan keranjang saat sesi ditutup
+    setCartItems([]); 
     toast({ title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset." });
   };
 
