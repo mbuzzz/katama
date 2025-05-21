@@ -128,6 +128,10 @@ export const siteConfig: SiteConfig = {
       href: `${dashboardBaseUrl}/purchases`,
       icon: Truck, 
       description: "Catat dan kelola pembelanjaan bahan baku.",
+      items: [
+        { title: "Daftar Pembelanjaan", href: `${dashboardBaseUrl}/purchases`, icon: ListTree, description: "Lihat semua pembelanjaan." },
+        { title: "Tambah Pembelanjaan", href: `${dashboardBaseUrl}/purchases/add`, icon: PlusCircle, description: "Catat pembelanjaan baru." },
+      ]
     },
     {
       title: "Laporan",
@@ -160,4 +164,3 @@ export const siteConfig: SiteConfig = {
 };
 
 export type AddItemSidebarNavItem = SidebarNavItem & { icon: typeof PlusCircle };
-

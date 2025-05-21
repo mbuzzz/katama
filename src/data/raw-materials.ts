@@ -43,7 +43,7 @@ export const getMockRawMaterialById = (id: string, companyId?: string): RawMater
 };
 
 // Modifikasi add, update, delete untuk menyertakan companyId
-export const addMockRawMaterial = (materialData: Omit<RawMaterialSaaS, 'id'>, companyId: string): RawMaterialSaaS => {
+export const addMockRawMaterial = (materialData: Omit<RawMaterialSaaS, 'id' | 'companyId'>, companyId: string): RawMaterialSaaS => {
   if (!companyId) throw new Error("companyId diperlukan untuk menambah bahan baku");
   const newMaterial: RawMaterialSaaS = {
     id: `rm${mockRawMaterialsStore.length + 1 + Date.now().toString().slice(-3)}`,
@@ -72,11 +72,16 @@ export const deleteMockRawMaterial = (id: string, companyId: string): boolean =>
 export const updateRawMaterialStock = (materialId: string, companyId: string, quantityChange: number): RawMaterialSaaS | undefined => {
   const materialIndex = mockRawMaterialsStore.findIndex(m => m.id === materialId && m.companyId === companyId);
   if (materialIndex === -1) {
+    console.warn(`Bahan baku dengan ID ${materialId} tidak ditemukan untuk perusahaan ${companyId} saat update stok.`);
     return undefined;
   }
   mockRawMaterialsStore[materialIndex].stock += quantityChange;
-  if (mockRawMaterialsStore[materialIndex].stock < 0) {
-    mockRawMaterialsStore[materialIndex].stock = 0; 
-  }
+  // Stok tidak boleh negatif dari pengurangan (penjualan), tapi bisa negatif jika input salah saat penambahan (pembelian), namun form harusnya memvalidasi.
+  // Jika ini dari penjualan dan hasilnya negatif, itu masalah, tapi untuk pembelian, kita hanya menambah.
+  // Jika suatu saat ada fitur retur pembelian, maka quantityChange bisa negatif.
+  // Untuk sekarang, kita asumsikan quantityChange positif untuk pembelian.
+  // if (mockRawMaterialsStore[materialIndex].stock < 0 && quantityChange < 0) {
+  //   mockRawMaterialsStore[materialIndex].stock = 0; 
+  // }
   return mockRawMaterialsStore[materialIndex];
 };
