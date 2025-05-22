@@ -2,7 +2,7 @@
 import { PageHeader } from "@/components/page-header";
 import RoleForm from "@/components/roles/role-form";
 import type { RoleFormData } from "@/components/roles/role-form";
-import { createRoleAction } from "./actions"; // Import server action
+import { createRoleAction } from "../actions"; // Import server action
 
 export default function AddRolePage() {
 
