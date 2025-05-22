@@ -5,13 +5,14 @@ import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import UserForm from "@/components/users/user-form"; // Impor form baru
 import type { UserFormData } from "@/types/user";
-import { createUserAction } from "./actions"; // Impor server action
+import { createUserAction } from "../actions"; // Impor server action
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getMockCompanyById } from "@/data/companies";
 import { getMockRoles } from "@/data/roles"; // Untuk daftar peran
-import { mockOutlets as getAllMockOutlets, type Outlet } from "@/app/dashboard/settings/outlets/page"; // Untuk daftar outlet
+import { mockOutlets as getAllMockOutlets } from "@/app/dashboard/settings/outlets/page"; // Untuk daftar outlet
+import type { Outlet } from "@/app/dashboard/settings/outlets/page";
 import { AlertTriangle } from "lucide-react";
 import type { Role } from "@/types/role";
 
@@ -32,8 +33,7 @@ export default function AddUserPage() {
     if (storedCompanyId) {
       const companyDetails = getMockCompanyById(storedCompanyId);
       setActiveCompanyName(companyDetails?.name || null);
-      // Filter outlets berdasarkan companyId. Asumsi getAllMockOutlets mengembalikan semua.
-      const allOutlets = getAllMockOutlets; // Ini adalah array, bukan fungsi
+      const allOutlets = getAllMockOutlets; 
       setOutletsForCompany(allOutlets.filter(outlet => outlet.companyId === storedCompanyId));
     } else {
         setOutletsForCompany([]);
