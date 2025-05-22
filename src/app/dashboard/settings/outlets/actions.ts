@@ -3,6 +3,7 @@
 
 import type { OutletFormData, Outlet } from "@/types/outlet";
 import { addMockOutlet as dataAddMockOutlet, updateMockOutlet as dataUpdateMockOutlet, deleteMockOutlet as dataDeleteMockOutlet } from "@/data/outlets";
+import { deleteMockOperatingHoursForOutlet } from "@/data/operating-hours"; // Import here
 
 export async function createOutletAction(
   data: OutletFormData,
@@ -61,13 +62,22 @@ export async function deleteOutletAction(
     throw new Error("ID Outlet tidak ditemukan.");
   }
   try {
+    // First, delete associated operating hours
+    const opHoursDeleted = deleteMockOperatingHoursForOutlet(outletId, companyId);
+    if (opHoursDeleted) {
+      console.log(`Jam operasional untuk outlet ${outletId} (perusahaan ${companyId}) dihapus.`);
+    } else {
+      console.warn(`Tidak ada jam operasional ditemukan atau gagal dihapus untuk outlet ${outletId} (perusahaan ${companyId}).`);
+    }
+
+    // Then, delete the outlet itself
     const success = dataDeleteMockOutlet(outletId, companyId);
     if (success) {
       console.log(`Outlet dengan ID ${outletId} untuk perusahaan ${companyId} dihapus via action.`);
     } else {
       console.warn(`Gagal menghapus outlet dengan ID ${outletId} untuk perusahaan ${companyId} via action atau outlet tidak ditemukan.`);
     }
-    return success;
+    return success; // Return success of outlet deletion primarily
   } catch (error: any) {
     console.error("Gagal menghapus outlet via action:", error.message);
     throw new Error(`Gagal menghapus outlet: ${error.message}`);

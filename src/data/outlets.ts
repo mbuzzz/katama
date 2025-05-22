@@ -1,6 +1,6 @@
 
 import type { Outlet, OutletFormData } from "@/types/outlet";
-import { deleteMockOperatingHoursForOutlet } from "@/data/operating-hours"; // Import fungsi hapus jam operasional
+// Removed import: import { deleteMockOperatingHoursForOutlet } from "@/data/operating-hours"; 
 
 // Mock data - sekarang dengan companyId
 let mockOutletsStore: Outlet[] = [
@@ -74,14 +74,12 @@ export const updateMockOutlet = (id: string, updates: Partial<OutletFormData>, c
 
 export const deleteMockOutlet = (id: string, companyId: string): boolean => {
   const initialLength = mockOutletsStore.length;
-  // Hapus jam operasional terkait terlebih dahulu
-  deleteMockOperatingHoursForOutlet(id, companyId); 
+  // Removed call: deleteMockOperatingHoursForOutlet(id, companyId); 
   
   mockOutletsStore = mockOutletsStore.filter(o => !(o.id === id && o.companyId === companyId));
   const success = mockOutletsStore.length < initialLength;
   if (success && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('outletListChanged', { detail: { companyId } }));
-    // Also, if the deleted outlet was the one whose hours are being viewed, the operating hours page might need a more specific update
   }
   return success;
 };
