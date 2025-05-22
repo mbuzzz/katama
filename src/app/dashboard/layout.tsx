@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { siteConfig, type SidebarNavItem } from "@/config/site";
+import { siteConfig, type SidebarNavItem, ADMIN_OVERVIEW_PATH } from "@/config/site";
 import { Logo } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Menu as MenuIconLucide, Bell, UserCircle, LogOut, ChevronDown, ChevronUp, Building } from 'lucide-react'; // Renamed Menu to avoid conflict
@@ -38,6 +38,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { AppBottomNav } from "@/components/mobile-bottom-nav";
 import CompanySwitcher from "@/components/company-switcher"; // Import CompanySwitcher
+import { getMockCompanyById as fetchMockCompanyById } from "@/data/companies"; // Renamed for clarity
+
 
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
 const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
@@ -83,7 +85,8 @@ function AppSidebar() {
   const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
   const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME);
   const [hasMounted, setHasMounted] = React.useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false); // Keep for potential future use
   const [filteredSidebarNav, setFilteredSidebarNav] = React.useState<SidebarNavItem[]>(siteConfig.sidebarNav);
 
 
@@ -102,9 +105,8 @@ function AppSidebar() {
       const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
       setIsSuperAdmin(currentIsSuperAdmin);
 
-      // Filter sidebar nav items based on superadmin status
       if (!currentIsSuperAdmin) {
-        setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== `${process.env.NEXT_PUBLIC_DASHBOARD_BASE_URL || '/dashboard'}/admin/overview`));
+        setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== ADMIN_OVERVIEW_PATH));
       } else {
         setFilteredSidebarNav(siteConfig.sidebarNav);
       }
@@ -120,9 +122,9 @@ function AppSidebar() {
           }
           if (event.key === 'isSuperAdmin') {
             const newIsSuperAdmin = event.newValue === 'true';
-            setIsSuperAdmin(newIsSuperAdmin);
+            setIsSuperAdmin(newIsSuperAdmin); // Update state for potential direct use
             if (!newIsSuperAdmin) {
-                setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== `${process.env.NEXT_PUBLIC_DASHBOARD_BASE_URL || '/dashboard'}/admin/overview`));
+                setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== ADMIN_OVERVIEW_PATH));
             } else {
                 setFilteredSidebarNav(siteConfig.sidebarNav);
             }
@@ -150,34 +152,28 @@ function AppSidebar() {
   }, []);
 
   const handleLogout = () => {
-     // Clear sensitive localStorage items on logout
     localStorage.removeItem('katama-pos-active-session');
     localStorage.removeItem('katama-pos-selectedCompanyId');
-    localStorage.removeItem('isSuperAdmin'); // Remove superadmin flag
-    // Potentially other user-specific data
+    localStorage.removeItem('isSuperAdmin'); 
     
     toast({
       title: "Keluar Berhasil",
       description: "Anda telah berhasil keluar.",
     });
-    router.push("/login"); // Redirect to the new login page
+    router.push("/login"); 
   };
 
   if (!hasMounted) {
-     // Return a placeholder or null during SSR to avoid hydration mismatch
     return (
        <Sidebar collapsible="icon" className="border-r">
         <SidebarHeader className="p-4 flex items-center justify-center">
            <div className="flex items-center gap-2">
-             {/* Placeholder for logo, ensure dimensions match */}
             <div className="h-8 w-24 bg-muted rounded"></div>
           </div>
         </SidebarHeader>
          <SidebarContent className="p-2">
-           {/* Skeleton loaders for menu items */}
          </SidebarContent>
         <SidebarFooter className="p-4 border-t">
-           {/* Placeholder for logout button */}
         </SidebarFooter>
       </Sidebar>
     );
@@ -222,15 +218,16 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     if (shouldBeOpen !== isSubmenuOpen) {
         setIsSubmenuOpen(shouldBeOpen);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, item.items, isSubmenuOpen]); // isSubmenuOpen added to dep array
+  }, [pathname, item.items, isSubmenuOpen]); 
 
   const isActive = item.href && pathname === item.href;
   
   let isParentActive = false;
   if (item.href && item.items && item.items.length > 0) {
+    // For parent items, it's active if the current path starts with the parent's href OR any of its sub-items' href
     isParentActive = pathname?.startsWith(item.href) || item.items.some(subItem => pathname?.startsWith(subItem.href));
   } else if (item.href) {
+    // For items without sub-items, active if path matches exactly
     isParentActive = isActive;
   }
 
@@ -250,7 +247,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
             "justify-between",
             isParentActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
           )}
-          isActive={!!isParentActive} // This sets data-active for internal styling (e.g. accent)
+          isActive={!!isParentActive} 
           tooltip={item.title}
         >
           <div className="flex items-center gap-2">
@@ -301,7 +298,7 @@ function AppHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const [activeCompanyName, setActiveCompanyName] = React.useState<string | null>(null);
-  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+  const [isUserSuperAdmin, setIsUserSuperAdmin] = React.useState(false); // Renamed to avoid conflict
   const [hasMounted, setHasMounted] = React.useState(false);
 
 
@@ -309,11 +306,11 @@ function AppHeader() {
     setHasMounted(true);
     if (typeof window !== 'undefined') {
         const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
-        setIsSuperAdmin(currentIsSuperAdmin);
+        setIsUserSuperAdmin(currentIsSuperAdmin);
 
         const handleStorageChange = (event: StorageEvent) => {
           if (event.key === 'isSuperAdmin') {
-            setIsSuperAdmin(event.newValue === 'true');
+            setIsUserSuperAdmin(event.newValue === 'true');
           }
         };
         window.addEventListener('storage', handleStorageChange);
@@ -328,10 +325,9 @@ function AppHeader() {
       setActiveCompanyName(customEvent.detail.companyName);
     };
 
-    // Initial load of company name if already set
     const initialCompanyId = localStorage.getItem('katama-pos-selectedCompanyId');
     if (initialCompanyId) {
-        const companyData = getMockCompanyById(initialCompanyId); 
+        const companyData = fetchMockCompanyById(initialCompanyId); 
         if (companyData) {
             setActiveCompanyName(companyData.name);
         }
@@ -347,7 +343,7 @@ function AppHeader() {
   const handleLogout = () => {
     localStorage.removeItem('katama-pos-active-session');
     localStorage.removeItem('katama-pos-selectedCompanyId');
-    localStorage.removeItem('isSuperAdmin'); // Remove superadmin flag
+    localStorage.removeItem('isSuperAdmin'); 
     
     toast({
       title: "Keluar Berhasil",
@@ -357,10 +353,8 @@ function AppHeader() {
   };
 
   if (!hasMounted) {
-    // Return a simplified header or null during SSR to avoid hydration mismatch
     return (
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
-        {/* Placeholder content */}
       </header>
     );
   }
@@ -378,7 +372,7 @@ function AppHeader() {
         </SidebarTrigger>
       )}
 
-      {!isMobile && isSuperAdmin && <CompanySwitcher />}
+      {!isMobile && isUserSuperAdmin && <CompanySwitcher />}
       
       {activeCompanyName && !isMobile && (
         <div className="ml-2 hidden items-center md:flex text-sm font-medium text-muted-foreground">
@@ -418,16 +412,7 @@ function AppHeader() {
   );
 }
 
-// Helper to get company details by ID, as CompanySwitcher might not always be mounted.
-// This function can be moved to a utils file if needed elsewhere.
-function getMockCompanyById(companyId: string): { id: string; name: string } | null {
-    // In a real app, this would fetch from a data source. For mock data:
-    const companies = [ // This should ideally come from a shared data source like `src/data/companies.ts`
-        { id: 'comp_es_teh_jaya', name: 'Perusahaan Es Teh Jaya' },
-        { id: 'comp_kopi_maju', name: 'Kedai Kopi Maju Jaya' },
-        { id: 'comp_roti_lezat', name: 'Toko Roti Lezat Selalu' },
-    ];
-    const company = companies.find(c => c.id === companyId);
-    return company || null;
-}
+// Helper function moved to top-level, now named fetchMockCompanyById to avoid conflict.
+// And it was also imported from `data/companies` directly, so this local one is redundant and removed.
+// function getMockCompanyById(companyId: string): { id: string; name: string } | null { ... }
 

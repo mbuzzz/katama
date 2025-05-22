@@ -26,7 +26,7 @@ import {
   UserCheck,
   CalendarClock,
   Briefcase,
-  Activity, // Added for Admin Overview
+  Activity,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -57,6 +57,7 @@ export type SiteConfig = {
 };
 
 const dashboardBaseUrl = "/dashboard";
+export const ADMIN_OVERVIEW_PATH = `${dashboardBaseUrl}/admin/overview`;
 
 export const siteConfig: SiteConfig = {
   name: "KATAMA",
@@ -79,11 +80,11 @@ export const siteConfig: SiteConfig = {
     // Menu Superadmin - Administrasi Sistem
     {
       title: "Administrasi Sistem",
-      href: `${dashboardBaseUrl}/admin/overview`, 
+      href: ADMIN_OVERVIEW_PATH, 
       icon: Briefcase,
       description: "Pengelolaan sistem tingkat lanjut (Superadmin).",
       items: [
-        { title: "Overview Administrasi", href: `${dashboardBaseUrl}/admin/overview`, icon: Activity, description: "Ringkasan dan statistik sistem." },
+        { title: "Overview Administrasi", href: ADMIN_OVERVIEW_PATH, icon: Activity, description: "Ringkasan dan statistik sistem." },
         { title: "Manajemen Perusahaan", href: `${dashboardBaseUrl}/admin/companies`, icon: Building2, description: "Kelola daftar perusahaan dalam sistem." },
       ]
     },
