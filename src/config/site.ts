@@ -74,18 +74,17 @@ export const siteConfig: SiteConfig = {
       title: "Dasbor",
       href: `${dashboardBaseUrl}`,
       icon: LayoutDashboard,
-      description: "Gambaran umum sistem.", 
+      description: "Gambaran umum kinerja perusahaan yang aktif.", 
     },
     // Menu Superadmin - Administrasi Sistem
     {
       title: "Administrasi Sistem",
-      href: `${dashboardBaseUrl}/admin/overview`, // Main link for this section
+      href: `${dashboardBaseUrl}/admin/overview`, 
       icon: Briefcase,
       description: "Pengelolaan sistem tingkat lanjut (Superadmin).",
       items: [
         { title: "Overview Administrasi", href: `${dashboardBaseUrl}/admin/overview`, icon: Activity, description: "Ringkasan dan statistik sistem." },
         { title: "Manajemen Perusahaan", href: `${dashboardBaseUrl}/admin/companies`, icon: Building2, description: "Kelola daftar perusahaan dalam sistem." },
-        // Future Superadmin items: User Management (global), Global Settings, System Logs, Subscription Management etc.
       ]
     },
     // Menu Operasional untuk Tenant Admin (dan Superadmin jika melihat sebagai tenant)
@@ -93,33 +92,33 @@ export const siteConfig: SiteConfig = {
       title: "Point of Sale",
       href: `${dashboardBaseUrl}/pos`,
       icon: ShoppingCart,
-      description: "Proses penjualan dan transaksi.",
+      description: "Proses penjualan dan transaksi untuk perusahaan aktif.",
     },
     {
       title: "Manajemen Shift",
       href: `${dashboardBaseUrl}/shifts`,
       icon: Clock,
-      description: "Kelola sesi kerja kasir dan outlet.",
+      description: "Kelola sesi kerja untuk perusahaan aktif.",
       items: [
-        { title: "Daftar Shift", href: `${dashboardBaseUrl}/shifts`, icon: ListTree, description: "Lihat semua shift." },
-        { title: "Mulai Shift Baru", href: `${dashboardBaseUrl}/shifts/add`, icon: PlusCircle, description: "Mulai sesi shift baru." },
+        { title: "Daftar Shift", href: `${dashboardBaseUrl}/shifts`, icon: ListTree, description: "Lihat semua shift perusahaan aktif." },
+        { title: "Mulai Shift Baru", href: `${dashboardBaseUrl}/shifts/add`, icon: PlusCircle, description: "Mulai sesi shift baru untuk perusahaan aktif." },
       ]
     },
     {
       title: "Manajemen Produk", 
       href: `${dashboardBaseUrl}/products`, 
       icon: Package,
-      description: "Kelola daftar produk, kategori, dan bahan baku.",
+      description: "Kelola produk, kategori, bahan baku, dan satuan untuk perusahaan aktif.",
       items: [ 
-        { title: "Daftar Produk", href: `${dashboardBaseUrl}/products`, icon: Package, description: "Lihat semua produk." },
-        { title: "Tambah Produk", href: `${dashboardBaseUrl}/products/add`, icon: PlusCircle, description: "Buat produk baru." },
-        { title: "Kategori Produk", href: `${dashboardBaseUrl}/categories`, icon: ListTree, description: "Kelola kategori produk." },
-        { title: "Bahan Baku", href: `${dashboardBaseUrl}/raw-materials`, icon: Archive, description: "Kelola stok bahan baku." },
+        { title: "Daftar Produk", href: `${dashboardBaseUrl}/products`, icon: Package, description: "Lihat semua produk perusahaan aktif." },
+        { title: "Tambah Produk", href: `${dashboardBaseUrl}/products/add`, icon: PlusCircle, description: "Buat produk baru untuk perusahaan aktif." },
+        { title: "Kategori Produk", href: `${dashboardBaseUrl}/categories`, icon: ListTree, description: "Kelola kategori produk perusahaan aktif." },
+        { title: "Bahan Baku", href: `${dashboardBaseUrl}/raw-materials`, icon: Archive, description: "Kelola stok bahan baku perusahaan aktif." },
         { 
           title: "Satuan Barang", 
           href: `${dashboardBaseUrl}/units`, 
           icon: Tags, 
-          description: "Kelola satuan barang.",
+          description: "Kelola satuan barang perusahaan aktif.",
         },
       ]
     },
@@ -127,35 +126,34 @@ export const siteConfig: SiteConfig = {
       title: "Pembelanjaan",
       href: `${dashboardBaseUrl}/purchases`,
       icon: Truck, 
-      description: "Catat dan kelola pembelanjaan bahan baku.",
+      description: "Catat dan kelola pembelanjaan untuk perusahaan aktif.",
       items: [
-        { title: "Daftar Pembelanjaan", href: `${dashboardBaseUrl}/purchases`, icon: ListTree, description: "Lihat semua pembelanjaan." },
-        { title: "Tambah Pembelanjaan", href: `${dashboardBaseUrl}/purchases/add`, icon: PlusCircle, description: "Catat pembelanjaan baru." },
+        { title: "Daftar Pembelanjaan", href: `${dashboardBaseUrl}/purchases`, icon: ListTree, description: "Lihat semua pembelanjaan perusahaan aktif." },
+        { title: "Tambah Pembelanjaan", href: `${dashboardBaseUrl}/purchases/add`, icon: PlusCircle, description: "Catat pembelanjaan baru untuk perusahaan aktif." },
       ]
     },
     {
       title: "Laporan",
       href: `${dashboardBaseUrl}/reports`,
       icon: BarChart3,
-      description: "Lihat laporan penjualan, stok, dll.",
+      description: "Lihat laporan penjualan, stok, dll. untuk perusahaan aktif.",
       items: [
-        { title: "Penjualan", href: `${dashboardBaseUrl}/reports/sales`, icon: DollarSign, description: "Laporan penjualan." },
-        { title: "Pembelanjaan", href: `${dashboardBaseUrl}/reports/purchases`, icon: Receipt, description: "Laporan pembelanjaan." },
-        { title: "Stok", href: `${dashboardBaseUrl}/reports/stock`, icon: PercentCircle, description: "Laporan stok barang." },
-        { title: "Shift", href: `${dashboardBaseUrl}/reports/shifts`, icon: UserCheck, description: "Laporan aktivitas shift pengguna." },
+        { title: "Penjualan", href: `${dashboardBaseUrl}/reports/sales`, icon: DollarSign, description: "Laporan penjualan perusahaan aktif." },
+        { title: "Pembelanjaan", href: `${dashboardBaseUrl}/reports/purchases`, icon: Receipt, description: "Laporan pembelanjaan perusahaan aktif." },
+        { title: "Stok", href: `${dashboardBaseUrl}/reports/stock`, icon: PercentCircle, description: "Laporan stok barang perusahaan aktif." },
+        { title: "Shift", href: `${dashboardBaseUrl}/reports/shifts`, icon: UserCheck, description: "Laporan aktivitas shift perusahaan aktif." },
       ],
     },
     {
       title: "Pengaturan",
       href: `${dashboardBaseUrl}/settings`,
       icon: SettingsIcon,
-      description: "Konfigurasi sistem dan default.", 
+      description: "Konfigurasi sistem dan data bisnis.", 
       items: [
-        // These settings might need to be adapted or made global for Superadmin
         { title: "Umum (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/general`, icon: Building2, description: "Pengaturan umum perusahaan yang dipilih." },
         { title: "Struk (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/struk`, icon: FileCog, description: "Pengaturan struk belanja perusahaan yang dipilih." },
-        { title: "Pengguna (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna perusahaan yang dipilih." },
-        { title: "Peran (Global/Template)", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola peran pengguna (global atau template)." },
+        { title: "Pengguna (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/users`, icon: UserCog, description: "Kelola pengguna untuk perusahaan yang aktif." },
+        { title: "Template Peran (Global)", href: `${dashboardBaseUrl}/settings/roles`, icon: ShieldCheck, description: "Kelola template peran global untuk sistem (Superadmin)." },
         { title: "Outlet (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/outlets`, icon: Store, description: "Kelola outlet perusahaan yang dipilih." },
         { title: "Jam Operasional (Perusahaan Aktif)", href: `${dashboardBaseUrl}/settings/operating-hours`, icon: CalendarClock, description: "Atur jam buka outlet perusahaan yang dipilih." },
       ]

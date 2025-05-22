@@ -10,10 +10,10 @@ export default function AddRolePage() {
     "use server";
     try {
       const newRole = addMockRole(data);
-      console.log("Peran ditambahkan:", newRole);
+      console.log("Template peran ditambahkan:", newRole);
       return newRole;
     } catch (error) {
-      console.error("Gagal menambahkan peran:", error);
+      console.error("Gagal menambahkan template peran:", error);
       throw error;
     }
   };
@@ -21,8 +21,8 @@ export default function AddRolePage() {
   return (
     <div className="space-y-6">
       <PageHeader 
-        title="Tambah Peran Baru" 
-        description="Isi detail untuk peran pengguna baru." 
+        title="Tambah Template Peran Global Baru" 
+        description="Isi detail untuk template peran pengguna baru. Peran ini akan tersedia secara global." 
       />
       <RoleForm
         onSave={handleSaveRole}

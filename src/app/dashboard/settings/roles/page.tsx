@@ -48,13 +48,13 @@ export default function RolesPage() {
     if (success) {
       setRoles(roles.filter(role => role.id !== roleToDelete.id));
       toast({
-        title: "Peran Dihapus",
-        description: `Peran "${roleToDelete.name}" telah berhasil dihapus.`,
+        title: "Template Peran Dihapus",
+        description: `Template peran "${roleToDelete.name}" telah berhasil dihapus.`,
       });
     } else {
       toast({
         title: "Gagal Menghapus",
-        description: `Terjadi kesalahan saat menghapus peran "${roleToDelete.name}". Peran "Admin" tidak dapat dihapus.`,
+        description: `Terjadi kesalahan saat menghapus template peran "${roleToDelete.name}". Peran default sistem tidak dapat dihapus.`,
         variant: "destructive",
       });
     }
@@ -64,11 +64,11 @@ export default function RolesPage() {
   };
 
   const openDeleteDialog = (role: Role) => {
-    if (role.name === "Admin") {
+    if (role.name === "Admin" || role.name === "Super Admin") {
         toast({
             title: "Tindakan Tidak Diizinkan",
-            description: "Peran 'Admin' tidak dapat dihapus.",
-            variant: "destructive",
+            description: `Template peran default "${role.name}" tidak dapat dihapus.`,
+            variant: "warning",
         });
         return;
     }
@@ -78,18 +78,18 @@ export default function RolesPage() {
 
   return (
     <div>
-      <PageHeader title="Manajemen Peran (Role)" description="Kelola peran pengguna dan hak aksesnya.">
+      <PageHeader title="Manajemen Template Peran (Global)" description="Kelola template peran pengguna global dan hak aksesnya. Peran ini dapat ditugaskan ke pengguna di setiap perusahaan.">
         <Button asChild>
           <Link href="/dashboard/settings/roles/add">
-            <PlusCircle className="mr-2 h-4 w-4" /> Tambah Peran
+            <PlusCircle className="mr-2 h-4 w-4" /> Tambah Template Peran
           </Link>
         </Button>
       </PageHeader>
       
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Daftar Peran</CardTitle>
-          <CardDescription>Total {roles.length} peran ditemukan.</CardDescription>
+          <CardTitle>Daftar Template Peran Global</CardTitle>
+          <CardDescription>Total {roles.length} template peran ditemukan. Hanya Superadmin yang dapat mengelola ini.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -97,7 +97,7 @@ export default function RolesPage() {
               <TableRow>
                 <TableHead>Nama Peran</TableHead>
                 <TableHead>Deskripsi</TableHead>
-                <TableHead className="text-center hidden md:table-cell">Jumlah Pengguna</TableHead>
+                <TableHead className="text-center hidden md:table-cell">Jumlah Pengguna (Global)</TableHead>
                 <TableHead>
                   <span className="sr-only">Aksi</span>
                 </TableHead>
@@ -107,7 +107,7 @@ export default function RolesPage() {
               {roles.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
-                    Belum ada peran yang ditambahkan.
+                    Belum ada template peran yang ditambahkan.
                   </TableCell>
                 </TableRow>
               )}
@@ -131,15 +131,15 @@ export default function RolesPage() {
                         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/settings/roles/edit/${role.id}`}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit Peran
+                            <Edit className="mr-2 h-4 w-4" /> Edit Template
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive focus:text-destructive focus:bg-destructive/10"
                           onClick={() => openDeleteDialog(role)}
-                          disabled={role.name === "Admin"}
+                          disabled={role.name === "Admin" || role.name === "Super Admin"}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> Hapus Peran
+                          <Trash2 className="mr-2 h-4 w-4" /> Hapus Template
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -154,16 +154,16 @@ export default function RolesPage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Anda yakin ingin menghapus peran ini?</AlertDialogTitle>
+            <AlertDialogTitle>Anda yakin ingin menghapus template peran ini?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat diurungkan. Peran "{roleToDelete?.name}" akan dihapus secara permanen.
-              Pengguna yang memiliki peran ini mungkin perlu diberi peran baru.
+              Tindakan ini tidak dapat diurungkan. Template peran "{roleToDelete?.name}" akan dihapus secara permanen.
+              Ini tidak akan menghapus peran dari pengguna yang sudah ada, tetapi template ini tidak akan tersedia lagi untuk penugasan baru.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setRoleToDelete(null)}>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteRole} className="bg-destructive hover:bg-destructive/90">
-              Ya, Hapus Peran
+              Ya, Hapus Template Peran
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

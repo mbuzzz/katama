@@ -21,12 +21,12 @@ export default async function EditRolePage({ params }: EditRolePageProps) {
     try {
       const updatedRole = updateMockRole(roleId, data);
       if (!updatedRole) {
-        throw new Error("Peran tidak ditemukan untuk diperbarui.");
+        throw new Error("Template peran tidak ditemukan untuk diperbarui.");
       }
-      console.log("Peran diperbarui:", updatedRole);
+      console.log("Template peran diperbarui:", updatedRole);
       return updatedRole;
     } catch (error) {
-      console.error("Gagal memperbarui peran:", error);
+      console.error("Gagal memperbarui template peran:", error);
       throw error;
     }
   };
@@ -34,17 +34,17 @@ export default async function EditRolePage({ params }: EditRolePageProps) {
   if (!role) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Edit Peran" description="Peran tidak ditemukan." />
+        <PageHeader title="Edit Template Peran" description="Template peran tidak ditemukan." />
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <AlertTriangle className="mr-2 h-6 w-6 text-destructive" /> Peran Tidak Ditemukan
+              <AlertTriangle className="mr-2 h-6 w-6 text-destructive" /> Template Peran Tidak Ditemukan
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Peran yang Anda coba edit tidak ada atau mungkin telah dihapus.</p>
+            <p>Template peran yang Anda coba edit tidak ada atau mungkin telah dihapus.</p>
             <Button asChild className="mt-4">
-              <Link href="/dashboard/settings/roles">Kembali ke Daftar Peran</Link>
+              <Link href="/dashboard/settings/roles">Kembali ke Daftar Template Peran</Link>
             </Button>
           </CardContent>
         </Card>
@@ -55,8 +55,8 @@ export default async function EditRolePage({ params }: EditRolePageProps) {
   return (
     <div className="space-y-6">
       <PageHeader 
-        title="Edit Peran" 
-        description={`Perbarui detail untuk peran "${role.name}".`}
+        title="Edit Template Peran Global" 
+        description={`Perbarui detail untuk template peran "${role.name}".`}
       />
       <RoleForm
         initialData={role}
