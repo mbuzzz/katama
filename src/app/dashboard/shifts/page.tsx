@@ -31,11 +31,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Shift, EndShiftDialogFormData } from "@/types/shift";
-import { getMockShifts, endMockShift, cancelMockShift } from "@/data/shifts";
+import { getMockShifts } from "@/data/shifts"; // Removed endMockShift, cancelMockShift
+import { endShiftAction, cancelShiftAction } from "./actions"; // Import server actions
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 export default function ShiftsPage() {
   const [shifts, setShifts] = React.useState<Shift[]>([]);
@@ -44,32 +47,42 @@ export default function ShiftsPage() {
   const [shiftToModify, setShiftToModify] = React.useState<Shift | null>(null);
   const [endShiftForm, setEndShiftForm] = React.useState<EndShiftDialogFormData>({ finalCashInput: 0, endNotes: "" });
   const [cancelShiftNotes, setCancelShiftNotes] = React.useState<string>("");
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const { toast } = useToast();
   const router = useRouter();
 
-  React.useEffect(() => {
-    setShifts(getMockShifts());
+  const fetchShifts = React.useCallback(() => {
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
+    if (storedCompanyId) {
+      setShifts(getMockShifts(storedCompanyId));
+    } else {
+      setShifts([]);
+    }
+    setIsLoading(false);
   }, []);
 
-  const refreshShifts = () => {
-    setShifts(getMockShifts());
-    router.refresh();
+  React.useEffect(() => {
+    fetchShifts();
+  }, [fetchShifts]);
+
+  const refreshShiftsAndGrid = () => {
+    fetchShifts(); // Re-fetch shifts which will update the state
+    router.refresh(); // May not be strictly necessary if state update re-renders, but good for ensuring data sync
   }
 
   const handleEndShift = async () => {
-    if (!shiftToModify) return;
+    if (!shiftToModify || !activeCompanyId) return;
     try {
-      const updatedShift = endMockShift(shiftToModify.id, {
-        finalCashInput: endShiftForm.finalCashInput,
-        endNotes: endShiftForm.endNotes,
-      });
+      const updatedShift = await endShiftAction(shiftToModify.id, endShiftForm, activeCompanyId);
       if (updatedShift) {
         toast({
           title: "Shift Diakhiri",
           description: `Shift untuk ${updatedShift.userName} telah berhasil diakhiri.`,
         });
-        refreshShifts();
+        refreshShiftsAndGrid();
       } else {
          throw new Error("Shift tidak ditemukan atau gagal diakhiri.");
       }
@@ -86,15 +99,15 @@ export default function ShiftsPage() {
   };
 
   const handleCancelShift = async () => {
-    if (!shiftToModify) return;
+    if (!shiftToModify || !activeCompanyId) return;
     try {
-        const updatedShift = cancelMockShift(shiftToModify.id, cancelShiftNotes);
+        const updatedShift = await cancelShiftAction(shiftToModify.id, activeCompanyId, cancelShiftNotes);
         if (updatedShift) {
             toast({
                 title: "Shift Dibatalkan",
                 description: `Shift untuk ${updatedShift.userName} telah dibatalkan.`,
             });
-            refreshShifts();
+            refreshShiftsAndGrid();
         } else {
             throw new Error("Shift tidak ditemukan atau gagal dibatalkan.");
         }
@@ -113,7 +126,7 @@ export default function ShiftsPage() {
 
   const openEndShiftDialog = (shift: Shift) => {
     setShiftToModify(shift);
-    setEndShiftForm({ finalCashInput: shift.initialCash, endNotes: "" }); 
+    setEndShiftForm({ finalCashInput: shift.initialCash || 0, endNotes: "" }); 
     setShowEndShiftDialog(true);
   };
 
@@ -145,8 +158,8 @@ export default function ShiftsPage() {
   return (
     <div>
       <PageHeader title="Manajemen Shift" description="Kelola sesi kerja kasir dan operasional outlet.">
-        <Button asChild className="w-full sm:w-auto">
-          <Link href="/dashboard/shifts/add">
+        <Button asChild className="w-full sm:w-auto" disabled={!activeCompanyId}>
+          <Link href={activeCompanyId ? "/dashboard/shifts/add" : "#"}>
             <PlayCircle className="mr-2 h-4 w-4" /> Mulai Shift Baru
           </Link>
         </Button>
@@ -155,7 +168,9 @@ export default function ShiftsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Daftar Shift</CardTitle>
-          <CardDescription>Total {shifts.length} shift ditemukan.</CardDescription>
+          <CardDescription>
+            Total {shifts.length} shift ditemukan {activeCompanyId ? "untuk perusahaan ini" : " (pilih perusahaan dahulu)"}.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -176,14 +191,26 @@ export default function ShiftsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shifts.length === 0 && (
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-10">Memuat data shift...</TableCell>
+                </TableRow>
+              )}
+              {!isLoading && !activeCompanyId && (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center text-muted-foreground py-10">
-                    Belum ada data shift.
+                    Pilih perusahaan aktif terlebih dahulu untuk melihat data shift.
                   </TableCell>
                 </TableRow>
               )}
-              {shifts.map((shift) => (
+              {!isLoading && activeCompanyId && shifts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-10">
+                    Belum ada data shift untuk perusahaan ini.
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && activeCompanyId && shifts.map((shift) => (
                 <TableRow key={shift.id}>
                   <TableCell className="font-medium max-w-[120px] truncate">{shift.userName}</TableCell>
                   <TableCell className="hidden sm:table-cell max-w-[120px] truncate">{shift.outletName}</TableCell>
@@ -234,7 +261,6 @@ export default function ShiftsPage() {
         </CardContent>
       </Card>
 
-      {/* Dialog untuk Mengakhiri Shift */}
       <AlertDialog open={showEndShiftDialog} onOpenChange={setShowEndShiftDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -274,7 +300,6 @@ export default function ShiftsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog untuk Membatalkan Shift */}
       <AlertDialog open={showCancelShiftDialog} onOpenChange={setShowCancelShiftDialog}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -305,5 +330,3 @@ export default function ShiftsPage() {
     </div>
   );
 }
-
-    

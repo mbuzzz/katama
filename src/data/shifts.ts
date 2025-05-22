@@ -1,7 +1,7 @@
 
 import type { Shift, ShiftFormData, EndShiftData } from '@/types/shift';
 import { getMockUsers } from '@/data/users'; 
-import { getMockOutlets, getMockOutletById } from '@/data/outlets'; // Menggunakan getMockOutlets dari file terpusat
+import { getMockOutlets, getMockOutletById } from '@/data/outlets'; 
 import { differenceInMinutes, formatDistanceStrict, format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import type { User } from '@/types/user';
@@ -11,9 +11,9 @@ let mockShiftsStore: Shift[] = [
   {
     id: 'shift1',
     companyId: "comp_es_teh_jaya",
-    userId: '2', // Budi Santoso
+    userId: '2', 
     userName: 'Budi Santoso',
-    outletId: '1', // KATAMA Pusat (Es Teh)
+    outletId: '1', 
     outletName: 'KATAMA Pusat (Es Teh)',
     startTime: "2024-07-23T02:00:00.000Z", 
     endTime: "2024-07-23T09:00:00.000Z",  
@@ -26,9 +26,9 @@ let mockShiftsStore: Shift[] = [
   {
     id: 'shift2',
     companyId: "comp_es_teh_jaya",
-    userId: '1', // Ana Maria
+    userId: '1', 
     userName: 'Ana Maria',
-    outletId: '1', // KATAMA Pusat (Es Teh)
+    outletId: '1', 
     outletName: 'KATAMA Pusat (Es Teh)',
     startTime: "2024-07-23T08:00:00.000Z", 
     endTime: null,
@@ -41,9 +41,9 @@ let mockShiftsStore: Shift[] = [
   {
     id: 'shift3',
     companyId: "comp_kopi_maju",
-    userId: '3', // Candra Wijaya
+    userId: '3', 
     userName: 'Candra Wijaya',
-    outletId: '3', // Kedai Kopi Maju Jaya Pusat
+    outletId: '3', 
     outletName: 'Kedai Kopi Maju Jaya Pusat',
     startTime: "2024-07-22T10:00:00.000Z", 
     endTime: "2024-07-22T16:00:00.000Z",  
@@ -62,11 +62,9 @@ const calculateDuration = (startTime: string, endTime: string | null): string | 
   return formatDistanceStrict(end, start, { locale: idLocale, unit: 'minute' });
 };
 
-// Populate shift names based on potentially company-specific users and outlets
 const populateShiftNames = (shift: Shift): Shift => {
-  const users = getMockUsers(); // Users are global for now
+  const users = getMockUsers(); 
   const user = users.find(u => u.id === shift.userId);
-  // Outlets are company-specific, so we need companyId from the shift
   const outlet = getMockOutletById(shift.outletId, shift.companyId); 
   
   return {
@@ -81,7 +79,7 @@ const populateShiftNames = (shift: Shift): Shift => {
 export const getMockShifts = (companyId?: string): Shift[] => {
   const filteredShifts = companyId 
     ? mockShiftsStore.filter(s => s.companyId === companyId) 
-    : []; // Jika tidak ada companyId, kembalikan kosong (shift harus per perusahaan)
+    : []; 
 
   return filteredShifts
     .map(populateShiftNames)
@@ -92,7 +90,7 @@ export const getMockShiftById = (id: string, companyId?: string): Shift | undefi
   const shift = mockShiftsStore.find((s) => s.id === id);
   if (shift) {
     if (companyId && shift.companyId !== companyId) {
-      return undefined; // Not found for this company
+      return undefined; 
     }
     return populateShiftNames(shift);
   }
@@ -101,11 +99,13 @@ export const getMockShiftById = (id: string, companyId?: string): Shift | undefi
 
 export const addMockShift = (shiftData: ShiftFormData, companyId: string): Shift => {
   if (!companyId) throw new Error("companyId is required to add a shift.");
-  const users = getMockUsers(); // Global users for now
+  const users = getMockUsers(); 
   const user = users.find(u => u.id === shiftData.userId);
-  const outlet = getMockOutletById(shiftData.outletId, companyId); // Company-specific outlet
+  const outlet = getMockOutletById(shiftData.outletId, companyId); 
 
   if (!outlet) throw new Error(`Outlet dengan ID ${shiftData.outletId} tidak ditemukan untuk perusahaan ini.`);
+  if (!user) throw new Error(`Pengguna dengan ID ${shiftData.userId} tidak ditemukan.`);
+
 
   const newShift: Shift = {
     id: `shift${mockShiftsStore.length + 1}-${Date.now().toString().slice(-4)}`,
@@ -116,7 +116,7 @@ export const addMockShift = (shiftData: ShiftFormData, companyId: string): Shift
     totalSales: null, 
     status: 'Berjalan',
     ...shiftData,
-    userName: user?.name || 'Tidak Diketahui',
+    userName: user.name,
     outletName: outlet.name,
     duration: null,
   };
@@ -136,8 +136,6 @@ export const endMockShift = (id: string, endShiftData: EndShiftData, companyId: 
   }
 
   const finalCash = endShiftData.finalCashInput;
-  // TODO: totalSales should be calculated based on actual sales transactions during the shift.
-  // For mock, we can use a placeholder or keep it simple: finalCash - initialCash
   const totalSales = finalCash - shiftToEnd.initialCash; 
 
   mockShiftsStore[shiftIndex] = {
@@ -168,7 +166,6 @@ export const cancelMockShift = (id: string, companyId: string, notes?: string): 
 
 export const getMockUsersForSelect = (): { value: string; label: string }[] => getMockUsers().map((u: User) => ({ value: u.id, label: u.name })); 
 
-// Sekarang getMockOutletsForSelect membutuhkan companyId
 export const getMockOutletsForSelect = (companyId: string): { value: string; label: string }[] => {
   return getMockOutlets(companyId).map(o => ({ value: o.id, label: o.name }));
 };
@@ -180,4 +177,3 @@ export const getMockShiftsForSelect = (companyId?: string): {value: string; labe
     return { value: shift.id, label };
   });
 };
-
