@@ -107,7 +107,7 @@ export default function POSPage() {
       const allCompanies = getMockCompanies();
       if (allCompanies.length > 0) {
         companyIdForSession = allCompanies[0].id;
-        localStorage.setItem(SELECTED_COMPANY_ID_KEY, companyIdForSession);
+        localStorage.setItem(SELECTED_COMPANY_ID_KEY, companyIdForSession); 
         const companyDetails = getMockCompanyById(companyIdForSession);
         if (companyDetails) {
             window.dispatchEvent(new CustomEvent('companySwitched', {
@@ -137,13 +137,16 @@ export default function POSPage() {
           if (typeof potentialSessionData === 'object' && 
               potentialSessionData !== null && 
               'startTime' in potentialSessionData && 
-              'companyId' in potentialSessionData &&
-              typeof potentialSessionData.startTime === 'string') { 
+              typeof potentialSessionData.startTime === 'string' && // Check type of startTime before using it for Date
+              'companyId' in potentialSessionData) { 
+            
             const validSessionData = potentialSessionData as Omit<POSSession, 'startTime'> & { startTime: string };
             const sessionStartTime = new Date(validSessionData.startTime);
+
             if (sessionStartTime && !isNaN(sessionStartTime.getTime()) && validSessionData.companyId === companyIdForSession) {
               setPosSession({ ...validSessionData, startTime: sessionStartTime });
             } else {
+              console.warn("Sesi POS ditemukan di localStorage tetapi tidak valid untuk perusahaan ini atau format tanggal salah, menghapus...");
               localStorage.removeItem(POS_SESSION_STORAGE_KEY); 
             }
           } else {

@@ -65,18 +65,15 @@ export const deleteMockRawMaterial = (id: string, companyId: string): boolean =>
 export const updateRawMaterialStock = (materialId: string, companyId: string, quantityChange: number): RawMaterialSaaS | undefined => {
   const materialIndex = mockRawMaterialsStore.findIndex(m => m.id === materialId && m.companyId === companyId);
   if (materialIndex === -1) {
-    console.warn(`Bahan baku dengan ID ${materialId} tidak ditemukan untuk perusahaan ${companyId} saat update stok.`);
+    console.warn(`DATA_RAW_MATERIALS: Bahan baku dengan ID ${materialId} tidak ditemukan untuk perusahaan ${companyId} saat update stok.`);
     return undefined;
   }
   mockRawMaterialsStore[materialIndex].stock += quantityChange;
   if (mockRawMaterialsStore[materialIndex].stock < 0) {
-    // This might happen if a sale is processed for an item whose raw material stock was already depleted due to some error
-    // Or if a purchase is "undone" and quantityChange is negative.
-    // For sales (quantityChange is negative), if it goes below zero, it's an issue. For now, let it go negative for debugging.
-    console.warn(`Stok bahan baku ${materialId} (company ${companyId}) menjadi negatif: ${mockRawMaterialsStore[materialIndex].stock}`);
-     // mockRawMaterialsStore[materialIndex].stock = 0; // Option to prevent negative stock
+    console.warn(`DATA_RAW_MATERIALS: Stok bahan baku ${materialId} (company ${companyId}) menjadi negatif: ${mockRawMaterialsStore[materialIndex].stock}, direset ke 0.`);
+    mockRawMaterialsStore[materialIndex].stock = 0; 
   }
-  console.log(`Stock for raw material ${materialId} (company ${companyId}) updated to: ${mockRawMaterialsStore[materialIndex].stock}`); // DEBUG
+  console.log(`DATA_RAW_MATERIALS: Stok untuk bahan baku ${materialId} (company ${companyId}) diperbarui menjadi: ${mockRawMaterialsStore[materialIndex].stock}`);
   return mockRawMaterialsStore[materialIndex];
 };
 

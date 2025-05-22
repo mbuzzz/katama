@@ -113,15 +113,16 @@ export const deleteMockProduct = (id: string, companyId: string): boolean => {
 export const updateProductStock = (productId: string, companyId: string, quantityChange: number): Product | undefined => {
   const productIndex = mockProductsStore.findIndex(p => p.id === productId && p.companyId === companyId);
   if (productIndex === -1) {
-    console.warn(`Produk dengan ID ${productId} tidak ditemukan untuk perusahaan ${companyId} saat update stok.`);
+    console.warn(`DATA_PRODUCTS: Produk dengan ID ${productId} tidak ditemukan untuk perusahaan ${companyId} saat update stok.`);
     return undefined;
   }
 
   mockProductsStore[productIndex].stock += quantityChange;
   if (mockProductsStore[productIndex].stock < 0) {
+    console.warn(`DATA_PRODUCTS: Stok produk ${productId} (company ${companyId}) menjadi negatif: ${mockProductsStore[productIndex].stock}, direset ke 0.`);
     mockProductsStore[productIndex].stock = 0; 
   }
-  console.log(`Stock for product ${productId} (company ${companyId}) updated to: ${mockProductsStore[productIndex].stock}`); // DEBUG
+  console.log(`DATA_PRODUCTS: Stok untuk produk ${productId} (company ${companyId}) diperbarui menjadi: ${mockProductsStore[productIndex].stock}`);
   return mockProductsStore[productIndex];
 };
 
@@ -129,7 +130,9 @@ export const processSaleTransaction = (
   items: Array<{ productId: string; quantity: number; ingredients?: ProductIngredient[] }>,
   companyId: string 
 ): { success: boolean; message?: string } => {
+  console.log(`DATA_PRODUCTS: Memulai processSaleTransaction untuk companyId: ${companyId}`, items);
   if (!companyId) {
+    console.error("DATA_PRODUCTS: companyId tidak valid untuk processSaleTransaction.");
     return { success: false, message: "ID Perusahaan tidak valid untuk proses transaksi." };
   }
   const currentRawMaterialsForCompany = getMockRawMaterials(companyId); 
@@ -138,9 +141,11 @@ export const processSaleTransaction = (
   for (const item of items) {
     const product = getMockProductById(item.productId, companyId); 
     if (!product) {
+      console.error(`DATA_PRODUCTS: Produk ID ${item.productId} tidak ditemukan untuk companyId ${companyId}.`);
       return { success: false, message: `Produk dengan ID ${item.productId} tidak ditemukan untuk perusahaan ini.` };
     }
     if (product.stock < item.quantity) {
+      console.error(`DATA_PRODUCTS: Stok produk ${product.name} (ID: ${item.productId}) tidak cukup. Stok: ${product.stock}, Diminta: ${item.quantity}`);
       return { success: false, message: `Stok produk ${product.name} tidak mencukupi.` };
     }
 
@@ -148,10 +153,12 @@ export const processSaleTransaction = (
       for (const ing of product.ingredients) {
         const rawMat = currentRawMaterialsForCompany.find(rm => rm.id === ing.rawMaterialId);
         if (!rawMat) {
+          console.error(`DATA_PRODUCTS: Bahan baku ID ${ing.rawMaterialId} (untuk produk ${product.name}) tidak ditemukan untuk companyId ${companyId}.`);
           return { success: false, message: `Bahan baku dengan ID ${ing.rawMaterialId} untuk produk ${product.name} tidak ditemukan di perusahaan ini.` };
         }
         const requiredRawMaterialQuantity = ing.quantity * item.quantity;
         if (rawMat.stock < requiredRawMaterialQuantity) {
+          console.error(`DATA_PRODUCTS: Stok bahan baku ${rawMat.name} (ID: ${ing.rawMaterialId}) untuk produk ${product.name} tidak cukup. Stok: ${rawMat.stock}, Dibutuhkan: ${requiredRawMaterialQuantity}`);
           return { success: false, message: `Stok bahan baku ${rawMat.name} untuk produk ${product.name} tidak mencukupi (dibutuhkan: ${requiredRawMaterialQuantity}, tersedia: ${rawMat.stock}).` };
         }
       }
@@ -159,17 +166,21 @@ export const processSaleTransaction = (
   }
 
   // Execution phase: Update stock if all validations passed
+  console.log(`DATA_PRODUCTS: Validasi berhasil, melanjutkan update stok untuk companyId: ${companyId}`);
   for (const item of items) {
+    console.log(`DATA_PRODUCTS: Memperbarui stok produk ID ${item.productId} sebanyak ${-item.quantity}`);
     updateProductStock(item.productId, companyId, -item.quantity); 
     
-    const product = getMockProductById(item.productId, companyId); 
+    const product = getMockProductById(item.productId, companyId); // Ambil lagi detail produk setelah update stok produk jadi
     if (product && product.ingredients && product.ingredients.length > 0) {
       product.ingredients.forEach(ingredient => {
         const consumedRawMaterialQuantity = ingredient.quantity * item.quantity;
+        console.log(`DATA_PRODUCTS: Memperbarui stok bahan baku ID ${ingredient.rawMaterialId} sebanyak ${-consumedRawMaterialQuantity} untuk produk ${product.name}`);
         updateRawMaterialStock(ingredient.rawMaterialId, companyId, -consumedRawMaterialQuantity); 
       });
     }
   }
+  console.log(`DATA_PRODUCTS: processSaleTransaction selesai untuk companyId: ${companyId}`);
   return { success: true };
 };
     
