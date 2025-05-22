@@ -28,7 +28,7 @@ import { handleProcessSaleAction } from "./actions";
 import html2canvas from 'html2canvas';
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { getMockCompanies } from "@/data/companies"; // Import getMockCompanies
+import { getMockCompanies, getMockCompanyById } from "@/data/companies"; // Import getMockCompanies
 
 // localStorage keys
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
@@ -134,6 +134,7 @@ export default function POSPage() {
             if (sessionStartTime && !isNaN(sessionStartTime.getTime()) && validSessionData.companyId === companyIdForSession) {
               setPosSession({ ...validSessionData, startTime: sessionStartTime });
             } else {
+              // Invalid session data for this company, remove it
               localStorage.removeItem(POS_SESSION_KEY_PREFIX + companyIdForSession); 
             }
           } else {
@@ -150,12 +151,14 @@ export default function POSPage() {
     }
     setIsLoadingSession(false);
 
-    // Load struk settings
+    // Load struk settings (these are global for now, could be company-specific in future)
     if (typeof window !== 'undefined') {
-      setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || DEFAULT_COMPANY_NAME_FALLBACK);
+      const activeCompanyDetails = companyIdForSession ? getMockCompanyById(companyIdForSession) : null;
+      setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || activeCompanyDetails?.name || DEFAULT_COMPANY_NAME_FALLBACK);
       setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Contoh No. 123, Kota Contoh");
       setCompanyContact(localStorage.getItem(COMPANY_CONTACT_STORAGE_KEY) || "0812-3456-7890");
       setCustomLogoUrl(localStorage.getItem(LOGO_STORAGE_KEY));
+      
       setStrukHeaderText(localStorage.getItem(STRUK_HEADER_TEXT_KEY) || "Terima Kasih Atas Kunjungan Anda!");
       setStrukFooterText(localStorage.getItem(STRUK_FOOTER_TEXT_KEY) || "Barang yang sudah dibeli tidak dapat dikembalikan.");
       setStrukShowLogo(localStorage.getItem(STRUK_SHOW_LOGO_KEY) === 'true');
@@ -163,17 +166,27 @@ export default function POSPage() {
       setStrukShowContact(localStorage.getItem(STRUK_SHOW_CONTACT_KEY) === 'true');
       setStrukPaperSize(localStorage.getItem(STRUK_PAPER_SIZE_KEY) || "58mm");
     }
-  }, [activeCompanyId]); // Re-run if activeCompanyId changes (e.g. Superadmin switches)
+  }, [activeCompanyId]);
 
   React.useEffect(() => {
-    // Effect to re-fetch products if companyId changes
-    // This is now handled in the main useEffect, but keep this if there are other dependencies
-    if (activeCompanyId) {
-      setProducts(getMockProducts(activeCompanyId));
-    } else {
-      setProducts([]);
+    // Effect to re-fetch products or re-evaluate session if activeCompanyId changes (e.g., Superadmin switches company)
+    if (!isLoadingSession) { // Only run if initial load is complete
+        const companyIdForSession = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+        setActiveCompanyId(companyIdForSession); // This will trigger the main useEffect above
     }
-  }, [activeCompanyId]);
+    
+    const handleCompanySwitch = () => {
+        setIsLoadingSession(true); // Set loading while switching
+        const newCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+        setActiveCompanyId(newCompanyId); 
+        // The main useEffect will handle loading products and session for the newCompanyId
+    };
+
+    window.addEventListener('companySwitched', handleCompanySwitch);
+    return () => {
+        window.removeEventListener('companySwitched', handleCompanySwitch);
+    };
+  }, [isLoadingSession]); // Re-run when isLoadingSession changes, or initial company switch
 
 
   React.useEffect(() => {
@@ -191,9 +204,15 @@ export default function POSPage() {
         toast({ title: "Perusahaan tidak dipilih.", description: "Pilih perusahaan aktif terlebih dahulu.", variant: "destructive"});
         return;
     }
-    const currentProductDetails = products.find(p => p.id === product.id);
+    // Ensure product being added belongs to the active company
+    if (product.companyId !== activeCompanyId) {
+        toast({ title: "Produk tidak valid.", description: "Produk ini bukan milik perusahaan yang aktif.", variant: "destructive"});
+        return;
+    }
+
+    const currentProductDetails = products.find(p => p.id === product.id && p.companyId === activeCompanyId);
     if (!currentProductDetails) {
-        toast({ title: "Produk tidak ditemukan.", variant: "destructive"});
+        toast({ title: "Produk tidak ditemukan untuk perusahaan ini.", variant: "destructive"});
         return;
     }
 
@@ -231,7 +250,7 @@ export default function POSPage() {
       const productInCart = prevItems.find((item) => item.id === productId);
       if (!productInCart) return prevItems;
 
-      const productDetailsFromState = products.find(p => p.id === productId);
+      const productDetailsFromState = products.find(p => p.id === productId && p.companyId === activeCompanyId);
       if (!productDetailsFromState) {
           toast({ title: "Detail produk tidak ditemukan untuk pembaruan kuantitas.", variant: "destructive"});
           return prevItems;
@@ -261,8 +280,9 @@ export default function POSPage() {
   };
   
   const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    product.companyId === activeCompanyId && // Ensure products are from active company
+    (product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -272,17 +292,24 @@ export default function POSPage() {
     let htmlContent = '';
     const transactionDate = new Date();
     const receiptId = `TXN-${Date.now().toString().slice(-6)}`;
+    
+    const currentCompanyDetails = activeCompanyId ? getMockCompanyById(activeCompanyId) : null;
+    const receiptCompanyName = localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || currentCompanyDetails?.name || DEFAULT_COMPANY_NAME_FALLBACK;
+    const receiptCompanyAddress = localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Alamat Perusahaan";
+    const receiptCompanyContact = localStorage.getItem(COMPANY_CONTACT_STORAGE_KEY) || "Kontak Perusahaan";
+    const receiptCustomLogoUrl = localStorage.getItem(LOGO_STORAGE_KEY);
 
-    if (strukShowLogo && customLogoUrl && customLogoUrl.startsWith("data:image/")) {
-        htmlContent += `<div style="text-align: center; margin-bottom: 10px;"><img src="${customLogoUrl}" style="max-width: 100px; max-height: 50px; display: inline-block;" alt="logo"/></div>`;
+
+    if (strukShowLogo && receiptCustomLogoUrl && receiptCustomLogoUrl.startsWith("data:image/")) {
+        htmlContent += `<div style="text-align: center; margin-bottom: 10px;"><img src="${receiptCustomLogoUrl}" style="max-width: 100px; max-height: 50px; display: inline-block;" alt="logo"/></div>`;
     }
 
-    htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '14px' : '16px'}; font-weight: bold; margin-bottom: 3px;">${companyName}</div>`;
-    if (strukShowAddress && companyAddress) {
-        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 3px;">${companyAddress}</div>`;
+    htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '14px' : '16px'}; font-weight: bold; margin-bottom: 3px;">${receiptCompanyName}</div>`;
+    if (strukShowAddress && receiptCompanyAddress) {
+        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 3px;">${receiptCompanyAddress}</div>`;
     }
-    if (strukShowContact && companyContact) {
-        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;">${companyContact}</div>`;
+    if (strukShowContact && receiptCompanyContact) {
+        htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-bottom: 8px;">${receiptCompanyContact}</div>`;
     }
     htmlContent += `<div style="border-top: 1px dashed #555; margin: 8px 0;"></div>`;
 
@@ -315,7 +342,7 @@ export default function POSPage() {
         htmlContent += `<div style="text-align: center; font-size: ${strukPaperSize === '58mm' ? '10px' : '11px'}; margin-top: 5px;">${strukFooterText}</div>`;
     }
     return { html: htmlContent, transactionId: receiptId };
-  }, [cartItems, companyAddress, companyContact, companyName, customLogoUrl, selectedPaymentMethod, strukFooterText, strukHeaderText, strukPaperSize, strukShowAddress, strukShowContact, strukShowLogo, subtotal, total]);
+  }, [cartItems, activeCompanyId, selectedPaymentMethod, strukFooterText, strukHeaderText, strukPaperSize, strukShowAddress, strukShowContact, strukShowLogo, subtotal, total]);
 
 
   const generateReceiptImage = async (htmlContent: string, transactionId: string) => {
@@ -641,9 +668,12 @@ export default function POSPage() {
                   </Card>
                 ))}
               </div>
-              {filteredProducts.length === 0 && (
+              {activeCompanyId && filteredProducts.length === 0 && (
                 <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Produk tidak ditemukan atau belum ada produk untuk perusahaan ini.</p>
               )}
+               {!activeCompanyId && !isSuperAdmin && ( // For regular admin, if no companyId (e.g., error state)
+                 <p className="text-destructive text-center py-10 text-sm sm:text-base">Perusahaan aktif tidak ditemukan. Silakan hubungi administrator.</p>
+               )}
             </ScrollArea>
           </CardContent>
         </Card>
@@ -714,7 +744,7 @@ export default function POSPage() {
               size="lg" 
               className="w-full mt-2 text-sm sm:text-base h-10 sm:h-11" 
               onClick={handlePayment} 
-              disabled={cartItems.length === 0 || isProcessingPayment}
+              disabled={cartItems.length === 0 || isProcessingPayment || !activeCompanyId}
             >
               {isProcessingPayment ? (
                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -724,7 +754,7 @@ export default function POSPage() {
               ) : <CreditCard className="mr-2 h-4 w-4" />}
               {isProcessingPayment ? "Memproses..." : "Proses Pembayaran"}
             </Button>
-            <Button size="sm" variant="ghost" className="w-full mt-1 h-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={handleClosePOSSession}>
+            <Button size="sm" variant="ghost" className="w-full mt-1 h-9 text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={handleClosePOSSession} disabled={!activeCompanyId}>
               Tutup Sesi POS
             </Button>
           </CardFooter>
@@ -758,3 +788,5 @@ export default function POSPage() {
     </div>
   );
 }
+
+    

@@ -22,3 +22,5 @@ export async function handleProcessSaleAction(cartItems: CartItem[], companyId: 
   // dataProcessSaleTransaction sekarang membutuhkan companyId
   return dataProcessSaleTransaction(itemsToProcess, companyId);
 }
+
+    
