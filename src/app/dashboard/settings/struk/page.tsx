@@ -135,8 +135,8 @@ export default function StrukSettingsPage() {
       let errorMessage = "Gagal mencari printer. Pastikan Bluetooth aktif dan izin diberikan.";
       if (error.name === 'NotFoundError') {
         errorMessage = "Tidak ada perangkat Bluetooth yang dipilih atau ditemukan.";
-      } else if (error.name === 'SecurityError') {
-        errorMessage = "Akses ke Bluetooth diblokir. Pastikan halaman ini aman (HTTPS) dan diizinkan.";
+      } else if (error.name === 'SecurityError' || error.message.includes('Permissions Policy')) {
+        errorMessage = "Akses ke Bluetooth diblokir karena Permissions Policy. Pastikan halaman ini aman (HTTPS) dan kebijakan izin server mengizinkan Bluetooth.";
       }
       setBluetoothError(errorMessage);
       toast({ title: "Pencarian Gagal", description: errorMessage, variant: "destructive" });
@@ -160,18 +160,34 @@ export default function StrukSettingsPage() {
       toast({ title: "Error", description: "Printer yang dipilih tidak ditemukan.", variant: "destructive" });
       return;
     }
+        
+    // Actual connection logic would go here. 
+    // For a real implementation, you'd store the device object, connect to GATT, etc.
+    // This part remains a placeholder for actual Bluetooth communication.
+    console.log("Mencoba menghubungkan ke printer:", printerToConnect.name, printerToConnect.id);
+    // Example (conceptual, would need full Web Bluetooth GATT implementation):
+    // try {
+    //   const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] , name: printerToConnect.name}] });
+    //   const server = await device.gatt.connect();
+    //   // ... further GATT operations ...
+    //   setConnectedPrinterName(printerToConnect.name || `Printer ${printerToConnect.id.substring(0,6)}...`);
+    //   localStorage.setItem(CONNECTED_PRINTER_NAME_KEY, printerToConnect.name || `Printer ${printerToConnect.id.substring(0,6)}...`);
+    //   localStorage.setItem(CONNECTED_PRINTER_ID_KEY, selectedPrinterId);
+    //   toast({ title: "Printer Terhubung", description: `Printer "${printerToConnect.name}" berhasil terhubung.` });
+    //   setShowPrinterDialog(false);
+    // } catch (error) {
+    //   console.error("Gagal menghubungkan ke printer:", error);
+    //   setBluetoothError("Gagal menghubungkan ke printer. Pastikan printer dalam jangkauan dan siap.");
+    //   toast({ title: "Koneksi Gagal", description: "Tidak dapat menghubungkan ke printer.", variant: "destructive"});
+    // } finally {
+    //   setIsConnectingPrinter(false);
+    // }
     
-    // Actual connection logic would go here. For now, we just set it as connected.
-    // This part remains a placeholder because Web Bluetooth API for printing is complex.
-    // navigator.bluetooth.requestDevice({ filters: [{ deviceId: selectedPrinterId }]}) // This isn't correct for reconnecting, store the device object
-    // .then(device => device.gatt.connect())
-    // .then(server => { ... })
-    
-    // Simulate successful connection for UI update
+    // For now, simulate successful connection for UI update
     setConnectedPrinterName(printerToConnect.name || `Printer ${printerToConnect.id.substring(0,6)}...`);
     localStorage.setItem(CONNECTED_PRINTER_NAME_KEY, printerToConnect.name || `Printer ${printerToConnect.id.substring(0,6)}...`);
     localStorage.setItem(CONNECTED_PRINTER_ID_KEY, selectedPrinterId);
-    toast({ title: "Printer Terhubung", description: `Printer "${printerToConnect.name}" berhasil terhubung (simulasi).` });
+    toast({ title: "Printer Terhubung (Placeholder)", description: `Printer "${printerToConnect.name}" telah dipilih. Implementasi koneksi penuh diperlukan.` });
     setShowPrinterDialog(false);
     setIsConnectingPrinter(false);
   };
@@ -227,7 +243,7 @@ export default function StrukSettingsPage() {
                   <Printer className="mr-2 h-4 w-4" /> Cari & Hubungkan Printer
                 </Button>
               )}
-              <p className="text-xs text-muted-foreground">Hubungkan ke printer Bluetooth thermal untuk mencetak struk. Membutuhkan browser dengan dukungan Web Bluetooth (mis. Chrome, Edge di Desktop/Android).</p>
+              <p className="text-xs text-muted-foreground">Hubungkan ke printer Bluetooth thermal untuk mencetak struk. Membutuhkan browser dengan dukungan Web Bluetooth (mis. Chrome, Edge di Desktop/Android) dan halaman yang disajikan melalui HTTPS.</p>
             </div>
           </fieldset>
 

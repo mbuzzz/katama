@@ -25,6 +25,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*', // Berlaku untuk semua path
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'bluetooth=*', // Mengizinkan Web Bluetooth
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
