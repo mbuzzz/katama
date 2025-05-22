@@ -2,15 +2,16 @@
 import { PageHeader } from "@/components/page-header";
 import RoleForm from "@/components/roles/role-form";
 import type { RoleFormData } from "@/components/roles/role-form";
-import { addMockRole } from "@/data/roles";
+import { createRoleAction } from "./actions"; // Import server action
 
 export default function AddRolePage() {
 
   const handleSaveRole = async (data: RoleFormData) => {
-    "use server";
+    "use server"; // This remains a server function passed to a client component
     try {
-      const newRole = addMockRole(data);
-      console.log("Template peran ditambahkan:", newRole);
+      // Call the server action
+      const newRole = await createRoleAction(data); 
+      // console.log("Template peran ditambahkan:", newRole); // Logging is now in the action
       return newRole;
     } catch (error) {
       console.error("Gagal menambahkan template peran:", error);

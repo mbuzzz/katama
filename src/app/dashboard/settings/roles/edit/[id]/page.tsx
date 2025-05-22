@@ -2,7 +2,8 @@
 import { PageHeader } from "@/components/page-header";
 import RoleForm from "@/components/roles/role-form";
 import type { RoleFormData } from "@/components/roles/role-form";
-import { getMockRoleById, updateMockRole } from "@/data/roles";
+import { getMockRoleById } from "@/data/roles"; // getMockRoleById is fine here for initial data
+import { updateRoleAction } from "../actions"; // Import server action (note the path)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
@@ -14,16 +15,18 @@ interface EditRolePageProps {
 
 export default async function EditRolePage({ params }: EditRolePageProps) {
   const roleId = params.id;
-  const role = getMockRoleById(roleId);
+  // Fetching initial data on the server is fine
+  const role = getMockRoleById(roleId); 
 
   const handleUpdateRole = async (data: RoleFormData) => {
-    "use server";
+    "use server"; // This remains a server function passed to a client component
     try {
-      const updatedRole = updateMockRole(roleId, data);
-      if (!updatedRole) {
-        throw new Error("Template peran tidak ditemukan untuk diperbarui.");
-      }
-      console.log("Template peran diperbarui:", updatedRole);
+      // Call the server action
+      const updatedRole = await updateRoleAction(roleId, data); 
+      // if (!updatedRole) { // This check is now within the action
+      //   throw new Error("Template peran tidak ditemukan untuk diperbarui.");
+      // }
+      // console.log("Template peran diperbarui:", updatedRole); // Logging is now in the action
       return updatedRole;
     } catch (error) {
       console.error("Gagal memperbarui template peran:", error);
