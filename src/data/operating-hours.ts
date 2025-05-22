@@ -4,8 +4,8 @@ import { getMockOutlets } from "@/data/outlets"; // Menggunakan fungsi data outl
 import { ALL_DAYS } from "@/types/operating-hours";
 
 const getDefaultShiftTemplates = (): ShiftTemplate[] => [
-  { id: `st-${Date.now()}-1`, name: "Shift Pagi", startTime: "09:00", closeTime: "15:00" },
-  { id: `st-${Date.now()}-2`, name: "Shift Sore", startTime: "15:00", closeTime: "21:00" },
+  { id: `st-${Date.now()}-1-${Math.random().toString(36).substr(2, 5)}`, name: "Shift Pagi", startTime: "09:00", closeTime: "15:00" },
+  { id: `st-${Date.now()}-2-${Math.random().toString(36).substr(2, 5)}`, name: "Shift Sore", startTime: "15:00", closeTime: "21:00" },
 ];
 
 const getDefaultSchedule = (): Record<DaysOfWeek, DayOperatingHours> => {
@@ -116,7 +116,7 @@ export const getMockOperatingHoursByOutletId = (outletId: string, companyId?: st
       const outlet = getMockOutlets(companyId).find(o => o.id === outletId);
       if (outlet) {
         return {
-          id: `ophr-${outletId}`,
+          id: `ophr-${outletId}-${Date.now()}`, // Ensure unique ID for new default
           companyId: companyId,
           outletId: outletId,
           outletName: outlet.name,
@@ -128,7 +128,7 @@ export const getMockOperatingHoursByOutletId = (outletId: string, companyId?: st
 };
 
 export const upsertMockOperatingHours = (outletId: string, formData: OperatingHoursFormData): OperatingHours | undefined => {
-  const outlet = getMockOutlets().find(o => o.id === outletId); // Perlu cara untuk mendapatkan companyId outlet
+  const outlet = getMockOutlets().find(o => o.id === outletId) || getMockOutlets("comp_es_teh_jaya").find(o => o.id === outletId) || getMockOutlets("comp_kopi_maju").find(o => o.id === outletId) || getMockOutlets("comp_roti_lezat_selalu").find(o => o.id === outletId); // Need to find outlet from any company to get its companyId
   if (!outlet || !outlet.companyId) {
     console.error(`Outlet dengan ID ${outletId} atau companyId-nya tidak ditemukan.`);
     return undefined;
@@ -149,7 +149,7 @@ export const upsertMockOperatingHours = (outletId: string, formData: OperatingHo
   });
 
   const operatingHoursData: OperatingHours = {
-    id: existingIndex !== -1 ? mockOperatingHoursStore[existingIndex].id : `ophr-${outletId}`,
+    id: existingIndex !== -1 ? mockOperatingHoursStore[existingIndex].id : `ophr-${outletId}-${Date.now()}`,
     companyId: companyId,
     outletId: outletId,
     outletName: outlet.name,
@@ -167,5 +167,9 @@ export const upsertMockOperatingHours = (outletId: string, formData: OperatingHo
 export const deleteMockOperatingHoursForOutlet = (outletId: string, companyId: string): boolean => {
   const initialLength = mockOperatingHoursStore.length;
   mockOperatingHoursStore = mockOperatingHoursStore.filter(oh => !(oh.outletId === outletId && oh.companyId === companyId));
-  return mockOperatingHoursStore.length < initialLength;
+  const success = mockOperatingHoursStore.length < initialLength;
+  if (success) {
+    console.log(`Jam operasional untuk outlet ${outletId} perusahaan ${companyId} telah dihapus.`);
+  }
+  return success;
 };

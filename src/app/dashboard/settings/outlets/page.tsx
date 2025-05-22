@@ -16,7 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Outlet } from "@/types/outlet"; 
-import { getMockOutlets, deleteMockOutlet } from "@/data/outlets"; 
+import { getMockOutlets } from "@/data/outlets"; 
+import { deleteOutletAction } from "./actions"; // Import delete server action
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -67,20 +68,29 @@ export default function OutletsPage() {
   }, [activeCompanyId]);
 
 
-  const handleDeleteOutlet = () => {
+  const handleDeleteOutlet = async () => { // Make it async
     if (!outletToDelete || !activeCompanyId) return;
 
-    const success = deleteMockOutlet(outletToDelete.id, activeCompanyId);
-    if (success) {
-      // setOutlets(prev => prev.filter(o => o.id !== outletToDelete.id)); // Handled by event listener
-      toast({
-        title: "Outlet Dihapus",
-        description: `Outlet "${outletToDelete.name}" telah berhasil dihapus.`,
-      });
-    } else {
+    try {
+      const success = await deleteOutletAction(outletToDelete.id, activeCompanyId); // Call server action
+      if (success) {
+        // setOutlets(prev => prev.filter(o => o.id !== outletToDelete.id)); // Handled by event listener
+        toast({
+          title: "Outlet Dihapus",
+          description: `Outlet "${outletToDelete.name}" dan data jam operasional terkait telah berhasil dihapus.`,
+        });
+        window.dispatchEvent(new CustomEvent('outletListChanged')); // Manually dispatch to ensure UI update
+      } else {
+        toast({
+          title: "Gagal Menghapus",
+          description: "Outlet tidak ditemukan atau terjadi kesalahan saat menghapus.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
       toast({
         title: "Gagal Menghapus",
-        description: "Terjadi kesalahan saat menghapus outlet.",
+        description: error.message || "Terjadi kesalahan fatal saat menghapus outlet.",
         variant: "destructive",
       });
     }
@@ -203,7 +213,7 @@ export default function OutletsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Anda yakin ingin menghapus outlet ini?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat diurungkan. Outlet "{outletToDelete?.name}" akan dihapus secara permanen. Semua data terkait outlet ini (misal jam operasional, shift) juga mungkin akan terpengaruh atau perlu disesuaikan.
+              Tindakan ini tidak dapat diurungkan. Outlet "{outletToDelete?.name}" akan dihapus secara permanen. Semua data terkait outlet ini, termasuk **jam operasional dan shift yang terhubung**, juga akan dihapus atau terpengaruh.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
