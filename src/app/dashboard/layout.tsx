@@ -219,23 +219,27 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
   );
 
   React.useEffect(() => {
-    const shouldBeOpen = item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false;
-    if (shouldBeOpen !== isSubmenuOpen) {
-        setIsSubmenuOpen(shouldBeOpen);
+    const shouldBeOpenBasedOnPath = item.items?.some(subItem => pathname?.startsWith(subItem.href)) || false;
+    if (shouldBeOpenBasedOnPath && !isSubmenuOpen) {
+      setIsSubmenuOpen(true);
+    } else if (!shouldBeOpenBasedOnPath && isSubmenuOpen) {
+      setIsSubmenuOpen(false);
     }
-  }, [pathname, item.items, isSubmenuOpen]); 
+  }, [pathname, item.items]); // Removed isSubmenuOpen from dependency array
 
   let isParentActive = false;
   if (item.href && item.items && item.items.length > 0) {
     isParentActive = pathname?.startsWith(item.href) || item.items.some(subItem => pathname?.startsWith(subItem.href));
   } else if (item.href) {
     isParentActive = pathname === item.href;
+  } else if (item.items && item.items.length > 0) { 
+    isParentActive = item.items.some(subItem => pathname?.startsWith(subItem.href));
   }
 
 
   const toggleSubmenu = () => {
     if (item.items) {
-      setIsSubmenuOpen(!isSubmenuOpen);
+      setIsSubmenuOpen(prev => !prev);
     }
   };
 
@@ -282,7 +286,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     <SidebarMenuItem>
       <Link href={item.href || "#"}>
         <SidebarMenuButton
-          isActive={!!isParentActive} // Use isParentActive for direct items too
+          isActive={!!isParentActive} 
           tooltip={item.title}
           className={cn(isParentActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90")}
         >
@@ -330,8 +334,7 @@ function AppHeader() {
         const companies = getMockCompanies();
         if (companies.length > 0) {
           companyIdToFetch = companies[0].id;
-          // Optionally, update localStorage here if you want non-superadmin to persist this default
-          // localStorage.setItem(SELECTED_COMPANY_ID_KEY, companyIdToFetch); 
+          localStorage.setItem(SELECTED_COMPANY_ID_KEY, companyIdToFetch); 
         }
       }
 
@@ -343,18 +346,16 @@ function AppHeader() {
       }
     };
 
-    updateActiveCompanyName(); // Initial call
+    updateActiveCompanyName(); 
 
-    // Listen to companySwitched event (primarily for Superadmin)
     const handleCompanySwitch = (event: Event) => {
       const customEvent = event as CustomEvent<{ companyId: string, companyName: string }>;
       setActiveCompanyName(customEvent.detail.companyName);
     };
     window.addEventListener('companySwitched', handleCompanySwitch);
 
-    // Listen to storage changes for SELECTED_COMPANY_ID_KEY
     const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === SELECTED_COMPANY_ID_KEY) {
+        if (event.key === SELECTED_COMPANY_ID_KEY || event.key === 'isSuperAdmin') {
             updateActiveCompanyName();
         }
     };
@@ -371,7 +372,6 @@ function AppHeader() {
     localStorage.removeItem('katama-pos-active-session');
     localStorage.removeItem(SELECTED_COMPANY_ID_KEY);
     localStorage.removeItem('isSuperAdmin'); 
-    // Clear company-specific POS sessions
     const companies = getMockCompanies();
     companies.forEach(company => {
       localStorage.removeItem(`katama-pos-active-session-${company.id}`);
@@ -443,3 +443,4 @@ function AppHeader() {
     </header>
   );
 }
+
