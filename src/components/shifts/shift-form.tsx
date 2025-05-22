@@ -26,6 +26,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { getMockOutletsForSelect } from "@/data/shifts"; // Import fungsi yang sudah dimodifikasi
+
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 const shiftFormSchema = z.object({
   userId: z.string().min(1, "Pengguna harus dipilih"),
@@ -39,21 +42,15 @@ interface UserSelectItem {
   label: string;
 }
 
-interface OutletSelectItem {
-  value: string;
-  label: string;
-}
-
 interface ShiftFormProps {
   users: UserSelectItem[];
-  outlets: OutletSelectItem[];
-  allOperatingHours: OperatingHours[]; // Terima data jam operasional
-  onSave: (data: ShiftFormData) => Promise<any>; 
+  // outlets prop no longer needed here, will be fetched based on activeCompanyId
+  allOperatingHours: OperatingHours[]; 
+  onSave: (data: ShiftFormData, companyId: string) => Promise<any>; 
 }
 
 export default function ShiftForm({
   users,
-  outlets,
   allOperatingHours,
   onSave,
 }: ShiftFormProps) {
@@ -61,7 +58,19 @@ export default function ShiftForm({
   const router = useRouter();
   const [selectedOutletOperatingHours, setSelectedOutletOperatingHours] = useState<DayOperatingHours | null>(null);
   const [currentDayName, setCurrentDayName] = useState<string>("");
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
+  const [companyOutlets, setCompanyOutlets] = useState<{value: string; label: string}[]>([]);
   
+  useEffect(() => {
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
+    if (storedCompanyId) {
+      setCompanyOutlets(getMockOutletsForSelect(storedCompanyId));
+    } else {
+      setCompanyOutlets([]);
+    }
+  }, []);
+
   const form = useForm<ShiftFormData>({
     resolver: zodResolver(shiftFormSchema),
     defaultValues: {
@@ -75,15 +84,15 @@ export default function ShiftForm({
   const selectedOutletId = form.watch("outletId");
 
   useEffect(() => {
-    if (selectedOutletId) {
-      const outletHours = allOperatingHours.find(oh => oh.outletId === selectedOutletId);
+    if (selectedOutletId && activeCompanyId) { // Pastikan activeCompanyId juga ada
+      const outletHours = allOperatingHours.find(oh => oh.outletId === selectedOutletId && oh.companyId === activeCompanyId);
       if (outletHours) {
         const today = new Date();
-        const dayIndex = today.getDay(); // 0 for Sunday, 1 for Monday...
+        const dayIndex = today.getDay(); 
         let currentDayKey: DaysOfWeek;
-        if (dayIndex === 0) { // Sunday
+        if (dayIndex === 0) { 
           currentDayKey = 'sunday';
-        } else { // Monday to Saturday
+        } else { 
           currentDayKey = ALL_DAYS[dayIndex - 1];
         }
         setCurrentDayName(DAY_NAMES_ID[currentDayKey]);
@@ -96,14 +105,18 @@ export default function ShiftForm({
       setSelectedOutletOperatingHours(null);
       setCurrentDayName("");
     }
-  }, [selectedOutletId, allOperatingHours]);
+  }, [selectedOutletId, activeCompanyId, allOperatingHours]);
 
   const onSubmit = async (data: ShiftFormData) => {
+    if (!activeCompanyId) {
+      toast({ title: "Error", description: "Perusahaan aktif tidak ditemukan.", variant: "destructive" });
+      return;
+    }
     try {
-      await onSave(data);
+      await onSave(data, activeCompanyId);
       toast({
         title: "Shift Dimulai",
-        description: `Shift untuk ${users.find(u=>u.value === data.userId)?.label || 'pengguna'} di ${outlets.find(o=>o.value === data.outletId)?.label || 'outlet'} telah dimulai.`,
+        description: `Shift untuk ${users.find(u=>u.value === data.userId)?.label || 'pengguna'} di ${companyOutlets.find(o=>o.value === data.outletId)?.label || 'outlet'} telah dimulai.`,
       });
       router.push("/dashboard/shifts"); 
       router.refresh(); 
@@ -130,18 +143,41 @@ export default function ShiftForm({
           <CardTitle>Mulai Shift Baru</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!activeCompanyId && (
+            <Alert variant="warning">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Perusahaan Belum Dipilih</AlertTitle>
+              <AlertDescription>
+                Pilih perusahaan aktif terlebih dahulu dari menu dropdown di header (jika Superadmin) untuk memulai shift.
+              </AlertDescription>
+            </Alert>
+          )}
+          {activeCompanyId && companyOutlets.length === 0 && (
+             <Alert variant="warning">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Outlet Tidak Ditemukan</AlertTitle>
+              <AlertDescription>
+                Perusahaan yang aktif saat ini belum memiliki outlet. Tambahkan outlet terlebih dahulu.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div>
             <Label htmlFor="outletId">Outlet</Label>
             <Controller
               name="outletId"
               control={form.control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                  disabled={!activeCompanyId || companyOutlets.length === 0}
+                >
                   <SelectTrigger id="outletId">
                     <SelectValue placeholder="Pilih outlet" />
                   </SelectTrigger>
                   <SelectContent>
-                    {outlets.map((outlet) => (
+                    {companyOutlets.map((outlet) => (
                       <SelectItem key={outlet.value} value={outlet.value}>
                         {outlet.label}
                       </SelectItem>
@@ -184,7 +220,11 @@ export default function ShiftForm({
               name="userId"
               control={form.control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                  disabled={!activeCompanyId}
+                >
                   <SelectTrigger id="userId">
                     <SelectValue placeholder="Pilih pengguna" />
                   </SelectTrigger>
@@ -207,7 +247,14 @@ export default function ShiftForm({
             <Label htmlFor="initialCash">Modal Awal Kasir (Rp)</Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="initialCash" type="number" {...form.register("initialCash")} placeholder="Contoh: 500000" className="pl-8" />
+              <Input 
+                id="initialCash" 
+                type="number" 
+                {...form.register("initialCash")} 
+                placeholder="Contoh: 500000" 
+                className="pl-8" 
+                disabled={!activeCompanyId}
+              />
             </div>
             {form.formState.errors.initialCash && (
               <p className="text-sm text-destructive mt-1">{form.formState.errors.initialCash.message}</p>
@@ -221,6 +268,7 @@ export default function ShiftForm({
               {...form.register("notes")} 
               placeholder="Catatan awal shift, jika ada."
               rows={3}
+              disabled={!activeCompanyId}
             />
           </div>
         </CardContent>
@@ -231,6 +279,8 @@ export default function ShiftForm({
             <Button 
               type="submit" 
               disabled={
+                !activeCompanyId ||
+                companyOutlets.length === 0 ||
                 form.formState.isSubmitting || 
                 (selectedOutletOperatingHours && !selectedOutletOperatingHours.isOpen)
               }

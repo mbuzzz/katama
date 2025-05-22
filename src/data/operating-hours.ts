@@ -1,6 +1,6 @@
 
 import type { OperatingHours, OperatingHoursFormData, DayOperatingHours, DaysOfWeek, ShiftTemplate } from "@/types/operating-hours";
-import { mockOutlets } from "@/app/dashboard/settings/outlets/page";
+import { getMockOutlets } from "@/data/outlets"; // Menggunakan fungsi data outlet terpusat
 import { ALL_DAYS } from "@/types/operating-hours";
 
 const getDefaultShiftTemplates = (): ShiftTemplate[] => [
@@ -21,18 +21,37 @@ const getDefaultSchedule = (): Record<DaysOfWeek, DayOperatingHours> => {
   return schedule as Record<DaysOfWeek, DayOperatingHours>;
 };
 
+// Fungsi untuk menginisialisasi mockOperatingHoursStore berdasarkan outlet yang ada
+const initializeOperatingHours = (): OperatingHours[] => {
+  const allCompaniesMock = [ // Asumsi ini adalah daftar perusahaan mock Anda jika tidak ada di file terpisah
+    { id: 'comp_es_teh_jaya', name: 'Perusahaan Es Teh Jaya' },
+    { id: 'comp_kopi_maju', name: 'Kedai Kopi Maju Jaya' },
+    { id: 'comp_roti_lezat_selalu', name: 'Toko Roti Lezat Selalu' },
+  ];
 
-let mockOperatingHoursStore: OperatingHours[] = mockOutlets.map(outlet => ({
-  id: `ophr-${outlet.id}`,
-  outletId: outlet.id,
-  outletName: outlet.name,
-  schedule: getDefaultSchedule(),
-}));
+  let initialHours: OperatingHours[] = [];
+  allCompaniesMock.forEach(company => {
+    const outletsForCompany = getMockOutlets(company.id);
+    outletsForCompany.forEach(outlet => {
+      initialHours.push({
+        id: `ophr-${outlet.id}`,
+        companyId: company.id, // Tambahkan companyId
+        outletId: outlet.id,
+        outletName: outlet.name,
+        schedule: getDefaultSchedule(),
+      });
+    });
+  });
+  return initialHours;
+};
+
+
+let mockOperatingHoursStore: OperatingHours[] = initializeOperatingHours();
 
 // Example: Customize hours and shifts for one outlet
-const outletPusatIndex = mockOperatingHoursStore.findIndex(oh => oh.outletId === "1"); // KATAMA Pusat
-if (outletPusatIndex !== -1) {
-  mockOperatingHoursStore[outletPusatIndex].schedule.saturday = { 
+const outletPusatEsTehIndex = mockOperatingHoursStore.findIndex(oh => oh.outletId === "1" && oh.companyId === "comp_es_teh_jaya");
+if (outletPusatEsTehIndex !== -1) {
+  mockOperatingHoursStore[outletPusatEsTehIndex].schedule.saturday = { 
     isOpen: true, 
     openTime: "10:00", 
     closeTime: "22:00",
@@ -41,36 +60,40 @@ if (outletPusatIndex !== -1) {
       { id: "st-sat-2", name: "Shift Malam", startTime: "16:00", closeTime: "22:00" },
     ]
   };
-  mockOperatingHoursStore[outletPusatIndex].schedule.sunday = { 
-    isOpen: true, // Misal Minggu tetap buka
+  mockOperatingHoursStore[outletPusatEsTehIndex].schedule.sunday = { 
+    isOpen: true, 
     openTime: "12:00", 
     closeTime: "20:00",
     shiftTemplates: [
         { id: "st-sun-1", name: "Shift Full", startTime: "12:00", closeTime: "20:00"}
     ]
   };
-   mockOperatingHoursStore[outletPusatIndex].schedule.monday.shiftTemplates = [ // Custom Senin
+   mockOperatingHoursStore[outletPusatEsTehIndex].schedule.monday.shiftTemplates = [ 
       { id: "st-mon-1", name: "Shift Pagi Utama", startTime: "09:00", closeTime: "17:00" },
-      { id: "st-mon-2", name: "Shift Rapat", startTime: "17:00", closeTime: "18:00" }, // Contoh shift pendek
+      { id: "st-mon-2", name: "Shift Rapat", startTime: "17:00", closeTime: "18:00" }, 
     ];
 }
-const outletSudirmanIndex = mockOperatingHoursStore.findIndex(oh => oh.outletId === "2"); // KATAMA Cabang Sudirman
-if (outletSudirmanIndex !== -1) {
-    mockOperatingHoursStore[outletSudirmanIndex].schedule.monday.isOpen = true;
-    mockOperatingHoursStore[outletSudirmanIndex].schedule.monday.openTime = "08:00";
-    mockOperatingHoursStore[outletSudirmanIndex].schedule.monday.closeTime = "20:00";
-    mockOperatingHoursStore[outletSudirmanIndex].schedule.monday.shiftTemplates = [
-      { id: "st-sud-mon-1", name: "Shift Pagi A", startTime: "08:00", closeTime: "14:00" },
-      { id: "st-sud-mon-2", name: "Shift Sore A", startTime: "14:00", closeTime: "20:00" },
+const outletKopiMajuPusatIndex = mockOperatingHoursStore.findIndex(oh => oh.outletId === "3" && oh.companyId === "comp_kopi_maju"); 
+if (outletKopiMajuPusatIndex !== -1) {
+    mockOperatingHoursStore[outletKopiMajuPusatIndex].schedule.monday.isOpen = true;
+    mockOperatingHoursStore[outletKopiMajuPusatIndex].schedule.monday.openTime = "08:00";
+    mockOperatingHoursStore[outletKopiMajuPusatIndex].schedule.monday.closeTime = "20:00";
+    mockOperatingHoursStore[outletKopiMajuPusatIndex].schedule.monday.shiftTemplates = [
+      { id: "st-kopi-mon-1", name: "Shift Pagi Kopi", startTime: "08:00", closeTime: "14:00" },
+      { id: "st-kopi-mon-2", name: "Shift Sore Kopi", startTime: "14:00", closeTime: "20:00" },
     ];
-    mockOperatingHoursStore[outletSudirmanIndex].schedule.saturday.isOpen = false; // Contoh Sabtu tutup
-    mockOperatingHoursStore[outletSudirmanIndex].schedule.saturday.shiftTemplates = [];
+    mockOperatingHoursStore[outletKopiMajuPusatIndex].schedule.saturday.isOpen = false; 
+    mockOperatingHoursStore[outletKopiMajuPusatIndex].schedule.saturday.shiftTemplates = [];
 }
 
 
-export const getMockOperatingHours = (): OperatingHours[] => {
-  return [...mockOperatingHoursStore].map(oh => {
-    const outlet = mockOutlets.find(o => o.id === oh.outletId);
+export const getMockOperatingHours = (companyId?: string): OperatingHours[] => {
+  const hoursToReturn = companyId 
+    ? mockOperatingHoursStore.filter(oh => oh.companyId === companyId)
+    : []; // Jika tidak ada companyId, kembalikan kosong
+    
+  return hoursToReturn.map(oh => {
+    const outlet = getMockOutlets(oh.companyId).find(o => o.id === oh.outletId);
     return {
       ...oh,
       outletName: outlet?.name || oh.outletName || "Outlet Tidak Diketahui",
@@ -78,37 +101,42 @@ export const getMockOperatingHours = (): OperatingHours[] => {
   });
 };
 
-export const getMockOperatingHoursByOutletId = (outletId: string): OperatingHours | undefined => {
+export const getMockOperatingHoursByOutletId = (outletId: string, companyId?: string): OperatingHours | undefined => {
   let hours = mockOperatingHoursStore.find(oh => oh.outletId === outletId);
   if (hours) {
-    const outlet = mockOutlets.find(o => o.id === outletId);
+    if (companyId && hours.companyId !== companyId) return undefined; // Pastikan milik perusahaan yg benar
+    const outlet = getMockOutlets(hours.companyId).find(o => o.id === outletId);
     return {
       ...hours,
       outletName: outlet?.name || hours.outletName || "Outlet Tidak Diketahui",
     };
   }
-  const outlet = mockOutlets.find(o => o.id === outletId);
-  if (outlet) {
-    return {
-      id: `ophr-${outletId}`,
-      outletId: outletId,
-      outletName: outlet.name,
-      schedule: getDefaultSchedule(),
-    };
+  // Jika tidak ada data jam operasional tersimpan, buat default untuk outlet tersebut jika outlet ada
+  if (companyId) {
+      const outlet = getMockOutlets(companyId).find(o => o.id === outletId);
+      if (outlet) {
+        return {
+          id: `ophr-${outletId}`,
+          companyId: companyId,
+          outletId: outletId,
+          outletName: outlet.name,
+          schedule: getDefaultSchedule(),
+        };
+      }
   }
   return undefined;
 };
 
 export const upsertMockOperatingHours = (outletId: string, formData: OperatingHoursFormData): OperatingHours | undefined => {
-  const outlet = mockOutlets.find(o => o.id === outletId);
-  if (!outlet) {
-    console.error(`Outlet dengan ID ${outletId} tidak ditemukan.`);
+  const outlet = getMockOutlets().find(o => o.id === outletId); // Perlu cara untuk mendapatkan companyId outlet
+  if (!outlet || !outlet.companyId) {
+    console.error(`Outlet dengan ID ${outletId} atau companyId-nya tidak ditemukan.`);
     return undefined;
   }
+  const companyId = outlet.companyId;
 
-  const existingIndex = mockOperatingHoursStore.findIndex(oh => oh.outletId === outletId);
+  const existingIndex = mockOperatingHoursStore.findIndex(oh => oh.outletId === outletId && oh.companyId === companyId);
   
-  // Pastikan setiap shift template memiliki ID unik jika belum ada
   const scheduleWithTemplateIds = { ...formData.schedule };
   ALL_DAYS.forEach(dayKey => {
     const daySchedule = scheduleWithTemplateIds[dayKey];
@@ -122,6 +150,7 @@ export const upsertMockOperatingHours = (outletId: string, formData: OperatingHo
 
   const operatingHoursData: OperatingHours = {
     id: existingIndex !== -1 ? mockOperatingHoursStore[existingIndex].id : `ophr-${outletId}`,
+    companyId: companyId,
     outletId: outletId,
     outletName: outlet.name,
     schedule: scheduleWithTemplateIds,
@@ -135,8 +164,8 @@ export const upsertMockOperatingHours = (outletId: string, formData: OperatingHo
   return operatingHoursData;
 };
 
-export const deleteMockOperatingHoursForOutlet = (outletId: string): boolean => {
+export const deleteMockOperatingHoursForOutlet = (outletId: string, companyId: string): boolean => {
   const initialLength = mockOperatingHoursStore.length;
-  mockOperatingHoursStore = mockOperatingHoursStore.filter(oh => oh.outletId !== outletId);
+  mockOperatingHoursStore = mockOperatingHoursStore.filter(oh => !(oh.outletId === outletId && oh.companyId === companyId));
   return mockOperatingHoursStore.length < initialLength;
 };

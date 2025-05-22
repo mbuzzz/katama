@@ -3,16 +3,16 @@
 
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
-import UserForm from "@/components/users/user-form"; // Impor form baru
+import UserForm from "@/components/users/user-form"; 
 import type { UserFormData } from "@/types/user";
-import { createUserAction } from "../actions"; // Impor server action
+import { createUserAction } from "../actions"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getMockCompanyById } from "@/data/companies";
-import { getMockRoles } from "@/data/roles"; // Untuk daftar peran
-import { mockOutlets as getAllMockOutlets } from "@/app/dashboard/settings/outlets/page"; // Untuk daftar outlet
-import type { Outlet } from "@/app/dashboard/settings/outlets/page";
+import { getMockRoles } from "@/data/roles"; 
+import { getMockOutlets } from "@/data/outlets"; // Menggunakan fungsi data outlet terpusat
+import type { Outlet } from "@/types/outlet";
 import { AlertTriangle } from "lucide-react";
 import type { Role } from "@/types/role";
 
@@ -33,8 +33,7 @@ export default function AddUserPage() {
     if (storedCompanyId) {
       const companyDetails = getMockCompanyById(storedCompanyId);
       setActiveCompanyName(companyDetails?.name || null);
-      const allOutlets = getAllMockOutlets; 
-      setOutletsForCompany(allOutlets.filter(outlet => outlet.companyId === storedCompanyId));
+      setOutletsForCompany(getMockOutlets(storedCompanyId)); // Ambil outlet untuk perusahaan aktif
     } else {
         setOutletsForCompany([]);
     }
@@ -99,7 +98,7 @@ export default function AddUserPage() {
       <UserForm 
         onSave={handleSaveUser}
         roles={roles}
-        outlets={outletsForCompany}
+        outlets={outletsForCompany} // Kirim outlet yang sudah difilter
         activeCompanyName={activeCompanyName}
         isEditing={false}
       />

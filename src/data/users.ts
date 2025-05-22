@@ -1,13 +1,16 @@
 
 import type { User, UserFormData } from "@/types/user";
-import { mockOutlets } from "@/app/dashboard/settings/outlets/page"; // Untuk mendapatkan nama outlet
+import { getMockOutletById } from "@/data/outlets"; // Menggunakan fungsi data outlet terpusat
 
 // In-memory store for mock users
 let mockUsersStore: User[] = [
-  { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "KATAMA Pusat", avatar: "https://placehold.co/40x40.png?text=AU", dataAiHint:"user avatar", points: 970, badge: "Pemula" },
-  { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "KATAMA Pusat", avatar: "https://placehold.co/40x40.png?text=BS", dataAiHint:"user avatar", points: 400, badge: "Pemula" },
-  { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "KATAMA Cabang Sudirman", avatar: "https://placehold.co/40x40.png?text=CW", dataAiHint:"user avatar", points: 2500, badge: "Veteran" },
-  { id: "4", name: "Dewi Lestari", email: "dewi@katama.com", role: "Kasir", outlet: "KATAMA Cabang Sudirman", avatar: "https://placehold.co/40x40.png?text=DL", dataAiHint:"user avatar", points: 0, badge: "Pemula" },
+  { id: "1", name: "Ana Maria", email: "ana@katama.com", role: "Kasir", outlet: "KATAMA Pusat (Es Teh)", avatar: "https://placehold.co/40x40.png?text=AU", dataAiHint:"user avatar", points: 970, badge: "Pemula" },
+  { id: "2", name: "Budi Santoso", email: "budi@katama.com", role: "Admin", outlet: "KATAMA Pusat (Es Teh)", avatar: "https://placehold.co/40x40.png?text=BS", dataAiHint:"user avatar", points: 400, badge: "Pemula" },
+  { id: "3", name: "Candra Wijaya", email: "candra@katama.com", role: "Manajer", outlet: "Kedai Kopi Maju Jaya Pusat", avatar: "https://placehold.co/40x40.png?text=CW", dataAiHint:"user avatar", points: 2500, badge: "Veteran" },
+  { id: "4", name: "Dewi Lestari", email: "dewi@katama.com", role: "Kasir", outlet: "Kedai Kopi Maju Jaya Pusat", avatar: "https://placehold.co/40x40.png?text=DL", dataAiHint:"user avatar", points: 0, badge: "Pemula" },
+  // Pengguna Super Admin (tidak terikat perusahaan spesifik secara langsung untuk outlet)
+  { id: "sa1", name: "Ngadimin Payaman", email: "ngadmin@example.com", role: "Super Admin", outlet: "Kantor Pusat Sistem", avatar: "https://placehold.co/40x40.png?text=SA", dataAiHint:"user avatar", points: 0},
+
 ];
 
 export const getMockUsers = (): User[] => {
@@ -19,9 +22,8 @@ export const getMockUserById = (id: string): User | undefined => {
 };
 
 export const addMockUser = (userData: UserFormData, companyId: string): User => {
-  // Untuk mock data, kita akan mengambil nama outlet berdasarkan outletId dan companyId
-  // Dalam sistem nyata, outletId sudah cukup.
-  const outletData = mockOutlets.find(o => o.id === userData.outletId && o.companyId === companyId);
+  // Outlet diambil berdasarkan outletId DAN companyId untuk memastikan outlet tersebut milik perusahaan yang benar
+  const outletData = getMockOutletById(userData.outletId, companyId);
 
   const newUser: User = {
     id: `user-${mockUsersStore.length + 1}-${Date.now().toString().slice(-4)}`,
@@ -35,6 +37,7 @@ export const addMockUser = (userData: UserFormData, companyId: string): User => 
     dataAiHint: "user avatar",
     points: 0,
     badge: "Pemula",
+    // companyId tidak disimpan langsung di user, tapi diasosiasikan melalui outlet atau peran nantinya
   };
   mockUsersStore.push(newUser);
   return newUser;
