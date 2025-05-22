@@ -36,7 +36,6 @@ export type RawMaterialFormData = z.infer<typeof rawMaterialFormSchema>;
 
 interface RawMaterialFormProps {
   initialData?: RawMaterial;
-  // units prop is removed, will be fetched dynamically
   onSave: (data: RawMaterialFormData) => Promise<RawMaterial | void>;
   isEditing?: boolean;
 }

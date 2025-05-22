@@ -6,13 +6,13 @@ import { PageHeader } from "@/components/page-header";
 import RawMaterialForm from "@/components/raw-materials/raw-material-form";
 import type { RawMaterialFormData } from "@/components/raw-materials/raw-material-form";
 import { getMockRawMaterialById, updateMockRawMaterial } from "@/data/raw-materials";
-import { getMockUnits } from "@/data/units";
+// import { getMockUnits } from "@/data/units"; // No longer needed here
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { RawMaterial } from "@/types/raw-material";
-import type { Unit } from "@/types/unit";
+// import type { Unit } from "@/types/unit"; // No longer needed here
 
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
@@ -23,12 +23,12 @@ interface EditRawMaterialPageProps {
 export default function EditRawMaterialPage({ params }: EditRawMaterialPageProps) {
   const materialId = params.id;
   const [material, setMaterial] = React.useState<RawMaterial | null | undefined>(undefined);
-  const [units, setUnits] = React.useState<Unit[]>([]);
+  // const [units, setUnits] = React.useState<Unit[]>([]); // No longer needed
   const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    setUnits(getMockUnits());
+    // setUnits(getMockUnits()); // No longer needed, form handles its own units
     const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
     if (storedCompanyId) {
       setActiveCompanyId(storedCompanyId);
@@ -72,6 +72,28 @@ export default function EditRawMaterialPage({ params }: EditRawMaterialPageProps
     );
   }
 
+  if (!activeCompanyId && !isLoading) { // Added check for activeCompanyId
+    return (
+     <div className="space-y-6">
+       <PageHeader title="Edit Bahan Baku" description="Tidak dapat mengedit bahan baku." />
+       <Card className="shadow-lg">
+         <CardHeader>
+           <CardTitle className="flex items-center">
+             <AlertTriangle className="mr-2 h-6 w-6 text-destructive" /> Perusahaan Tidak Aktif
+           </CardTitle>
+         </CardHeader>
+         <CardContent>
+           <p>Pilih perusahaan terlebih dahulu sebelum mengedit bahan baku.</p>
+           <Button asChild className="mt-4">
+             <Link href="/dashboard/raw-materials">Kembali ke Daftar Bahan Baku</Link>
+           </Button>
+         </CardContent>
+       </Card>
+     </div>
+   );
+ }
+
+
   if (!material) {
     return (
       <div className="space-y-6">
@@ -101,10 +123,11 @@ export default function EditRawMaterialPage({ params }: EditRawMaterialPageProps
       />
       <RawMaterialForm
         initialData={material}
-        units={units}
+        // units={units} // Prop removed
         onSave={handleUpdateRawMaterial}
         isEditing={true}
       />
     </div>
   );
 }
+
