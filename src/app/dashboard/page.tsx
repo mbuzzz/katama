@@ -1,3 +1,4 @@
+
 "use client"; // Ditambahkan untuk menjadikan ini Client Component
 
 import { PageHeader } from "@/components/page-header";
@@ -144,3 +145,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

@@ -196,10 +196,19 @@ export default function SalesReportPage() {
         theme: 'grid',
         headStyles: { fillColor: [60, 56, 91], textColor: 255, fontSize: 7 }, 
         styles: { font: "helvetica", fontSize: 6.5, cellPadding: 1.5 }, 
-        columnStyles: {
-          0: { cellWidth: 15 }, 1: { cellWidth: 18 }, 2: { cellWidth: 18 }, 3: { cellWidth: 18 }, 4: { cellWidth: 25 }, 
-          5: { halign: 'right', cellWidth: 8 }, 6: { halign: 'right', cellWidth: 17 }, 7: { halign: 'right', cellWidth: 17 }, 
-          8: { halign: 'right', cellWidth: 17 }, 9: { halign: 'right', cellWidth: 17 }, 10: { cellWidth: 15 }, 11: { halign: 'right', cellWidth: 17 },
+        columnStyles: { // Adjusted widths
+          0: { cellWidth: 12 }, // ID Trx
+          1: { cellWidth: 18 }, // Waktu
+          2: { cellWidth: 18 }, // Outlet
+          3: { cellWidth: 18 }, // Pengguna
+          4: { cellWidth: 30 }, // Produk (wider)
+          5: { halign: 'right', cellWidth: 8 }, // Qty
+          6: { halign: 'right', cellWidth: 17 }, // Harga
+          7: { halign: 'right', cellWidth: 17 }, // Total
+          8: { halign: 'right', cellWidth: 17 }, // HPP/Unit
+          9: { halign: 'right', cellWidth: 17 }, // Total HPP
+          10: { cellWidth: 12 }, // Metode (narrower)
+          11: { halign: 'right', cellWidth: 17 }, // Keuntungan
         }
       });
       
@@ -471,15 +480,35 @@ export default function SalesReportPage() {
                 </TableRow>
               ))}
               {filteredSalesData.length > 0 && (
-                <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={7} className="text-right hidden lg:table-cell">Total Keseluruhan (Filtered)</TableCell>
-                  <TableCell colSpan={5} className="text-right sm:hidden">Total (Filtered)</TableCell>
-                  <TableCell colSpan={1} className="text-right hidden sm:table-cell lg:hidden">Total (Filtered)</TableCell>
-
+                 <TableRow className="font-bold bg-muted/50">
+                  {/* Label Cell - Adapts to screen size */}
+                  <TableCell 
+                    className="text-right"
+                    colSpan={ (( (typeof window !== 'undefined' && window.innerWidth >= 1280) ? 1 : 0) + /* ID Transaksi (XL) */
+                                1 + /* Waktu */
+                                ( (typeof window !== 'undefined' && window.innerWidth >= 640) ? 1 : 0) + /* Outlet (SM+) */
+                                ( (typeof window !== 'undefined' && window.innerWidth >= 768) ? 1 : 0) + /* Pengguna (MD+) */
+                                1 + /* Nama Produk */
+                                1 + /* Jml */
+                                ( (typeof window !== 'undefined' && window.innerWidth >= 1024) ? 1 : 0) /* Harga (LG+) */
+                              ) -1 /* Subtract 1 because the label itself is a cell */                               
+                              || 1 /* Min colSpan */
+                            }
+                  >Total (Filtered):</TableCell>
+                  
+                  {/* Total Revenue (aligns with "Total" column) */}
                   <TableCell className="text-right">Rp {totalRevenue.toLocaleString('id-ID')}</TableCell>
-                  <TableCell className="hidden lg:table-cell"></TableCell> 
+                  
+                  {/* HPP/Unit - Placeholder, content only if column is visible */}
+                  <TableCell className="text-right hidden lg:table-cell"></TableCell>
+                  
+                  {/* Total HPP - Content only if column is visible */}
                   <TableCell className="text-right hidden xl:table-cell">Rp {totalOverallHpp.toLocaleString('id-ID')}</TableCell>
-                   <TableCell className="hidden md:table-cell"></TableCell> 
+                  
+                  {/* Metode - Placeholder, content only if column is visible */}
+                  <TableCell className="hidden md:table-cell"></TableCell>
+                  
+                  {/* Keuntungan */}
                   <TableCell className="text-right">Rp {totalProfit.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               )}
