@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import RoleForm from "@/components/roles/role-form";
 import type { RoleFormData } from "@/components/roles/role-form";
 import { getMockRoleById } from "@/data/roles"; // getMockRoleById is fine here for initial data
-import { updateRoleAction } from "../actions"; // Import server action (note the path)
+import { updateRoleAction } from "../actions"; // Corrected import path
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
