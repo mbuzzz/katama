@@ -28,7 +28,7 @@ import { handleProcessSaleAction } from "./actions";
 import html2canvas from 'html2canvas';
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { getMockCompanies, getMockCompanyById } from "@/data/companies"; // Import getMockCompanies
+import { getMockCompanies, getMockCompanyById } from "@/data/companies"; 
 
 // localStorage keys
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
@@ -43,7 +43,7 @@ const STRUK_SHOW_ADDRESS_KEY = 'katama-pos-struk-showAddress';
 const STRUK_SHOW_CONTACT_KEY = 'katama-pos-struk-showContact';
 const STRUK_PAPER_SIZE_KEY = 'katama-pos-struk-paperSize';
 
-const POS_SESSION_KEY_PREFIX = 'katama-pos-active-session-'; // Prefix for company-specific session
+const POS_SESSION_KEY_PREFIX = 'katama-pos-active-session-'; 
 const DEFAULT_COMPANY_NAME_FALLBACK = "KATAMA";
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
@@ -108,19 +108,29 @@ export default function POSPage() {
       if (allCompanies.length > 0) {
         companyIdForSession = allCompanies[0].id;
         localStorage.setItem(SELECTED_COMPANY_ID_KEY, companyIdForSession);
+        const companyDetails = getMockCompanyById(companyIdForSession);
+        if (companyDetails) {
+            window.dispatchEvent(new CustomEvent('companySwitched', {
+                detail: { companyId: companyDetails.id, companyName: companyDetails.name }
+            }));
+        }
       } else {
         setNoCompanyAvailable(true);
         setIsLoadingSession(false);
+        setActiveCompanyId(null);
+        setProducts([]);
+        setPosSession(null);
         return;
       }
     }
     
-    setActiveCompanyId(companyIdForSession);
+    setActiveCompanyId(companyIdForSession); 
     setNoCompanyAvailable(false);
 
     if (companyIdForSession) {
       setProducts(getMockProducts(companyIdForSession)); 
-      const storedSession = localStorage.getItem(POS_SESSION_KEY_PREFIX + companyIdForSession);
+      const POS_SESSION_STORAGE_KEY = POS_SESSION_KEY_PREFIX + companyIdForSession;
+      const storedSession = localStorage.getItem(POS_SESSION_STORAGE_KEY);
       if (storedSession) {
         try {
           const potentialSessionData = JSON.parse(storedSession);
@@ -134,24 +144,24 @@ export default function POSPage() {
             if (sessionStartTime && !isNaN(sessionStartTime.getTime()) && validSessionData.companyId === companyIdForSession) {
               setPosSession({ ...validSessionData, startTime: sessionStartTime });
             } else {
-              // Invalid session data for this company, remove it
-              localStorage.removeItem(POS_SESSION_KEY_PREFIX + companyIdForSession); 
+              localStorage.removeItem(POS_SESSION_STORAGE_KEY); 
             }
           } else {
             console.error("Format data sesi POS di localStorage tidak valid:", potentialSessionData);
-            localStorage.removeItem(POS_SESSION_KEY_PREFIX + companyIdForSession);
+            localStorage.removeItem(POS_SESSION_STORAGE_KEY);
           }
         } catch (error) {
           console.error("Gagal memuat sesi POS dari localStorage:", error);
-          localStorage.removeItem(POS_SESSION_KEY_PREFIX + companyIdForSession); 
+          localStorage.removeItem(POS_SESSION_STORAGE_KEY); 
         }
       }
     } else {
-      setProducts([]); // No company, no products
+      setProducts([]); 
+      setPosSession(null); 
     }
     setIsLoadingSession(false);
 
-    // Load struk settings (these are global for now, could be company-specific in future)
+    // Load struk settings
     if (typeof window !== 'undefined') {
       const activeCompanyDetails = companyIdForSession ? getMockCompanyById(companyIdForSession) : null;
       setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || activeCompanyDetails?.name || DEFAULT_COMPANY_NAME_FALLBACK);
@@ -169,24 +179,17 @@ export default function POSPage() {
   }, [activeCompanyId]);
 
   React.useEffect(() => {
-    // Effect to re-fetch products or re-evaluate session if activeCompanyId changes (e.g., Superadmin switches company)
-    if (!isLoadingSession) { // Only run if initial load is complete
-        const companyIdForSession = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
-        setActiveCompanyId(companyIdForSession); // This will trigger the main useEffect above
-    }
-    
     const handleCompanySwitch = () => {
-        setIsLoadingSession(true); // Set loading while switching
+        setIsLoadingSession(true); 
         const newCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
         setActiveCompanyId(newCompanyId); 
-        // The main useEffect will handle loading products and session for the newCompanyId
     };
 
     window.addEventListener('companySwitched', handleCompanySwitch);
     return () => {
         window.removeEventListener('companySwitched', handleCompanySwitch);
     };
-  }, [isLoadingSession]); // Re-run when isLoadingSession changes, or initial company switch
+  }, []);
 
 
   React.useEffect(() => {
@@ -204,7 +207,6 @@ export default function POSPage() {
         toast({ title: "Perusahaan tidak dipilih.", description: "Pilih perusahaan aktif terlebih dahulu.", variant: "destructive"});
         return;
     }
-    // Ensure product being added belongs to the active company
     if (product.companyId !== activeCompanyId) {
         toast({ title: "Produk tidak valid.", description: "Produk ini bukan milik perusahaan yang aktif.", variant: "destructive"});
         return;
@@ -280,7 +282,7 @@ export default function POSPage() {
   };
   
   const filteredProducts = products.filter(product => 
-    product.companyId === activeCompanyId && // Ensure products are from active company
+    product.companyId === activeCompanyId && 
     (product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -436,6 +438,13 @@ export default function POSPage() {
         toast({ title: "Perusahaan Tidak Dipilih", description: "Pilih perusahaan aktif untuk melanjutkan pembayaran.", variant: "destructive" });
         return;
     }
+
+    console.log("POSPage: handlePayment activeCompanyId:", activeCompanyId); // DEBUG
+    const initialProductStocks: Record<string, number> = {};
+     products.forEach(p => { initialProductStocks[p.id] = p.stock; });
+    console.log("POSPage: Initial product stocks before sale:", initialProductStocks); // DEBUG
+
+
     setIsProcessingPayment(true);
     const result = await handleProcessSaleAction(cartItems, activeCompanyId);
     
@@ -449,7 +458,14 @@ export default function POSPage() {
         description: `Total Rp ${total.toLocaleString('id-ID')} telah dibayar. Stok diperbarui.`,
       });
       setCartItems([]); 
-      setProducts(getMockProducts(activeCompanyId)); 
+      
+      console.log("POSPage: Sale successful. Refreshing products for companyId:", activeCompanyId); // DEBUG
+      const updatedProducts = getMockProducts(activeCompanyId);
+      setProducts(updatedProducts); 
+      const finalProductStocks: Record<string, number> = {};
+      updatedProducts.forEach(p => { finalProductStocks[p.id] = p.stock; });
+      console.log("POSPage: Product stocks after sale & refresh:", finalProductStocks); // DEBUG
+      
       setShowPostPaymentDialog(true); 
     } else {
       toast({
@@ -457,6 +473,7 @@ export default function POSPage() {
         description: result.message || "Terjadi kesalahan saat memproses penjualan.",
         variant: "destructive",
       });
+      console.log("POSPage: Sale failed. Refreshing products for companyId:", activeCompanyId); // DEBUG
       setProducts(getMockProducts(activeCompanyId)); 
     }
     setIsProcessingPayment(false);
@@ -535,7 +552,7 @@ export default function POSPage() {
     );
   }
 
-  if (!activeCompanyId && isSuperAdmin) { // Hanya Superadmin yang mungkin tidak memiliki activeCompanyId jika belum memilih
+  if (isSuperAdmin && !activeCompanyId) { 
     return (
        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Card className="w-full max-w-md shadow-xl">
@@ -550,7 +567,7 @@ export default function POSPage() {
     );
   }
   
-  if (!posSession && activeCompanyId) { // Jika ada perusahaan aktif tapi sesi belum dibuka
+  if (!posSession && activeCompanyId) { 
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Card className="w-full max-w-md shadow-xl">
@@ -671,7 +688,7 @@ export default function POSPage() {
               {activeCompanyId && filteredProducts.length === 0 && (
                 <p className="text-muted-foreground text-center py-10 text-sm sm:text-base">Produk tidak ditemukan atau belum ada produk untuk perusahaan ini.</p>
               )}
-               {!activeCompanyId && !isSuperAdmin && ( // For regular admin, if no companyId (e.g., error state)
+               {!activeCompanyId && !isSuperAdmin && ( 
                  <p className="text-destructive text-center py-10 text-sm sm:text-base">Perusahaan aktif tidak ditemukan. Silakan hubungi administrator.</p>
                )}
             </ScrollArea>
@@ -788,5 +805,4 @@ export default function POSPage() {
     </div>
   );
 }
-
     

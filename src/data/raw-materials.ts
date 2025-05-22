@@ -1,15 +1,10 @@
 
 import type { RawMaterial } from "@/types/raw-material"; 
 
-// Untuk SaaS, setiap bahan baku juga harus memiliki companyId
-// Ini adalah perubahan signifikan yang perlu diterapkan jika ingin isolasi penuh.
-// Untuk sekarang, kita akan modifikasi fungsi get agar bisa filter, tapi data mock belum ada companyId
-// Ini akan menjadi langkah berikutnya.
 interface RawMaterialSaaS extends RawMaterial {
   companyId: string;
 }
 
-// Contoh data mock dengan companyId (Perlu disesuaikan dengan ID perusahaan Anda)
 let mockRawMaterialsStore: RawMaterialSaaS[] = [
   { id: "rm1", name: "Biji Kopi Arabika", unitId: "6", stock: 10000, costPerUnit: 150, companyId: "comp_es_teh_jaya" },
   { id: "rm2", name: "Susu UHT Full Cream", unitId: "7", stock: 20000, costPerUnit: 10, companyId: "comp_es_teh_jaya" },
@@ -30,19 +25,17 @@ export const getMockRawMaterials = (companyId?: string): RawMaterialSaaS[] => {
   if (companyId) {
     return [...mockRawMaterialsStore].filter(rm => rm.companyId === companyId);
   }
-  // Mengembalikan array kosong jika tidak ada companyId, karena bahan baku harus terikat ke perusahaan
   return []; 
 };
 
 export const getMockRawMaterialById = (id: string, companyId?: string): RawMaterialSaaS | undefined => {
   const material = mockRawMaterialsStore.find(m => m.id === id);
   if (material && companyId && material.companyId !== companyId) {
-    return undefined; // Bukan milik perusahaan ini
+    return undefined; 
   }
   return material;
 };
 
-// Modifikasi add, update, delete untuk menyertakan companyId
 export const addMockRawMaterial = (materialData: Omit<RawMaterialSaaS, 'id' | 'companyId'>, companyId: string): RawMaterialSaaS => {
   if (!companyId) throw new Error("companyId diperlukan untuk menambah bahan baku");
   const newMaterial: RawMaterialSaaS = {
@@ -76,12 +69,14 @@ export const updateRawMaterialStock = (materialId: string, companyId: string, qu
     return undefined;
   }
   mockRawMaterialsStore[materialIndex].stock += quantityChange;
-  // Stok tidak boleh negatif dari pengurangan (penjualan), tapi bisa negatif jika input salah saat penambahan (pembelian), namun form harusnya memvalidasi.
-  // Jika ini dari penjualan dan hasilnya negatif, itu masalah, tapi untuk pembelian, kita hanya menambah.
-  // Jika suatu saat ada fitur retur pembelian, maka quantityChange bisa negatif.
-  // Untuk sekarang, kita asumsikan quantityChange positif untuk pembelian.
-  // if (mockRawMaterialsStore[materialIndex].stock < 0 && quantityChange < 0) {
-  //   mockRawMaterialsStore[materialIndex].stock = 0; 
-  // }
+  if (mockRawMaterialsStore[materialIndex].stock < 0) {
+    // This might happen if a sale is processed for an item whose raw material stock was already depleted due to some error
+    // Or if a purchase is "undone" and quantityChange is negative.
+    // For sales (quantityChange is negative), if it goes below zero, it's an issue. For now, let it go negative for debugging.
+    console.warn(`Stok bahan baku ${materialId} (company ${companyId}) menjadi negatif: ${mockRawMaterialsStore[materialIndex].stock}`);
+     // mockRawMaterialsStore[materialIndex].stock = 0; // Option to prevent negative stock
+  }
+  console.log(`Stock for raw material ${materialId} (company ${companyId}) updated to: ${mockRawMaterialsStore[materialIndex].stock}`); // DEBUG
   return mockRawMaterialsStore[materialIndex];
 };
+

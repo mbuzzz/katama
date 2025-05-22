@@ -5,22 +5,22 @@ import { getMockRawMaterials, updateRawMaterialStock } from "@/data/raw-material
 import { getMockCompanyById } from "./companies"; 
 
 let mockProductsStore: Product[] = [
-  { id: "1", companyId: "comp_es_teh_jaya", name: "Kopi Susu Aren", price: 18000, stock: 48, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 100}, {rawMaterialId: "rm3", quantity: 15}], image: "https://placehold.co/200x150.png?text=Kopi+Susu" , dataAiHint:"coffee milk", hpp: 0 },
-  { id: "2", companyId: "comp_kopi_maju", name: "Croissant Coklat", price: 22000, stock: 28, category: "Roti & Pastry", image: "https://placehold.co/200x150.png?text=Croissant", dataAiHint:"croissant chocolate", hpp: 0 },
-  { id: "3", companyId: "comp_es_teh_jaya", name: "Teh Melati Panas", price: 15000, stock: 97, category: "Minuman Panas", ingredients: [{rawMaterialId: "rm6", quantity: 5}], image: "https://placehold.co/200x150.png?text=Teh+Melati", dataAiHint:"jasmine tea", hpp: 0 },
-  { id: "4", companyId: "comp_kopi_maju", name: "Nasi Goreng Spesial", price: 35000, stock: 25, category: "Makanan Berat", image: "https://placehold.co/200x150.png?text=Nasi+Goreng", dataAiHint:"fried rice", hpp: 0 },
-  { id: "5", companyId: "comp_es_teh_jaya", name: "Americano", price: 16000, stock: 100, category: "Minuman Dingin", image: "https://placehold.co/200x150.png?text=Americano", dataAiHint:"americano coffee", ingredients: [{rawMaterialId: "rm1", quantity: 25}], hpp: 0 },
-  { id: "6", companyId: "comp_roti_lezat_selalu", name: "Donat Gula", price: 10000, stock: 80, category: "Makanan Ringan", image: "https://placehold.co/200x150.png?text=Donat", dataAiHint:"donut sugar", hpp: 0 },
-  { id: "7", companyId: "comp_es_teh_jaya", name: "Cappuccino", price: 20000, stock: 100, category: "Minuman Dingin", image: "https://placehold.co/200x150.png?text=Cappuccino", dataAiHint:"cappuccino coffee", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 120}], hpp: 0 },
-  { id: "8", companyId: "comp_es_teh_jaya", name: "Red Velvet Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://placehold.co/200x150.png?text=Red+Velvet", dataAiHint:"red velvet", hpp: 0 },
-  { id: "9", companyId: "comp_es_teh_jaya", name: "Matcha Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://placehold.co/200x150.png?text=Matcha", dataAiHint:"matcha latte", hpp: 0 },
-  { id: "10", companyId: "comp_kopi_maju", name: "Kentang Goreng", price: 18000, stock: 120, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm10", quantity: 150}], image: "https://placehold.co/200x150.png?text=Kentang", dataAiHint:"french fries", hpp: 0 },
-  { id: "11", companyId: "comp_roti_lezat_selalu", name: "Roti Bakar Coklat Keju", price: 20000, stock: 60, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm11", quantity: 2}, {rawMaterialId: "rm5", quantity: 30}, {rawMaterialId: "rm12", quantity: 1}], image: "https://placehold.co/200x150.png?text=Roti+Bakar", dataAiHint:"toast bread", hpp: 0 },
-  { id: "12", companyId: "comp_es_teh_jaya", name: "Es Teh Lemon", price: 12000, stock: 150, category: "Minuman Dingin", image: "https://placehold.co/200x150.png?text=Es+Teh+Lemon", dataAiHint:"lemon tea", hpp: 0 },
-  { id: "13", companyId: "comp_roti_lezat_selalu", name: "Muffin Blueberry", price: 18000, stock: 40, category: "Makanan Ringan", image: "https://placehold.co/200x150.png?text=Muffin", dataAiHint:"muffin blueberry", hpp: 0 },
-  { id: "14", companyId: "comp_es_teh_jaya", name: "Air Mineral", price: 5000, stock: 200, category: "Minuman Dingin", image: "https://placehold.co/200x150.png?text=Air+Mineral", dataAiHint:"mineral water", hpp: 0 },
-  { id: "15", companyId: "comp_kopi_maju", name: "Mie Ayam", price: 28000, stock: 25, category: "Makanan Berat", image: "https://placehold.co/200x150.png?text=Mie+Ayam", dataAiHint:"chicken noodle", hpp: 0 },
-  { id: "16", companyId: "comp_es_teh_jaya", name: "Es Teh Manis", price: 10000, stock: 150, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm6", quantity: 3}, {rawMaterialId: "rm7", quantity: 200}], image: "https://placehold.co/200x150.png?text=Es+Teh", dataAiHint:"sweet tea", hpp: 0 },
+  { id: "1", companyId: "comp_es_teh_jaya", name: "Kopi Susu Aren", price: 18000, stock: 48, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 100}, {rawMaterialId: "rm3", quantity: 15}], image: "https://placehold.co/200x150.png", dataAiHint:"coffee milk", hpp: 0 },
+  { id: "2", companyId: "comp_kopi_maju", name: "Croissant Coklat", price: 22000, stock: 28, category: "Roti & Pastry", image: "https://placehold.co/200x150.png", dataAiHint:"croissant chocolate", hpp: 0 },
+  { id: "3", companyId: "comp_es_teh_jaya", name: "Teh Melati Panas", price: 15000, stock: 97, category: "Minuman Panas", ingredients: [{rawMaterialId: "rm6", quantity: 5}], image: "https://placehold.co/200x150.png", dataAiHint:"jasmine tea", hpp: 0 },
+  { id: "4", companyId: "comp_kopi_maju", name: "Nasi Goreng Spesial", price: 35000, stock: 25, category: "Makanan Berat", image: "https://placehold.co/200x150.png", dataAiHint:"fried rice", hpp: 0 },
+  { id: "5", companyId: "comp_es_teh_jaya", name: "Americano", price: 16000, stock: 100, category: "Minuman Dingin", image: "https://placehold.co/200x150.png", dataAiHint:"americano coffee", ingredients: [{rawMaterialId: "rm1", quantity: 25}], hpp: 0 },
+  { id: "6", companyId: "comp_roti_lezat_selalu", name: "Donat Gula", price: 10000, stock: 80, category: "Makanan Ringan", image: "https://placehold.co/200x150.png", dataAiHint:"donut sugar", hpp: 0 },
+  { id: "7", companyId: "comp_es_teh_jaya", name: "Cappuccino", price: 20000, stock: 100, category: "Minuman Dingin", image: "https://placehold.co/200x150.png", dataAiHint:"cappuccino coffee", ingredients: [{rawMaterialId: "rm1", quantity: 20}, {rawMaterialId: "rm2", quantity: 120}], hpp: 0 },
+  { id: "8", companyId: "comp_es_teh_jaya", name: "Red Velvet Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://placehold.co/200x150.png", dataAiHint:"red velvet", hpp: 0 },
+  { id: "9", companyId: "comp_es_teh_jaya", name: "Matcha Latte", price: 25000, stock: 70, category: "Minuman Dingin", image: "https://placehold.co/200x150.png", dataAiHint:"matcha latte", hpp: 0 },
+  { id: "10", companyId: "comp_kopi_maju", name: "Kentang Goreng", price: 18000, stock: 120, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm10", quantity: 150}], image: "https://placehold.co/200x150.png", dataAiHint:"french fries", hpp: 0 },
+  { id: "11", companyId: "comp_roti_lezat_selalu", name: "Roti Bakar Coklat Keju", price: 20000, stock: 60, category: "Makanan Ringan", ingredients: [{rawMaterialId: "rm11", quantity: 2}, {rawMaterialId: "rm5", quantity: 30}, {rawMaterialId: "rm12", quantity: 1}], image: "https://placehold.co/200x150.png", dataAiHint:"toast bread", hpp: 0 },
+  { id: "12", companyId: "comp_es_teh_jaya", name: "Es Teh Lemon", price: 12000, stock: 150, category: "Minuman Dingin", image: "https://placehold.co/200x150.png", dataAiHint:"lemon tea", hpp: 0 },
+  { id: "13", companyId: "comp_roti_lezat_selalu", name: "Muffin Blueberry", price: 18000, stock: 40, category: "Makanan Ringan", image: "https://placehold.co/200x150.png", dataAiHint:"muffin blueberry", hpp: 0 },
+  { id: "14", companyId: "comp_es_teh_jaya", name: "Air Mineral", price: 5000, stock: 200, category: "Minuman Dingin", image: "https://placehold.co/200x150.png", dataAiHint:"mineral water", hpp: 0 },
+  { id: "15", companyId: "comp_kopi_maju", name: "Mie Ayam", price: 28000, stock: 25, category: "Makanan Berat", image: "https://placehold.co/200x150.png", dataAiHint:"chicken noodle", hpp: 0 },
+  { id: "16", companyId: "comp_es_teh_jaya", name: "Es Teh Manis", price: 10000, stock: 150, category: "Minuman Dingin", ingredients: [{rawMaterialId: "rm6", quantity: 3}, {rawMaterialId: "rm7", quantity: 200}], image: "https://placehold.co/200x150.png", dataAiHint:"sweet tea", hpp: 0 },
 ];
 
 export function _calculateHPP(ingredients: ProductIngredient[] | undefined, allRawMaterials: RawMaterial[]): number {
@@ -44,13 +44,15 @@ mockProductsStore = mockProductsStore.map(p => ({
 
 
 export const getMockProducts = (companyId?: string): Product[] => {
-  const products = companyId 
+  const productsForCompany = companyId 
     ? mockProductsStore.filter(p => p.companyId === companyId) 
     : []; 
 
-  return [...products].map(p => ({ 
+  const rawMaterialsForCompany = companyId ? getMockRawMaterials(companyId) : [];
+
+  return productsForCompany.map(p => ({ 
     ...p,
-    hpp: _calculateHPP(p.ingredients, getMockRawMaterials(companyId)) 
+    hpp: _calculateHPP(p.ingredients, rawMaterialsForCompany) 
   }));
 };
 
@@ -60,9 +62,10 @@ export const getMockProductById = (id: string, companyId?: string): Product | un
     if (companyId && product.companyId !== companyId) {
         return undefined;
     }
+    const rawMaterialsForCompany = product.companyId ? getMockRawMaterials(product.companyId) : [];
     return {
       ...product,
-      hpp: _calculateHPP(product.ingredients, getMockRawMaterials(product.companyId))
+      hpp: _calculateHPP(product.ingredients, rawMaterialsForCompany)
     };
   }
   return undefined;
@@ -118,6 +121,7 @@ export const updateProductStock = (productId: string, companyId: string, quantit
   if (mockProductsStore[productIndex].stock < 0) {
     mockProductsStore[productIndex].stock = 0; 
   }
+  console.log(`Stock for product ${productId} (company ${companyId}) updated to: ${mockProductsStore[productIndex].stock}`); // DEBUG
   return mockProductsStore[productIndex];
 };
 
@@ -130,6 +134,7 @@ export const processSaleTransaction = (
   }
   const currentRawMaterialsForCompany = getMockRawMaterials(companyId); 
 
+  // Validation phase
   for (const item of items) {
     const product = getMockProductById(item.productId, companyId); 
     if (!product) {
@@ -147,12 +152,13 @@ export const processSaleTransaction = (
         }
         const requiredRawMaterialQuantity = ing.quantity * item.quantity;
         if (rawMat.stock < requiredRawMaterialQuantity) {
-          return { success: false, message: `Stok bahan baku ${rawMat.name} untuk produk ${product.name} tidak mencukupi.` };
+          return { success: false, message: `Stok bahan baku ${rawMat.name} untuk produk ${product.name} tidak mencukupi (dibutuhkan: ${requiredRawMaterialQuantity}, tersedia: ${rawMat.stock}).` };
         }
       }
     }
   }
 
+  // Execution phase: Update stock if all validations passed
   for (const item of items) {
     updateProductStock(item.productId, companyId, -item.quantity); 
     
@@ -166,5 +172,4 @@ export const processSaleTransaction = (
   }
   return { success: true };
 };
-
     
