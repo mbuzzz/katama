@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link"; // Import Link
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,25 +19,11 @@ import {
   DropdownMenuSeparator, 
 } from "@/components/ui/dropdown-menu";
 import type { User } from "@/types/user"; 
-import { getMockUsers, getMockCompanyById } from "@/data/users"; // Assuming getMockCompanyById is moved or available here
-// For now, we'll use a helper directly in this file if getMockCompanyById is not in data/users.ts
-// import { getMockCompanyById as getCompanyDetails } from "@/data/companies";
+import { getMockUsers } from "@/data/users"; 
+import { getMockCompanyById } from "@/data/companies";
 
 
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
-
-// Temporary helper if getMockCompanyById is not in src/data/users.ts
-const getCompanyDetails = (companyId: string): { id: string; name: string } | null => {
-    // In a real app, this would fetch from a data source. For mock data:
-    const companies = [ 
-        { id: 'comp_es_teh_jaya', name: 'Perusahaan Es Teh Jaya' },
-        { id: 'comp_kopi_maju', name: 'Kedai Kopi Maju Jaya' },
-        { id: 'comp_roti_lezat', name: 'Toko Roti Lezat Selalu' },
-    ];
-    const company = companies.find(c => c.id === companyId);
-    return company || null;
-};
-
 
 export default function UsersPage() {
   const [users, setUsers] = React.useState<User[]>([]);
@@ -48,7 +35,7 @@ export default function UsersPage() {
     const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
     setActiveCompanyId(storedCompanyId);
     if (storedCompanyId) {
-      const companyDetails = getCompanyDetails(storedCompanyId);
+      const companyDetails = getMockCompanyById(storedCompanyId);
       setActiveCompanyName(companyDetails?.name || null);
       // TODO: In a full SaaS, getMockUsers would accept companyId and filter users.
       // For now, it returns all users.
@@ -97,9 +84,10 @@ export default function UsersPage() {
   return (
     <div>
       <PageHeader title={pageTitle} description={pageDescription}>
-        <Button disabled={!activeCompanyId}> 
-          {/* TODO: Link to a company-specific add user page or disable if no company */}
-          <PlusCircle className="mr-2 h-4 w-4" /> Tambah Pengguna
+        <Button asChild disabled={!activeCompanyId}> 
+          <Link href={activeCompanyId ? "/dashboard/settings/users/add" : "#"}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Tambah Pengguna
+          </Link>
         </Button>
       </PageHeader>
       
