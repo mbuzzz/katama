@@ -72,7 +72,7 @@ export default function OutletsPage() {
 
     const success = deleteMockOutlet(outletToDelete.id, activeCompanyId);
     if (success) {
-      setOutlets(prev => prev.filter(o => o.id !== outletToDelete.id));
+      // setOutlets(prev => prev.filter(o => o.id !== outletToDelete.id)); // Handled by event listener
       toast({
         title: "Outlet Dihapus",
         description: `Outlet "${outletToDelete.name}" telah berhasil dihapus.`,
@@ -86,7 +86,7 @@ export default function OutletsPage() {
     }
     setShowDeleteDialog(false);
     setOutletToDelete(null);
-    // router.refresh(); // Event listener should handle this
+    // router.refresh(); // Event listener should handle this by calling fetchAndSetOutlets
   };
 
   const openDeleteDialog = (outlet: Outlet) => {
@@ -177,8 +177,10 @@ export default function OutletsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                        <DropdownMenuItem disabled> {/* Implement edit page later */}
-                          <Edit className="mr-2 h-4 w-4" /> Edit Outlet (Segera Hadir)
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/settings/outlets/edit/${outlet.id}`}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit Outlet
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => openDeleteDialog(outlet)} 

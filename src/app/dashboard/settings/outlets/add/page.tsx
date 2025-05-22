@@ -5,7 +5,7 @@ import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import OutletForm from "@/components/settings/outlet-form"; 
 import type { OutletFormData } from "@/types/outlet";
-import { createOutletAction } from "./actions"; 
+import { createOutletAction } from "../actions"; // Corrected import path
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

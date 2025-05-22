@@ -27,6 +27,20 @@ export const getMockOutletById = (id: string, companyId?: string): Outlet | unde
   return outlet;
 };
 
+// Function to get company details based on companyId, needed for edit page header
+// This might be better placed in /data/companies.ts but including a basic version here for simplicity if needed by outlet logic
+export const getMockCompanyById = (companyId: string): { id: string; name: string } | undefined => {
+  // This is a simplified mock. In a real app, you'd fetch this from your companies data source.
+  // For now, assuming companyId itself can be used or you have a predefined list.
+  const companies = [
+    { id: 'comp_es_teh_jaya', name: 'Perusahaan Es Teh Jaya' },
+    { id: 'comp_kopi_maju', name: 'Kedai Kopi Maju Jaya' },
+    { id: 'comp_roti_lezat_selalu', name: 'Toko Roti Lezat Selalu' },
+  ];
+  return companies.find(c => c.id === companyId);
+};
+
+
 export const addMockOutlet = (outletData: OutletFormData, companyId: string): Outlet => {
   if (!companyId) {
     throw new Error("companyId diperlukan untuk menambahkan outlet.");
@@ -47,6 +61,7 @@ export const addMockOutlet = (outletData: OutletFormData, companyId: string): Ou
 export const updateMockOutlet = (id: string, updates: Partial<OutletFormData>, companyId: string): Outlet | undefined => {
   const outletIndex = mockOutletsStore.findIndex(o => o.id === id && o.companyId === companyId);
   if (outletIndex === -1) {
+    console.warn(`Outlet dengan ID ${id} tidak ditemukan untuk perusahaan ${companyId} saat update.`);
     return undefined;
   }
   mockOutletsStore[outletIndex] = { ...mockOutletsStore[outletIndex], ...updates };
@@ -62,6 +77,7 @@ export const deleteMockOutlet = (id: string, companyId: string): boolean => {
   const success = mockOutletsStore.length < initialLength;
   if (success && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('outletListChanged', { detail: { companyId } }));
+    // Also, if the deleted outlet was the one whose hours are being viewed, the operating hours page might need a more specific update
   }
   return success;
 };
