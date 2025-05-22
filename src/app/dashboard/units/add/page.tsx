@@ -5,7 +5,7 @@ import * as React from "react";
 import { PageHeader } from "@/components/page-header";
 import UnitForm from "@/components/units/unit-form";
 import type { UnitFormData } from "@/components/units/unit-form";
-import { createUnitAction } from "./actions"; // Import the server action
+import { createUnitAction } from "../actions"; // Import the server action
 import { Card, CardContent } from "@/components/ui/card";
 
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
