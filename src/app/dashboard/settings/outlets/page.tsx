@@ -15,11 +15,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Outlet } from "@/types/outlet"; // Import tipe Outlet terpusat
-import { getMockOutlets } from "@/data/outlets"; // Import fungsi data terpusat
+import type { Outlet } from "@/types/outlet"; 
+import { getMockOutlets, deleteMockOutlet } from "@/data/outlets"; 
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
@@ -29,9 +40,8 @@ export default function OutletsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const { toast } = useToast();
   const router = useRouter();
-  // State untuk dialog hapus (jika diimplementasikan)
-  // const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  // const [outletToDelete, setOutletToDelete] = React.useState<Outlet | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [outletToDelete, setOutletToDelete] = React.useState<Outlet | null>(null);
 
   React.useEffect(() => {
     const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
@@ -40,24 +50,57 @@ export default function OutletsPage() {
   }, []);
 
   React.useEffect(() => {
-    if (activeCompanyId) {
-      setOutlets(getMockOutlets(activeCompanyId));
-    } else {
-      setOutlets([]);
-    }
+    const fetchAndSetOutlets = () => {
+      if (activeCompanyId) {
+        setOutlets(getMockOutlets(activeCompanyId));
+      } else {
+        setOutlets([]);
+      }
+    };
+    fetchAndSetOutlets();
+
+    // Listen for custom event
+    window.addEventListener('outletListChanged', fetchAndSetOutlets as EventListener);
+    return () => {
+      window.removeEventListener('outletListChanged', fetchAndSetOutlets as EventListener);
+    };
   }, [activeCompanyId]);
 
-  // Fungsi handleDeleteOutlet (jika diimplementasikan)
-  // const handleDeleteOutlet = () => { ... }
 
-  // Fungsi openDeleteDialog (jika diimplementasikan)
-  // const openDeleteDialog = (outlet: Outlet) => { ... }
+  const handleDeleteOutlet = () => {
+    if (!outletToDelete || !activeCompanyId) return;
+
+    const success = deleteMockOutlet(outletToDelete.id, activeCompanyId);
+    if (success) {
+      setOutlets(prev => prev.filter(o => o.id !== outletToDelete.id));
+      toast({
+        title: "Outlet Dihapus",
+        description: `Outlet "${outletToDelete.name}" telah berhasil dihapus.`,
+      });
+    } else {
+      toast({
+        title: "Gagal Menghapus",
+        description: "Terjadi kesalahan saat menghapus outlet.",
+        variant: "destructive",
+      });
+    }
+    setShowDeleteDialog(false);
+    setOutletToDelete(null);
+    // router.refresh(); // Event listener should handle this
+  };
+
+  const openDeleteDialog = (outlet: Outlet) => {
+    setOutletToDelete(outlet);
+    setShowDeleteDialog(true);
+  };
 
   return (
     <div>
       <PageHeader title="Manajemen Outlet" description="Kelola daftar outlet atau cabang bisnis untuk perusahaan yang aktif.">
-        <Button disabled={!activeCompanyId}> {/* Implementasi tambah outlet perlu halaman dan form sendiri */}
-          <PlusCircle className="mr-2 h-4 w-4" /> Tambah Outlet (Segera Hadir)
+        <Button asChild disabled={!activeCompanyId}>
+          <Link href={activeCompanyId ? "/dashboard/settings/outlets/add" : "#"}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Tambah Outlet
+          </Link>
         </Button>
       </PageHeader>
       
@@ -134,14 +177,14 @@ export default function OutletsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                        <DropdownMenuItem disabled>
+                        <DropdownMenuItem disabled> {/* Implement edit page later */}
                           <Edit className="mr-2 h-4 w-4" /> Edit Outlet (Segera Hadir)
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          disabled /* onClick={() => openDeleteDialog(outlet)} */
+                          onClick={() => openDeleteDialog(outlet)} 
                           className="text-destructive focus:text-destructive focus:bg-destructive/10"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> Hapus Outlet (Segera Hadir)
+                          <Trash2 className="mr-2 h-4 w-4" /> Hapus Outlet
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -153,11 +196,22 @@ export default function OutletsPage() {
         </CardContent>
       </Card>
 
-      {/* Dialog Hapus Outlet (jika diimplementasikan)
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        ...
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Anda yakin ingin menghapus outlet ini?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat diurungkan. Outlet "{outletToDelete?.name}" akan dihapus secara permanen. Semua data terkait outlet ini (misal jam operasional, shift) juga mungkin akan terpengaruh atau perlu disesuaikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOutletToDelete(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteOutlet} className="bg-destructive hover:bg-destructive/90">
+              Ya, Hapus Outlet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
-      */}
     </div>
   );
 }

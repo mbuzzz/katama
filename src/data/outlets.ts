@@ -1,5 +1,5 @@
 
-import type { Outlet } from "@/types/outlet";
+import type { Outlet, OutletFormData } from "@/types/outlet";
 
 // Mock data - sekarang dengan companyId
 let mockOutletsStore: Outlet[] = [
@@ -27,8 +27,41 @@ export const getMockOutletById = (id: string, companyId?: string): Outlet | unde
   return outlet;
 };
 
-// Fungsi CRUD untuk Outlet bisa ditambahkan di sini jika diperlukan (add, update, delete)
-// export const addMockOutlet = (outletData: Omit<Outlet, 'id'>, companyId: string): Outlet => { ... }
-// export const updateMockOutlet = (id: string, updates: Partial<Omit<Outlet, 'id' | 'companyId'>>, companyId: string): Outlet | undefined => { ... }
-// export const deleteMockOutlet = (id: string, companyId: string): boolean => { ... }
+export const addMockOutlet = (outletData: OutletFormData, companyId: string): Outlet => {
+  if (!companyId) {
+    throw new Error("companyId diperlukan untuk menambahkan outlet.");
+  }
+  const newOutlet: Outlet = {
+    id: `outlet-${mockOutletsStore.length + 1}-${Date.now().toString().slice(-4)}`,
+    ...outletData,
+    companyId: companyId,
+  };
+  mockOutletsStore.push(newOutlet);
+  // Dispatch event to notify listeners (e.g., operating hours page) that outlets might have changed
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('outletListChanged', { detail: { companyId } }));
+  }
+  return newOutlet;
+};
 
+export const updateMockOutlet = (id: string, updates: Partial<OutletFormData>, companyId: string): Outlet | undefined => {
+  const outletIndex = mockOutletsStore.findIndex(o => o.id === id && o.companyId === companyId);
+  if (outletIndex === -1) {
+    return undefined;
+  }
+  mockOutletsStore[outletIndex] = { ...mockOutletsStore[outletIndex], ...updates };
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('outletListChanged', { detail: { companyId } }));
+  }
+  return mockOutletsStore[outletIndex];
+};
+
+export const deleteMockOutlet = (id: string, companyId: string): boolean => {
+  const initialLength = mockOutletsStore.length;
+  mockOutletsStore = mockOutletsStore.filter(o => !(o.id === id && o.companyId === companyId));
+  const success = mockOutletsStore.length < initialLength;
+  if (success && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('outletListChanged', { detail: { companyId } }));
+  }
+  return success;
+};
