@@ -85,9 +85,9 @@ export default function ProductsPage() {
   return (
     <div>
       <PageHeader title="Produk" description="Kelola daftar produk Anda.">
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto" disabled={!activeCompanyId}>
           <Link href="/dashboard/products/add">
-            <PlusCircle className="mr-2 h-4 w-4" /> Tambah Produk
+             <PlusCircle className="mr-2 h-4 w-4" /> Tambah Produk
           </Link>
         </Button>
       </PageHeader>
@@ -103,13 +103,13 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden w-[100px] sm:table-cell">Gambar</TableHead>
+                <TableHead className="hidden w-[64px] sm:table-cell">Gambar</TableHead>
                 <TableHead>Nama Produk</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead className="hidden md:table-cell">HPP</TableHead>
-                <TableHead>Harga Jual</TableHead>
-                <TableHead className="hidden md:table-cell">Margin</TableHead>
-                <TableHead>Stok</TableHead>
+                <TableHead className="hidden md:table-cell">Kategori</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">HPP</TableHead>
+                <TableHead className="text-right">Harga Jual</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">Margin</TableHead>
+                <TableHead className="text-right">Stok</TableHead>
                 <TableHead>
                   <span className="sr-only">Aksi</span>
                 </TableHead>
@@ -144,14 +144,14 @@ export default function ProductsPage() {
                         data-ai-hint={product.dataAiHint || `${product.category} product`}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{product.category}</Badge>
+                    <TableCell className="font-medium max-w-[150px] truncate">{product.name}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Badge variant="outline" className="truncate max-w-[100px]">{product.category}</Badge>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">Rp {(product.hpp || 0).toLocaleString('id-ID')}</TableCell>
-                    <TableCell>Rp {product.price.toLocaleString('id-ID')}</TableCell>
-                    <TableCell className="hidden md:table-cell">Rp {margin.toLocaleString('id-ID')}</TableCell>
-                    <TableCell>{product.stock.toLocaleString('id-ID')}</TableCell>
+                    <TableCell className="text-right hidden lg:table-cell">Rp {(product.hpp || 0).toLocaleString('id-ID')}</TableCell>
+                    <TableCell className="text-right">Rp {product.price.toLocaleString('id-ID')}</TableCell>
+                    <TableCell className="text-right hidden lg:table-cell">Rp {margin.toLocaleString('id-ID')}</TableCell>
+                    <TableCell className="text-right">{product.stock.toLocaleString('id-ID')}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -203,3 +203,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+    

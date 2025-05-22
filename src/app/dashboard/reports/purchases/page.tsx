@@ -20,13 +20,15 @@ import { id as idLocale } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { getMockShiftsForSelect } from "@/data/shifts"; 
 
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
+
 // Mock Data
 const mockPurchaseReportDataFullStatic = [
-  { id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000, shiftId: "shift1", supplier: "Supplier Kopi Jaya" },
-  { id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00.000Z", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000, shiftId: "shift1", supplier: "Distributor Susu Segar" },
-  { id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00.000Z", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000, shiftId: "shift1", supplier: "Produsen Gula Aren" },
-  { id: "P004", outlet: "Outlet Pusat", timestamp: "2024-07-22T11:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Robusta", price: 120000, quantity: 8, unit: "kg", total: 960000, shiftId: "shift2", supplier: "Supplier Kopi Robusta" },
-  { id: "P005", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Manajer Cabang", itemName: "Bubuk Es Teh", price: 50000, quantity: 10, unit: "kg", total: 500000, shiftId: "shift3", supplier: "Supplier Teh Nusantara" },
+  { companyId:"comp_es_teh_jaya", id: "P001", outlet: "Outlet Pusat", timestamp: "2024-07-20T10:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Arabika", price: 150000, quantity: 10, unit: "kg", total: 1500000, shiftId: "shift1", supplier: "Supplier Kopi Jaya" },
+  { companyId:"comp_es_teh_jaya", id: "P002", outlet: "Outlet Pusat", timestamp: "2024-07-19T15:30:00.000Z", user: "Admin Toko", itemName: "Susu UHT Full Cream", price: 80000, quantity: 5, unit: "karton", total: 400000, shiftId: "shift1", supplier: "Distributor Susu Segar" },
+  { companyId:"comp_kopi_maju", id: "P003", outlet: "Outlet Cabang A", timestamp: "2024-07-18T09:00:00.000Z", user: "Manajer Cabang", itemName: "Gula Aren Cair", price: 25000, quantity: 20, unit: "liter", total: 500000, shiftId: "shift1", supplier: "Produsen Gula Aren" },
+  { companyId:"comp_es_teh_jaya", id: "P004", outlet: "Outlet Pusat", timestamp: "2024-07-22T11:00:00.000Z", user: "Admin Toko", itemName: "Biji Kopi Robusta", price: 120000, quantity: 8, unit: "kg", total: 960000, shiftId: "shift2", supplier: "Supplier Kopi Robusta" },
+  { companyId:"comp_roti_lezat_selalu", id: "P005", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Manajer Cabang", itemName: "Bubuk Es Teh", price: 50000, quantity: 10, unit: "kg", total: 500000, shiftId: "shift3", supplier: "Supplier Teh Nusantara" },
 ];
 
 type PurchaseRecord = typeof mockPurchaseReportDataFullStatic[0];
@@ -44,12 +46,19 @@ export default function PurchaseReportPage() {
   const [selectedShiftId, setSelectedShiftId] = React.useState<string>("all");
   const [isLoading, setIsLoading] = React.useState(true);
   const [shiftsForSelect, setShiftsForSelect] = React.useState<{value: string; label: string}[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    setMockPurchaseReportDataFull(mockPurchaseReportDataFullStatic);
-    setShiftsForSelect(getMockShiftsForSelect());
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
+
+    const companyPurchases = storedCompanyId 
+      ? mockPurchaseReportDataFullStatic.filter(p => p.companyId === storedCompanyId)
+      : [];
+    setMockPurchaseReportDataFull(companyPurchases);
+    setShiftsForSelect(getMockShiftsForSelect()); // Assuming this is global or needs companyId
     setIsLoading(false);
-  }, []);
+  }, [activeCompanyId]);
 
   React.useEffect(() => {
     if (isLoading) return; 
@@ -232,6 +241,19 @@ export default function PurchaseReportPage() {
     );
   }
 
+  if (!activeCompanyId && !isLoading) {
+    return (
+      <div>
+        <PageHeader title="Laporan Pembelanjaan" description="Pilih perusahaan untuk melihat laporan."/>
+        <Card className="shadow-lg">
+          <CardContent className="pt-6 flex justify-center items-center h-64">
+            <p className="text-muted-foreground">Pilih perusahaan aktif terlebih dahulu untuk melihat laporan pembelanjaan.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader title="Laporan Pembelanjaan" description="Lacak semua pembelanjaan barang.">
@@ -247,7 +269,7 @@ export default function PurchaseReportPage() {
         <CardHeader>
           <CardTitle className="flex items-center"><Filter className="mr-2 h-5 w-5"/> Filter Laporan</CardTitle>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-4">
+        <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="date-range">Rentang Tanggal</Label>
             <DatePickerWithRange className="mt-1" date={dateRange} onDateChange={setDateRange} />
@@ -278,15 +300,15 @@ export default function PurchaseReportPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px]">ID</TableHead>
+                <TableHead className="w-[80px] hidden xl:table-cell">ID</TableHead>
                 <TableHead>Waktu</TableHead>
-                <TableHead>Outlet</TableHead>
-                <TableHead>Pengguna</TableHead>
+                <TableHead className="hidden sm:table-cell">Outlet</TableHead>
+                <TableHead className="hidden md:table-cell">Pengguna</TableHead>
                 <TableHead>Nama Barang</TableHead>
-                <TableHead>Pemasok</TableHead>
+                <TableHead className="hidden lg:table-cell">Pemasok</TableHead>
                 <TableHead className="text-right">Jumlah</TableHead>
-                <TableHead>Satuan</TableHead>
-                <TableHead className="text-right">Harga Satuan</TableHead>
+                <TableHead className="hidden md:table-cell">Satuan</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">Harga Satuan</TableHead>
                 <TableHead className="text-right">Total Pembelanjaan</TableHead>
               </TableRow>
             </TableHeader>
@@ -300,21 +322,24 @@ export default function PurchaseReportPage() {
               )}
               {filteredPurchaseData.map((purchase) => (
                 <TableRow key={purchase.id}>
-                  <TableCell className="text-xs">{purchase.id}</TableCell>
+                  <TableCell className="text-xs hidden xl:table-cell">{purchase.id}</TableCell>
                   <TableCell>{format(parseISO(purchase.timestamp), "dd/MM/yy, HH:mm", { locale: idLocale })}</TableCell>
-                  <TableCell>{purchase.outlet}</TableCell>
-                  <TableCell>{purchase.user}</TableCell>
-                  <TableCell className="font-medium">{purchase.itemName}</TableCell>
-                  <TableCell>{purchase.supplier}</TableCell>
+                  <TableCell className="hidden sm:table-cell max-w-[100px] truncate">{purchase.outlet}</TableCell>
+                  <TableCell className="hidden md:table-cell max-w-[100px] truncate">{purchase.user}</TableCell>
+                  <TableCell className="font-medium max-w-[150px] truncate">{purchase.itemName}</TableCell>
+                  <TableCell className="hidden lg:table-cell max-w-[100px] truncate">{purchase.supplier}</TableCell>
                   <TableCell className="text-right">{purchase.quantity}</TableCell>
-                  <TableCell>{purchase.unit}</TableCell>
-                  <TableCell className="text-right">Rp {purchase.price.toLocaleString('id-ID')}</TableCell>
+                  <TableCell className="hidden md:table-cell">{purchase.unit}</TableCell>
+                  <TableCell className="text-right hidden lg:table-cell">Rp {purchase.price.toLocaleString('id-ID')}</TableCell>
                   <TableCell className="text-right">Rp {purchase.total.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               ))}
                {filteredPurchaseData.length > 0 && (
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={9} className="text-right">Total Keseluruhan Pembelanjaan (Filtered)</TableCell>
+                  <TableCell colSpan={9} className="text-right hidden lg:table-cell">Total Keseluruhan Pembelanjaan (Filtered)</TableCell>
+                  <TableCell colSpan={5} className="text-right sm:hidden">Total (Filtered)</TableCell>
+                  <TableCell colSpan={3} className="text-right hidden sm:table-cell md:hidden">Total (Filtered)</TableCell>
+                  <TableCell colSpan={1} className="text-right hidden md:table-cell lg:hidden">Total (Filtered)</TableCell>
                   <TableCell className="text-right">Rp {filteredPurchaseData.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</TableCell>
                 </TableRow>
                )}
@@ -326,3 +351,4 @@ export default function PurchaseReportPage() {
   );
 }
 
+    

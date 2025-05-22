@@ -21,15 +21,16 @@ import { getMockShiftsForSelect } from "@/data/shifts";
 import type { Product } from "@/types/product";
 import { getMockProducts } from "@/data/products";
 
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 const paymentMethods = ["Tunai", "Kartu", "QRIS"];
 
 const mockSalesDataFullStatic = [
-  { id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00.000Z", user: "Ana Maria", productId: "1", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000, shiftId: "shift2", paymentMethod: "QRIS" },
-  { id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00.000Z", user: "Budi Santoso", productId: "2", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000, shiftId: "shift1", paymentMethod: "Kartu" },
-  { id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00.000Z", user: "Ana Maria", productId: "3", productName: "Teh Melati Panas", price: 15000, quantity: 3, total: 45000, shiftId: "shift1", paymentMethod: "Tunai" },
-  { id: "S004", outlet: "Outlet Pusat", timestamp: "2024-07-22T09:00:00.000Z", user: "Ana Maria", productId: "5", productName: "Americano", price: 16000, quantity: 1, total: 16000, shiftId: "shift2", paymentMethod: "QRIS" },
-  { id: "S005", outlet: "Outlet Cabang A", timestamp: "2024-07-22T12:30:00.000Z", user: "Budi Santoso", productId: "1", productName: "Kopi Susu Aren", price: 18000, quantity: 1, total: 18000, shiftId: "shift1", paymentMethod: "Tunai" },
-  { id: "S006", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Dewi Lestari", productId: "16", productName: "Es Teh Manis", price: 10000, quantity: 5, total: 50000, shiftId: "shift3", paymentMethod: "Tunai" },
+  { companyId:"comp_es_teh_jaya", id: "S001", outlet: "Outlet Pusat", timestamp: "2024-07-21T10:30:00.000Z", user: "Ana Maria", productId: "1", productName: "Kopi Susu Aren", price: 18000, quantity: 2, total: 36000, shiftId: "shift2", paymentMethod: "QRIS" },
+  { companyId:"comp_kopi_maju", id: "S002", outlet: "Outlet Cabang A", timestamp: "2024-07-21T11:15:00.000Z", user: "Budi Santoso", productId: "2", productName: "Croissant Coklat", price: 22000, quantity: 1, total: 22000, shiftId: "shift1", paymentMethod: "Kartu" },
+  { companyId:"comp_es_teh_jaya", id: "S003", outlet: "Outlet Pusat", timestamp: "2024-07-20T14:00:00.000Z", user: "Ana Maria", productId: "3", productName: "Teh Melati Panas", price: 15000, quantity: 3, total: 45000, shiftId: "shift1", paymentMethod: "Tunai" },
+  { companyId:"comp_es_teh_jaya", id: "S004", outlet: "Outlet Pusat", timestamp: "2024-07-22T09:00:00.000Z", user: "Ana Maria", productId: "5", productName: "Americano", price: 16000, quantity: 1, total: 16000, shiftId: "shift2", paymentMethod: "QRIS" },
+  { companyId:"comp_kopi_maju", id: "S005", outlet: "Outlet Cabang A", timestamp: "2024-07-22T12:30:00.000Z", user: "Budi Santoso", productId: "1", productName: "Kopi Susu Aren", price: 18000, quantity: 1, total: 18000, shiftId: "shift1", paymentMethod: "Tunai" },
+  { companyId:"comp_roti_lezat_selalu", id: "S006", outlet: "Outlet Cabang Sudirman", timestamp: "2024-07-22T14:00:00.000Z", user: "Dewi Lestari", productId: "16", productName: "Es Teh Manis", price: 10000, quantity: 5, total: 50000, shiftId: "shift3", paymentMethod: "Tunai" },
 ];
 
 type EnrichedSaleRecord = typeof mockSalesDataFullStatic[0] & {
@@ -57,17 +58,25 @@ export default function SalesReportPage() {
   const [selectedShiftId, setSelectedShiftId] = React.useState<string>("all");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = React.useState<string>("all");
   const [isLoading, setIsLoading] = React.useState(true);
+  const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
 
   const [shiftsForSelect, setShiftsForSelect] = React.useState<{value: string; label: string}[]>([]);
   const [uniqueUsers, setUniqueUsers] = React.useState<string[]>([]);
   const [uniqueOutlets, setUniqueOutlets] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    const products = getMockProducts(); 
+    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+    setActiveCompanyId(storedCompanyId);
+
+    const products = getMockProducts(storedCompanyId || undefined); 
     setAllProducts(products);
     
-    const enrichedStaticData = mockSalesDataFullStatic.map(sale => {
-      const product = products.find(p => p.id === sale.productId);
+    const companySalesData = storedCompanyId 
+        ? mockSalesDataFullStatic.filter(sale => sale.companyId === storedCompanyId) 
+        : [];
+
+    const enrichedStaticData = companySalesData.map(sale => {
+      const product = products.find(p => p.id === sale.productId && p.companyId === sale.companyId);
       const hppPerUnit = product?.hpp || 0;
       const totalHpp = hppPerUnit * sale.quantity;
       const profit = sale.total - totalHpp;
@@ -81,11 +90,11 @@ export default function SalesReportPage() {
     });
     setMockSalesDataFull(enrichedStaticData);
 
-    setShiftsForSelect(getMockShiftsForSelect());
-    setUniqueUsers(uniqueUsersStatic);
-    setUniqueOutlets(uniqueOutletsStatic);
+    setShiftsForSelect(getMockShiftsForSelect()); // Assuming this is global for now, or needs companyId
+    setUniqueUsers(Array.from(new Set(companySalesData.map(sale => sale.user))));
+    setUniqueOutlets(Array.from(new Set(companySalesData.map(sale => sale.outlet))));
     setIsLoading(false);
-  }, []);
+  }, [activeCompanyId]); // Re-run when activeCompanyId changes
 
   React.useEffect(() => {
     if (isLoading) return;
@@ -299,6 +308,19 @@ export default function SalesReportPage() {
     );
   }
 
+  if (!activeCompanyId && !isLoading) {
+    return (
+      <div>
+        <PageHeader title="Laporan Penjualan" description="Pilih perusahaan untuk melihat laporan."/>
+        <Card className="shadow-lg">
+          <CardContent className="pt-6 flex justify-center items-center h-64">
+            <p className="text-muted-foreground">Pilih perusahaan aktif terlebih dahulu untuk melihat laporan penjualan.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader title="Laporan Penjualan" description="Analisis detail penjualan, biaya, dan keuntungan Anda.">
@@ -353,7 +375,7 @@ export default function SalesReportPage() {
         <CardHeader>
           <CardTitle className="flex items-center"><Filter className="mr-2 h-5 w-5"/> Filter Laporan</CardTitle>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <div>
             <Label htmlFor="date-range">Rentang Tanggal</Label>
             <DatePickerWithRange className="mt-1" date={dateRange} onDateChange={setDateRange} />
@@ -410,17 +432,17 @@ export default function SalesReportPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">ID Transaksi</TableHead>
+                <TableHead className="w-[100px] hidden xl:table-cell">ID Transaksi</TableHead>
                 <TableHead>Waktu</TableHead>
-                <TableHead>Outlet</TableHead>
-                <TableHead>Pengguna</TableHead>
+                <TableHead className="hidden sm:table-cell">Outlet</TableHead>
+                <TableHead className="hidden md:table-cell">Pengguna</TableHead>
                 <TableHead>Nama Produk</TableHead>
                 <TableHead className="text-right">Jml</TableHead>
-                <TableHead className="text-right">Harga</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">Harga</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">HPP/Unit</TableHead>
-                <TableHead className="text-right">Total HPP</TableHead>
-                <TableHead>Metode</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">HPP/Unit</TableHead>
+                <TableHead className="text-right hidden xl:table-cell">Total HPP</TableHead>
+                <TableHead className="hidden md:table-cell">Metode</TableHead>
                 <TableHead className="text-right">Keuntungan</TableHead>
               </TableRow>
             </TableHeader>
@@ -434,27 +456,30 @@ export default function SalesReportPage() {
               )}
               {filteredSalesData.map((sale) => (
                 <TableRow key={sale.id}>
-                  <TableCell className="text-xs">{sale.transactionId}</TableCell>
+                  <TableCell className="text-xs hidden xl:table-cell">{sale.transactionId}</TableCell>
                   <TableCell>{format(parseISO(sale.timestamp), "dd/MM/yy, HH:mm", { locale: idLocale })}</TableCell>
-                  <TableCell>{sale.outlet}</TableCell>
-                  <TableCell>{sale.user}</TableCell>
-                  <TableCell className="font-medium">{sale.productName}</TableCell>
+                  <TableCell className="hidden sm:table-cell max-w-[100px] truncate">{sale.outlet}</TableCell>
+                  <TableCell className="hidden md:table-cell max-w-[100px] truncate">{sale.user}</TableCell>
+                  <TableCell className="font-medium max-w-[150px] truncate">{sale.productName}</TableCell>
                   <TableCell className="text-right">{sale.quantity}</TableCell>
-                  <TableCell className="text-right">Rp {sale.price.toLocaleString('id-ID')}</TableCell>
+                  <TableCell className="text-right hidden lg:table-cell">Rp {sale.price.toLocaleString('id-ID')}</TableCell>
                   <TableCell className="text-right">Rp {sale.total.toLocaleString('id-ID')}</TableCell>
-                  <TableCell className="text-right">Rp {sale.hppPerUnit.toLocaleString('id-ID')}</TableCell>
-                  <TableCell className="text-right">Rp {sale.totalHpp.toLocaleString('id-ID')}</TableCell>
-                  <TableCell>{sale.paymentMethod}</TableCell>
+                  <TableCell className="text-right hidden lg:table-cell">Rp {sale.hppPerUnit.toLocaleString('id-ID')}</TableCell>
+                  <TableCell className="text-right hidden xl:table-cell">Rp {sale.totalHpp.toLocaleString('id-ID')}</TableCell>
+                  <TableCell className="hidden md:table-cell">{sale.paymentMethod}</TableCell>
                   <TableCell className="text-right">Rp {sale.profit.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               ))}
               {filteredSalesData.length > 0 && (
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={7} className="text-right">Total Keseluruhan (Filtered)</TableCell>
+                  <TableCell colSpan={7} className="text-right hidden lg:table-cell">Total Keseluruhan (Filtered)</TableCell>
+                  <TableCell colSpan={5} className="text-right sm:hidden">Total (Filtered)</TableCell>
+                  <TableCell colSpan={1} className="text-right hidden sm:table-cell lg:hidden">Total (Filtered)</TableCell>
+
                   <TableCell className="text-right">Rp {totalRevenue.toLocaleString('id-ID')}</TableCell>
-                  <TableCell></TableCell> 
-                  <TableCell className="text-right">Rp {totalOverallHpp.toLocaleString('id-ID')}</TableCell>
-                   <TableCell></TableCell> 
+                  <TableCell className="hidden lg:table-cell"></TableCell> 
+                  <TableCell className="text-right hidden xl:table-cell">Rp {totalOverallHpp.toLocaleString('id-ID')}</TableCell>
+                   <TableCell className="hidden md:table-cell"></TableCell> 
                   <TableCell className="text-right">Rp {totalProfit.toLocaleString('id-ID')}</TableCell>
                 </TableRow>
               )}
@@ -466,3 +491,4 @@ export default function SalesReportPage() {
   );
 }
 
+    

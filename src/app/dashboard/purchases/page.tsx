@@ -83,7 +83,7 @@ export default function PurchasesPage() {
   return (
     <div>
       <PageHeader title="Pembelanjaan" description="Catat dan kelola pembelanjaan barang untuk perusahaan yang aktif.">
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto" disabled={!activeCompanyId}>
           <Link href="/dashboard/purchases/add">
             <PlusCircle className="mr-2 h-4 w-4" /> Tambah Pembelanjaan
           </Link>
@@ -99,15 +99,15 @@ export default function PurchasesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tanggal</TableHead>
+                <TableHead className="hidden md:table-cell">Tanggal</TableHead>
                 <TableHead>Nama Barang</TableHead>
-                <TableHead>Outlet</TableHead>
+                <TableHead className="hidden sm:table-cell">Outlet</TableHead>
                 <TableHead className="text-right">Jumlah</TableHead>
-                <TableHead>Satuan</TableHead>
-                <TableHead className="text-right hidden md:table-cell">Harga Satuan</TableHead>
+                <TableHead className="hidden md:table-cell">Satuan</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">Harga Satuan</TableHead>
                 <TableHead className="text-right">Total Harga</TableHead>
-                <TableHead className="hidden md:table-cell">Pemasok</TableHead>
-                <TableHead className="hidden md:table-cell">Dicatat Oleh</TableHead>
+                <TableHead className="hidden lg:table-cell">Pemasok</TableHead>
+                <TableHead className="hidden xl:table-cell">Dicatat Oleh</TableHead>
                 <TableHead>
                   <span className="sr-only">Aksi</span>
                 </TableHead>
@@ -135,15 +135,15 @@ export default function PurchasesPage() {
               )}
               {!isLoading && activeCompanyId && purchases.map((purchase) => (
                 <TableRow key={purchase.id}>
-                  <TableCell>{format(new Date(purchase.timestamp), "dd MMM yyyy, HH:mm", { locale: idLocale })}</TableCell>
-                  <TableCell className="font-medium">{purchase.itemName}</TableCell>
-                  <TableCell>{purchase.outlet}</TableCell>
+                  <TableCell className="hidden md:table-cell">{format(new Date(purchase.timestamp), "dd MMM yyyy, HH:mm", { locale: idLocale })}</TableCell>
+                  <TableCell className="font-medium max-w-[150px] sm:max-w-xs truncate">{purchase.itemName}</TableCell>
+                  <TableCell className="hidden sm:table-cell max-w-[100px] truncate">{purchase.outlet}</TableCell>
                   <TableCell className="text-right">{purchase.quantity.toLocaleString('id-ID')}</TableCell>
-                  <TableCell>{purchase.unit}</TableCell>
-                  <TableCell className="text-right hidden md:table-cell">Rp {purchase.price.toLocaleString('id-ID')}</TableCell>
+                  <TableCell className="hidden md:table-cell">{purchase.unit}</TableCell>
+                  <TableCell className="text-right hidden lg:table-cell">Rp {purchase.price.toLocaleString('id-ID')}</TableCell>
                   <TableCell className="text-right">Rp {purchase.total.toLocaleString('id-ID')}</TableCell>
-                  <TableCell className="hidden md:table-cell">{purchase.supplier || "-"}</TableCell>
-                  <TableCell className="hidden md:table-cell">{purchase.userName}</TableCell>
+                  <TableCell className="hidden lg:table-cell max-w-[100px] truncate">{purchase.supplier || "-"}</TableCell>
+                  <TableCell className="hidden xl:table-cell">{purchase.userName}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -192,3 +192,5 @@ export default function PurchasesPage() {
     </div>
   );
 }
+
+    

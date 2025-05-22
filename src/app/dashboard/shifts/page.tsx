@@ -145,7 +145,7 @@ export default function ShiftsPage() {
   return (
     <div>
       <PageHeader title="Manajemen Shift" description="Kelola sesi kerja kasir dan operasional outlet.">
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/dashboard/shifts/add">
             <PlayCircle className="mr-2 h-4 w-4" /> Mulai Shift Baru
           </Link>
@@ -162,13 +162,13 @@ export default function ShiftsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Pengguna</TableHead>
-                <TableHead>Outlet</TableHead>
+                <TableHead className="hidden sm:table-cell">Outlet</TableHead>
                 <TableHead>Mulai</TableHead>
-                <TableHead>Selesai</TableHead>
-                <TableHead className="hidden sm:table-cell">Durasi</TableHead>
-                <TableHead className="text-right">Modal Awal</TableHead>
-                <TableHead className="text-right hidden md:table-cell">Kas Akhir</TableHead>
-                <TableHead className="text-right hidden md:table-cell">Total Penjualan</TableHead>
+                <TableHead className="hidden md:table-cell">Selesai</TableHead>
+                <TableHead className="hidden lg:table-cell">Durasi</TableHead>
+                <TableHead className="text-right hidden md:table-cell">Modal Awal</TableHead>
+                <TableHead className="text-right hidden lg:table-cell">Kas Akhir</TableHead>
+                <TableHead className="text-right hidden xl:table-cell">Total Penjualan</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Aksi</span>
@@ -185,14 +185,14 @@ export default function ShiftsPage() {
               )}
               {shifts.map((shift) => (
                 <TableRow key={shift.id}>
-                  <TableCell className="font-medium">{shift.userName}</TableCell>
-                  <TableCell>{shift.outletName}</TableCell>
+                  <TableCell className="font-medium max-w-[120px] truncate">{shift.userName}</TableCell>
+                  <TableCell className="hidden sm:table-cell max-w-[120px] truncate">{shift.outletName}</TableCell>
                   <TableCell>{formatDate(shift.startTime)}</TableCell>
-                  <TableCell>{formatDate(shift.endTime)}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{shift.duration || "-"}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(shift.initialCash)}</TableCell>
-                  <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.finalCash)}</TableCell>
-                  <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.totalSales)}</TableCell>
+                  <TableCell className="hidden md:table-cell">{formatDate(shift.endTime)}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{shift.duration || "-"}</TableCell>
+                  <TableCell className="text-right hidden md:table-cell">{formatCurrency(shift.initialCash)}</TableCell>
+                  <TableCell className="text-right hidden lg:table-cell">{formatCurrency(shift.finalCash)}</TableCell>
+                  <TableCell className="text-right hidden xl:table-cell">{formatCurrency(shift.totalSales)}</TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(shift.status)}
                      className={
@@ -306,3 +306,4 @@ export default function ShiftsPage() {
   );
 }
 
+    
