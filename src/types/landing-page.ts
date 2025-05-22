@@ -31,4 +31,5 @@ export interface LandingPageSettings {
   pricingPlans: PricingPlan[];
   footerTextLine1: string;
   footerTextLine2: string;
+  creatorCredit?: string; // New field for creator credit
 }

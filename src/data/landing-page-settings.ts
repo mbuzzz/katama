@@ -46,6 +46,7 @@ let mockLandingPageSettingsStore: LandingPageSettings = {
   ],
   footerTextLine1: `© ${new Date().getFullYear()} KATAMA POS. Hak Cipta Dilindungi.`,
   footerTextLine2: "Dirancang dengan ❤️ untuk bisnis Anda.",
+  creatorCredit: "Created by Tumbu Studio", // Added creator credit
 };
 
 export const getMockLandingPageSettings = (): LandingPageSettings => {

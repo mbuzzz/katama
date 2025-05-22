@@ -102,6 +102,9 @@ export default function LandingPage() {
       <footer className="w-full py-8 px-6 md:px-12 text-center text-muted-foreground bg-card border-t">
         <p>{settings.footerTextLine1}</p>
         <p className="text-xs mt-1">{settings.footerTextLine2}</p>
+        {settings.creatorCredit && (
+          <p className="text-xs mt-2">{settings.creatorCredit}</p>
+        )}
       </footer>
     </div>
   );
