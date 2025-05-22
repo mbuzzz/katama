@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, MinusCircle, Trash2, Download, CreditCard, QrCode, DollarSignIcon, PlayCircle, Search, CheckCircle, Printer, Loader2 } from "lucide-react";
+import { PlusCircle, MinusCircle, Trash2, Download, CreditCard, QrCode, DollarSignIcon, PlayCircle, Search, CheckCircle, Printer, Loader2, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -28,6 +28,7 @@ import { handleProcessSaleAction } from "./actions";
 import html2canvas from 'html2canvas';
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { getMockCompanies } from "@/data/companies"; // Import getMockCompanies
 
 // localStorage keys
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
@@ -42,7 +43,7 @@ const STRUK_SHOW_ADDRESS_KEY = 'katama-pos-struk-showAddress';
 const STRUK_SHOW_CONTACT_KEY = 'katama-pos-struk-showContact';
 const STRUK_PAPER_SIZE_KEY = 'katama-pos-struk-paperSize';
 
-const POS_SESSION_KEY = 'katama-pos-active-session';
+const POS_SESSION_KEY_PREFIX = 'katama-pos-active-session-'; // Prefix for company-specific session
 const DEFAULT_COMPANY_NAME_FALLBACK = "KATAMA";
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
@@ -76,13 +77,15 @@ export default function POSPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = React.useState<PaymentMethod>("Tunai");
   const [isLoadingSession, setIsLoadingSession] = React.useState(true);
   const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false);
+  const [noCompanyAvailable, setNoCompanyAvailable] = React.useState(false);
 
 
   const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME_FALLBACK);
   const [companyAddress, setCompanyAddress] = React.useState<string>("Alamat Perusahaan Anda");
   const [companyContact, setCompanyContact] = React.useState<string>("Kontak Perusahaan Anda");
   const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
-  const [strukHeaderText, setStrukHeaderText] = React.useState<string>("Terima Kasih!");
+  const [strukHeaderText, setStrukHeaderText] = React.useState<string>("Terima Kasih Atas Kunjungan Anda!");
   const [strukFooterText, setStrukFooterText] = React.useState<string>("Barang yang sudah dibeli tidak dapat dikembalikan.");
   const [strukShowLogo, setStrukShowLogo] = React.useState<boolean>(true);
   const [strukShowAddress, setStrukShowAddress] = React.useState<boolean>(true);
@@ -96,54 +99,63 @@ export default function POSPage() {
 
 
   React.useEffect(() => {
-    const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
-    setActiveCompanyId(storedCompanyId);
-    
-    if (storedCompanyId) {
-      setProducts(getMockProducts(storedCompanyId)); 
-    } else {
-      setProducts([]);
+    const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+    setIsSuperAdmin(currentIsSuperAdmin);
+    let companyIdForSession = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+
+    if (!currentIsSuperAdmin && !companyIdForSession) {
+      const allCompanies = getMockCompanies();
+      if (allCompanies.length > 0) {
+        companyIdForSession = allCompanies[0].id;
+        localStorage.setItem(SELECTED_COMPANY_ID_KEY, companyIdForSession);
+      } else {
+        setNoCompanyAvailable(true);
+        setIsLoadingSession(false);
+        return;
+      }
     }
     
-    const storedSession = localStorage.getItem(POS_SESSION_KEY);
-    if (storedSession) {
-      try {
-        const potentialSessionData = JSON.parse(storedSession);
-        
-        if (typeof potentialSessionData === 'object' && 
-            potentialSessionData !== null && 
-            'startTime' in potentialSessionData && 
-            'companyId' in potentialSessionData &&
-            typeof potentialSessionData.startTime === 'string') { 
-          
-          const validSessionData = potentialSessionData as Omit<POSSession, 'startTime'> & { startTime: string };
-          const sessionStartTime = new Date(validSessionData.startTime);
+    setActiveCompanyId(companyIdForSession);
+    setNoCompanyAvailable(false);
 
-          if (sessionStartTime && !isNaN(sessionStartTime.getTime()) && validSessionData.companyId === storedCompanyId) {
-            setPosSession({ 
-              ...validSessionData, 
-              startTime: sessionStartTime 
-            });
+    if (companyIdForSession) {
+      setProducts(getMockProducts(companyIdForSession)); 
+      const storedSession = localStorage.getItem(POS_SESSION_KEY_PREFIX + companyIdForSession);
+      if (storedSession) {
+        try {
+          const potentialSessionData = JSON.parse(storedSession);
+          if (typeof potentialSessionData === 'object' && 
+              potentialSessionData !== null && 
+              'startTime' in potentialSessionData && 
+              'companyId' in potentialSessionData &&
+              typeof potentialSessionData.startTime === 'string') { 
+            const validSessionData = potentialSessionData as Omit<POSSession, 'startTime'> & { startTime: string };
+            const sessionStartTime = new Date(validSessionData.startTime);
+            if (sessionStartTime && !isNaN(sessionStartTime.getTime()) && validSessionData.companyId === companyIdForSession) {
+              setPosSession({ ...validSessionData, startTime: sessionStartTime });
+            } else {
+              localStorage.removeItem(POS_SESSION_KEY_PREFIX + companyIdForSession); 
+            }
           } else {
-            localStorage.removeItem(POS_SESSION_KEY); 
+            console.error("Format data sesi POS di localStorage tidak valid:", potentialSessionData);
+            localStorage.removeItem(POS_SESSION_KEY_PREFIX + companyIdForSession);
           }
-        } else {
-          console.error("Format data sesi POS di localStorage tidak valid atau tidak lengkap:", potentialSessionData);
-          localStorage.removeItem(POS_SESSION_KEY);
+        } catch (error) {
+          console.error("Gagal memuat sesi POS dari localStorage:", error);
+          localStorage.removeItem(POS_SESSION_KEY_PREFIX + companyIdForSession); 
         }
-      } catch (error) {
-        console.error("Gagal memuat sesi POS dari localStorage (parsing error):", error);
-        localStorage.removeItem(POS_SESSION_KEY); 
       }
+    } else {
+      setProducts([]); // No company, no products
     }
     setIsLoadingSession(false);
 
+    // Load struk settings
     if (typeof window !== 'undefined') {
       setCompanyName(localStorage.getItem(COMPANY_NAME_STORAGE_KEY) || DEFAULT_COMPANY_NAME_FALLBACK);
       setCompanyAddress(localStorage.getItem(COMPANY_ADDRESS_STORAGE_KEY) || "Jl. Contoh No. 123, Kota Contoh");
       setCompanyContact(localStorage.getItem(COMPANY_CONTACT_STORAGE_KEY) || "0812-3456-7890");
       setCustomLogoUrl(localStorage.getItem(LOGO_STORAGE_KEY));
-      
       setStrukHeaderText(localStorage.getItem(STRUK_HEADER_TEXT_KEY) || "Terima Kasih Atas Kunjungan Anda!");
       setStrukFooterText(localStorage.getItem(STRUK_FOOTER_TEXT_KEY) || "Barang yang sudah dibeli tidak dapat dikembalikan.");
       setStrukShowLogo(localStorage.getItem(STRUK_SHOW_LOGO_KEY) === 'true');
@@ -151,7 +163,18 @@ export default function POSPage() {
       setStrukShowContact(localStorage.getItem(STRUK_SHOW_CONTACT_KEY) === 'true');
       setStrukPaperSize(localStorage.getItem(STRUK_PAPER_SIZE_KEY) || "58mm");
     }
+  }, [activeCompanyId]); // Re-run if activeCompanyId changes (e.g. Superadmin switches)
+
+  React.useEffect(() => {
+    // Effect to re-fetch products if companyId changes
+    // This is now handled in the main useEffect, but keep this if there are other dependencies
+    if (activeCompanyId) {
+      setProducts(getMockProducts(activeCompanyId));
+    } else {
+      setProducts([]);
+    }
   }, [activeCompanyId]);
+
 
   React.useEffect(() => {
     if (posSession) {
@@ -443,7 +466,7 @@ export default function POSPage() {
     }
     const newSession: POSSession = { initialCash: cashAmount, startTime: new Date(), companyId: activeCompanyId };
     setPosSession(newSession);
-    localStorage.setItem(POS_SESSION_KEY, JSON.stringify(newSession));
+    localStorage.setItem(POS_SESSION_KEY_PREFIX + activeCompanyId, JSON.stringify(newSession));
     setShowOpenPOSDialog(false);
     setInitialCashInput("");
     toast({
@@ -453,7 +476,9 @@ export default function POSPage() {
   };
 
   const handleClosePOSSession = () => {
-    localStorage.removeItem(POS_SESSION_KEY);
+    if (activeCompanyId) {
+      localStorage.removeItem(POS_SESSION_KEY_PREFIX + activeCompanyId);
+    }
     setPosSession(null);
     setCartItems([]); 
     toast({ title: "Sesi POS Ditutup", description: "Modal awal dan transaksi telah di-reset." });
@@ -468,22 +493,37 @@ export default function POSPage() {
     );
   }
 
-  if (!activeCompanyId) {
+  if (noCompanyAvailable) {
     return (
-       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
-            <CardTitle className="text-center text-2xl">Pilih Perusahaan</CardTitle>
-            <CardContent className="text-center text-muted-foreground pt-4">
-              Anda harus memilih perusahaan aktif terlebih dahulu dari menu dropdown di header sebelum dapat menggunakan Point of Sale.
-            </CardContent>
+            <CardTitle className="text-center text-2xl flex items-center justify-center"><AlertTriangle className="mr-2 h-7 w-7 text-destructive"/> Tidak Ada Perusahaan</CardTitle>
           </CardHeader>
+          <CardContent className="text-center text-muted-foreground pt-4">
+            Tidak ada perusahaan yang terdaftar di sistem. Silakan hubungi Superadmin untuk menambahkan perusahaan.
+          </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (!posSession) {
+  if (!activeCompanyId && isSuperAdmin) { // Hanya Superadmin yang mungkin tidak memiliki activeCompanyId jika belum memilih
+    return (
+       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl">Pilih Perusahaan (Superadmin)</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center text-muted-foreground pt-4">
+            Anda adalah Superadmin. Silakan pilih perusahaan aktif dari menu dropdown di header untuk menggunakan Point of Sale.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (!posSession && activeCompanyId) { // Jika ada perusahaan aktif tapi sesi belum dibuka
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Card className="w-full max-w-md shadow-xl">
@@ -539,7 +579,7 @@ export default function POSPage() {
     <div className="flex flex-col h-full">
       <PageHeader 
         title="Point of Sale" 
-        description={posSessionDisplayTime ? `Sesi dimulai ${posSessionDisplayTime} | Modal: Rp ${posSession.initialCash.toLocaleString('id-ID')}` : "Memuat info sesi..."}
+        description={posSessionDisplayTime ? `Sesi dimulai ${posSessionDisplayTime} | Modal: Rp ${posSession?.initialCash.toLocaleString('id-ID')}` : "Memuat info sesi..."}
         className="py-3 md:py-4" 
       />
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 flex-1 overflow-hidden">
@@ -718,4 +758,3 @@ export default function POSPage() {
     </div>
   );
 }
-

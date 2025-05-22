@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { getMockCompanies } from '@/data/companies'; // Import untuk mengambil daftar perusahaan
+
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,7 +25,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // Mock authentication
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (email === "demo@tokolite.com" && password === "demo") {
@@ -30,9 +32,18 @@ export default function LoginPage() {
         title: "Login Berhasil",
         description: "Selamat datang kembali!",
       });
-      // Set flag to indicate this is NOT a superadmin login
       localStorage.setItem('isSuperAdmin', 'false');
-      localStorage.setItem('katama-pos-active-session', 'true'); // Tandai sesi aktif
+      localStorage.setItem('katama-pos-active-session', 'true');
+
+      // Otomatis set perusahaan aktif jika belum ada
+      const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+      if (!storedCompanyId) {
+        const companies = getMockCompanies();
+        if (companies.length > 0) {
+          localStorage.setItem(SELECTED_COMPANY_ID_KEY, companies[0].id);
+        }
+      }
+
       router.push('/dashboard');
     } else {
       toast({

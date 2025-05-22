@@ -37,12 +37,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { AppBottomNav } from "@/components/mobile-bottom-nav";
-import CompanySwitcher from "@/components/company-switcher"; // Import CompanySwitcher
-import { getMockCompanyById as fetchMockCompanyById } from "@/data/companies"; // Renamed for clarity
+import CompanySwitcher from "@/components/company-switcher"; 
+import { getMockCompanyById as fetchMockCompanyById, getMockCompanies } from "@/data/companies"; 
 
 
 const LOGO_STORAGE_KEY = 'katama-pos-custom-logo';
 const COMPANY_NAME_STORAGE_KEY = 'katama-pos-company-name';
+const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 const DEFAULT_COMPANY_NAME = 'KATAMA';
 
 
@@ -102,7 +103,7 @@ function AppSidebar() {
       }
       
       const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
-      setIsUserSuperAdminState(currentIsSuperAdmin);
+      setIsUserSuperAdminState(currentIsSuperAdmin); 
 
       if (!currentIsSuperAdmin) {
         setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== ADMIN_OVERVIEW_PATH));
@@ -152,8 +153,13 @@ function AppSidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem('katama-pos-active-session');
-    localStorage.removeItem('katama-pos-selectedCompanyId');
+    localStorage.removeItem(SELECTED_COMPANY_ID_KEY); // Clear selected company
     localStorage.removeItem('isSuperAdmin'); 
+    // Clear company-specific POS sessions
+    const companies = getMockCompanies();
+    companies.forEach(company => {
+      localStorage.removeItem(`katama-pos-active-session-${company.id}`);
+    });
     
     toast({
       title: "Keluar Berhasil",
@@ -219,13 +225,11 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     }
   }, [pathname, item.items, isSubmenuOpen]); 
 
-  const isActive = item.href && pathname === item.href;
-  
   let isParentActive = false;
   if (item.href && item.items && item.items.length > 0) {
     isParentActive = pathname?.startsWith(item.href) || item.items.some(subItem => pathname?.startsWith(subItem.href));
   } else if (item.href) {
-    isParentActive = isActive;
+    isParentActive = pathname === item.href;
   }
 
 
@@ -259,7 +263,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
               <SidebarMenuSubItem key={subItem.href}>
                 <Link href={subItem.href}>
                   <SidebarMenuSubButton
-                    asChild // Add asChild here
+                    asChild 
                     isActive={pathname === subItem.href}
                      className={cn(pathname === subItem.href && "bg-sidebar-accent text-sidebar-accent-foreground")}
                   >
@@ -278,9 +282,9 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
     <SidebarMenuItem>
       <Link href={item.href || "#"}>
         <SidebarMenuButton
-          isActive={!!isActive}
+          isActive={!!isParentActive} // Use isParentActive for direct items too
           tooltip={item.title}
-          className={cn(isActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90")}
+          className={cn(isParentActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90")}
         >
           <item.icon className="h-4 w-4" />
           <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
@@ -318,30 +322,60 @@ function AppHeader() {
 
 
   React.useEffect(() => {
+    const updateActiveCompanyName = () => {
+      let companyIdToFetch = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
+      const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+
+      if (!currentIsSuperAdmin && !companyIdToFetch) {
+        const companies = getMockCompanies();
+        if (companies.length > 0) {
+          companyIdToFetch = companies[0].id;
+          // Optionally, update localStorage here if you want non-superadmin to persist this default
+          // localStorage.setItem(SELECTED_COMPANY_ID_KEY, companyIdToFetch); 
+        }
+      }
+
+      if (companyIdToFetch) {
+        const companyData = fetchMockCompanyById(companyIdToFetch);
+        setActiveCompanyName(companyData?.name || null);
+      } else {
+        setActiveCompanyName(null);
+      }
+    };
+
+    updateActiveCompanyName(); // Initial call
+
+    // Listen to companySwitched event (primarily for Superadmin)
     const handleCompanySwitch = (event: Event) => {
       const customEvent = event as CustomEvent<{ companyId: string, companyName: string }>;
       setActiveCompanyName(customEvent.detail.companyName);
     };
-
-    const initialCompanyId = localStorage.getItem('katama-pos-selectedCompanyId');
-    if (initialCompanyId) {
-        const companyData = fetchMockCompanyById(initialCompanyId); 
-        if (companyData) {
-            setActiveCompanyName(companyData.name);
-        }
-    }
-
-
     window.addEventListener('companySwitched', handleCompanySwitch);
+
+    // Listen to storage changes for SELECTED_COMPANY_ID_KEY
+    const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === SELECTED_COMPANY_ID_KEY) {
+            updateActiveCompanyName();
+        }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+
     return () => {
       window.removeEventListener('companySwitched', handleCompanySwitch);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('katama-pos-active-session');
-    localStorage.removeItem('katama-pos-selectedCompanyId');
+    localStorage.removeItem(SELECTED_COMPANY_ID_KEY);
     localStorage.removeItem('isSuperAdmin'); 
+    // Clear company-specific POS sessions
+    const companies = getMockCompanies();
+    companies.forEach(company => {
+      localStorage.removeItem(`katama-pos-active-session-${company.id}`);
+    });
     
     toast({
       title: "Keluar Berhasil",
@@ -409,4 +443,3 @@ function AppHeader() {
     </header>
   );
 }
-
