@@ -3,28 +3,51 @@
 
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
+import UserForm from "@/components/users/user-form"; // Impor form baru
+import type { UserFormData } from "@/types/user";
+import { createUserAction } from "./actions"; // Impor server action
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getMockCompanyById } from "@/data/companies";
+import { getMockRoles } from "@/data/roles"; // Untuk daftar peran
+import { mockOutlets as getAllMockOutlets, type Outlet } from "@/app/dashboard/settings/outlets/page"; // Untuk daftar outlet
 import { AlertTriangle } from "lucide-react";
+import type { Role } from "@/types/role";
 
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
 
 export default function AddUserPage() {
   const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
   const [activeCompanyName, setActiveCompanyName] = React.useState<string | null>(null);
+  const [roles, setRoles] = React.useState<Role[]>([]);
+  const [outletsForCompany, setOutletsForCompany] = React.useState<Outlet[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
     const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
     setActiveCompanyId(storedCompanyId);
+    setRoles(getMockRoles()); 
+
     if (storedCompanyId) {
       const companyDetails = getMockCompanyById(storedCompanyId);
       setActiveCompanyName(companyDetails?.name || null);
+      // Filter outlets berdasarkan companyId. Asumsi getAllMockOutlets mengembalikan semua.
+      const allOutlets = getAllMockOutlets; // Ini adalah array, bukan fungsi
+      setOutletsForCompany(allOutlets.filter(outlet => outlet.companyId === storedCompanyId));
+    } else {
+        setOutletsForCompany([]);
     }
     setIsLoading(false);
   }, []);
+
+  const handleSaveUser = async (data: UserFormData) => {
+    if (!activeCompanyId) {
+      console.error("Gagal menyimpan pengguna: ID Perusahaan aktif tidak ditemukan.");
+      throw new Error("ID Perusahaan aktif tidak ditemukan.");
+    }
+    return createUserAction(data, activeCompanyId);
+  };
 
   if (isLoading) {
     return (
@@ -73,25 +96,13 @@ export default function AddUserPage() {
         title={`Tambah Pengguna Baru untuk ${activeCompanyName || "Perusahaan Terpilih"}`}
         description={`Isi detail untuk pengguna baru yang akan dikaitkan dengan perusahaan ${activeCompanyName || "ini"}.`}
       />
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle>Formulir Tambah Pengguna</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Fitur formulir tambah pengguna lengkap masih dalam pengembangan. 
-            Pengguna baru akan dikaitkan dengan perusahaan "{activeCompanyName}".
-          </p>
-          {/* 
-            Placeholder for the actual user form:
-            <UserForm companyId={activeCompanyId} onSave={handleSaveUser} /> 
-          */}
-          <div className="mt-6 p-6 border border-dashed rounded-md text-center">
-            <p className="text-lg font-semibold">Formulir Tambah Pengguna</p>
-            <p className="text-sm text-muted-foreground">(Segera Hadir)</p>
-          </div>
-        </CardContent>
-      </Card>
+      <UserForm 
+        onSave={handleSaveUser}
+        roles={roles}
+        outlets={outletsForCompany}
+        activeCompanyName={activeCompanyName}
+        isEditing={false}
+      />
     </div>
   );
 }

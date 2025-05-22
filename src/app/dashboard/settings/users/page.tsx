@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link"; // Import Link
+import Link from "next/link"; 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,8 +19,19 @@ import {
   DropdownMenuSeparator, 
 } from "@/components/ui/dropdown-menu";
 import type { User } from "@/types/user"; 
-import { getMockUsers } from "@/data/users"; 
+import { getMockUsers, deleteMockUser } from "@/data/users"; 
 import { getMockCompanyById } from "@/data/companies";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 const SELECTED_COMPANY_ID_KEY = 'katama-pos-selectedCompanyId';
@@ -30,6 +41,10 @@ export default function UsersPage() {
   const [activeCompanyId, setActiveCompanyId] = React.useState<string | null>(null);
   const [activeCompanyName, setActiveCompanyName] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const { toast } = useToast();
+  const [userToDelete, setUserToDelete] = React.useState<User | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+
 
   React.useEffect(() => {
     const storedCompanyId = localStorage.getItem(SELECTED_COMPANY_ID_KEY);
@@ -37,14 +52,43 @@ export default function UsersPage() {
     if (storedCompanyId) {
       const companyDetails = getMockCompanyById(storedCompanyId);
       setActiveCompanyName(companyDetails?.name || null);
-      // TODO: In a full SaaS, getMockUsers would accept companyId and filter users.
-      // For now, it returns all users.
+      // TODO: Implement company-specific user fetching
+      // For now, getMockUsers returns all users. We need a way to associate users with companies.
+      // This might involve changing the User type to include companyId or a list of companyIds/roles.
       setUsers(getMockUsers());
     } else {
-      setUsers([]); // No company selected, show no users or a message
+      setUsers([]); 
     }
     setIsLoading(false);
   }, []);
+
+  const handleDeleteUser = () => {
+    if (!userToDelete) return;
+    // TODO: If users become company-specific, deleteMockUser might need companyId.
+    // For now, it deletes globally.
+    const success = deleteMockUser(userToDelete.id);
+    if (success) {
+        setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+        toast({
+            title: "Pengguna Dihapus",
+            description: `Pengguna "${userToDelete.name}" telah berhasil dihapus.`,
+        });
+    } else {
+        toast({
+            title: "Gagal Menghapus",
+            description: "Terjadi kesalahan saat menghapus pengguna.",
+            variant: "destructive",
+        });
+    }
+    setShowDeleteDialog(false);
+    setUserToDelete(null);
+  };
+
+  const openDeleteDialog = (user: User) => {
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
+  };
+
 
   const getBadgeVariant = (badgeName?: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (badgeName?.toLowerCase()) {
@@ -65,7 +109,7 @@ export default function UsersPage() {
   
   const pageDescription = activeCompanyName
     ? `Kelola akun pengguna, peran, poin, dan lencana untuk perusahaan ${activeCompanyName}.`
-    : "Pilih perusahaan terlebih dahulu untuk mengelola pengguna.";
+    : "Pilih perusahaan aktif dari menu dropdown di header untuk mengelola pengguna.";
 
 
   if (isLoading) {
@@ -108,8 +152,9 @@ export default function UsersPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Daftar Pengguna {activeCompanyName ? `(${activeCompanyName})` : ''}</CardTitle>
-            {/* TODO: userCount should be per company in full SaaS */}
-            <CardDescription>Total {users.length} pengguna ditemukan (global). Fitur filter per perusahaan akan datang.</CardDescription>
+            <CardDescription>
+              Total {users.length} pengguna ditemukan (saat ini daftar pengguna masih global, belum difilter per perusahaan).
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -181,14 +226,18 @@ export default function UsersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                          <DropdownMenuItem disabled> {/* TODO: Link to company-specific user detail */}
+                          <DropdownMenuItem disabled> 
                             <UserCircle2 className="mr-2 h-4 w-4" /> Lihat Detail
                           </DropdownMenuItem>
-                          <DropdownMenuItem disabled> {/* TODO: Link to company-specific user edit */}
+                          <DropdownMenuItem disabled> 
                             <Edit className="mr-2 h-4 w-4" /> Edit Pengguna
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled> {/* TODO: Implement company-specific delete */}
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10" 
+                            onClick={() => openDeleteDialog(user)}
+                            disabled={user.email === "budi@katama.com"} // Contoh: nonaktifkan hapus untuk admin utama
+                           > 
                             <Trash2 className="mr-2 h-4 w-4" /> Hapus Pengguna
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -201,6 +250,23 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       )}
+
+       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Anda yakin ingin menghapus pengguna ini?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat diurungkan. Pengguna "{userToDelete?.name}" akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+              Ya, Hapus Pengguna
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
