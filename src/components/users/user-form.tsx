@@ -17,24 +17,15 @@ import { Save, UserPlus, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
-const userFormSchema = z.object({
+// Base schema definition
+let baseUserFormSchema = z.object({
   name: z.string().min(3, "Nama pengguna minimal 3 karakter."),
   email: z.string().email("Format email tidak valid."),
   password: z.string().min(6, "Password minimal 6 karakter.").optional(),
   confirmPassword: z.string().optional(),
   role: z.string().min(1, "Peran harus dipilih."),
   outletId: z.string().min(1, "Outlet default harus dipilih."),
-}).refine(data => {
-    // Jika password diisi (untuk pengguna baru), confirmPassword juga harus diisi dan cocok
-    if (data.password && data.password !== data.confirmPassword) {
-        return false;
-    }
-    return true;
-}, {
-    message: "Konfirmasi password tidak cocok.",
-    path: ["confirmPassword"], // Path error ditujukan ke field confirmPassword
 });
-
 
 interface UserFormProps {
   initialData?: User; // Untuk mode edit di masa depan
@@ -57,9 +48,29 @@ export default function UserForm({
   const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  // Conditionally extend the schema if it's not editing mode (i.e., adding a new user)
+  let finalUserFormSchema = baseUserFormSchema;
+  if (!isEditing) {
+    finalUserFormSchema = baseUserFormSchema.extend({
+      password: z.string().min(6, "Password minimal 6 karakter."), // Password becomes required
+    }) as any; // Cast to any to avoid complex type inference issues with conditional extension
+  }
+
+  // Apply refine to the final schema
+  const userFormSchemaWithRefine = finalUserFormSchema.refine(data => {
+    // Jika password diisi (untuk pengguna baru atau saat mengganti password), confirmPassword juga harus diisi dan cocok
+    if (data.password && data.password !== data.confirmPassword) {
+        return false;
+    }
+    return true;
+  }, {
+      message: "Konfirmasi password tidak cocok.",
+      path: ["confirmPassword"], // Path error ditujukan ke field confirmPassword
+  });
   
   const form = useForm<UserFormData>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(userFormSchemaWithRefine),
     defaultValues: {
       name: initialData?.name || "",
       email: initialData?.email || "",
@@ -69,14 +80,6 @@ export default function UserForm({
       outletId: outlets.find(o => o.name === initialData?.outlet)?.id || "", // Cari outletId dari nama outlet
     },
   });
-
-  // Validasi tambahan untuk memastikan password diisi jika pengguna baru
-  if (!isEditing) {
-    userFormSchema.extend({
-        password: z.string().min(6, "Password minimal 6 karakter."),
-    });
-  }
-
 
   const onSubmit = async (data: UserFormData) => {
     try {
@@ -245,3 +248,5 @@ export default function UserForm({
     </form>
   );
 }
+
+    
