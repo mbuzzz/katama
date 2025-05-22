@@ -86,7 +86,7 @@ function AppSidebar() {
   const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME);
   const [hasMounted, setHasMounted] = React.useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isSuperAdmin, setIsSuperAdmin] = React.useState(false); // Keep for potential future use
+  const [isSuperAdminState, setIsSuperAdminState] = React.useState(false); // Renamed to avoid conflict with other isSuperAdmin
   const [filteredSidebarNav, setFilteredSidebarNav] = React.useState<SidebarNavItem[]>(siteConfig.sidebarNav);
 
 
@@ -103,7 +103,7 @@ function AppSidebar() {
       }
       
       const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
-      setIsSuperAdmin(currentIsSuperAdmin);
+      setIsSuperAdminState(currentIsSuperAdmin);
 
       if (!currentIsSuperAdmin) {
         setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== ADMIN_OVERVIEW_PATH));
@@ -122,7 +122,7 @@ function AppSidebar() {
           }
           if (event.key === 'isSuperAdmin') {
             const newIsSuperAdmin = event.newValue === 'true';
-            setIsSuperAdmin(newIsSuperAdmin); // Update state for potential direct use
+            setIsSuperAdminState(newIsSuperAdmin); 
             if (!newIsSuperAdmin) {
                 setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== ADMIN_OVERVIEW_PATH));
             } else {
@@ -224,10 +224,8 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
   
   let isParentActive = false;
   if (item.href && item.items && item.items.length > 0) {
-    // For parent items, it's active if the current path starts with the parent's href OR any of its sub-items' href
     isParentActive = pathname?.startsWith(item.href) || item.items.some(subItem => pathname?.startsWith(subItem.href));
   } else if (item.href) {
-    // For items without sub-items, active if path matches exactly
     isParentActive = isActive;
   }
 
@@ -260,7 +258,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
           <SidebarMenuSub>
             {item.items.map((subItem) => (
               <SidebarMenuSubItem key={subItem.href}>
-                <Link href={subItem.href} legacyBehavior passHref>
+                <Link href={subItem.href}>
                   <SidebarMenuSubButton
                     isActive={pathname === subItem.href}
                      className={cn(pathname === subItem.href && "bg-sidebar-accent text-sidebar-accent-foreground")}
@@ -278,7 +276,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
 
   return (
     <SidebarMenuItem>
-      <Link href={item.href || "#"} legacyBehavior passHref>
+      <Link href={item.href || "#"}>
         <SidebarMenuButton
           isActive={!!isActive}
           tooltip={item.title}
@@ -298,7 +296,7 @@ function AppHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const [activeCompanyName, setActiveCompanyName] = React.useState<string | null>(null);
-  const [isUserSuperAdmin, setIsUserSuperAdmin] = React.useState(false); // Renamed to avoid conflict
+  const [isUserSuperAdmin, setIsUserSuperAdmin] = React.useState(false); 
   const [hasMounted, setHasMounted] = React.useState(false);
 
 
@@ -374,7 +372,7 @@ function AppHeader() {
 
       {!isMobile && isUserSuperAdmin && <CompanySwitcher />}
       
-      {activeCompanyName && !isMobile && (
+      {activeCompanyName && !isMobile && !isUserSuperAdmin && (
         <div className="ml-2 hidden items-center md:flex text-sm font-medium text-muted-foreground">
           <Building className="mr-1.5 h-4 w-4" />
           <span>{activeCompanyName}</span>
@@ -411,8 +409,3 @@ function AppHeader() {
     </header>
   );
 }
-
-// Helper function moved to top-level, now named fetchMockCompanyById to avoid conflict.
-// And it was also imported from `data/companies` directly, so this local one is redundant and removed.
-// function getMockCompanyById(companyId: string): { id: string; name: string } | null { ... }
-
