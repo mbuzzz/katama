@@ -85,8 +85,7 @@ function AppSidebar() {
   const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
   const [companyName, setCompanyName] = React.useState<string>(DEFAULT_COMPANY_NAME);
   const [hasMounted, setHasMounted] = React.useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isSuperAdminState, setIsSuperAdminState] = React.useState(false); // Renamed to avoid conflict with other isSuperAdmin
+  const [isUserSuperAdminState, setIsUserSuperAdminState] = React.useState(false); 
   const [filteredSidebarNav, setFilteredSidebarNav] = React.useState<SidebarNavItem[]>(siteConfig.sidebarNav);
 
 
@@ -103,7 +102,7 @@ function AppSidebar() {
       }
       
       const currentIsSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
-      setIsSuperAdminState(currentIsSuperAdmin);
+      setIsUserSuperAdminState(currentIsSuperAdmin);
 
       if (!currentIsSuperAdmin) {
         setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== ADMIN_OVERVIEW_PATH));
@@ -122,7 +121,7 @@ function AppSidebar() {
           }
           if (event.key === 'isSuperAdmin') {
             const newIsSuperAdmin = event.newValue === 'true';
-            setIsSuperAdminState(newIsSuperAdmin); 
+            setIsUserSuperAdminState(newIsSuperAdmin); 
             if (!newIsSuperAdmin) {
                 setFilteredSidebarNav(siteConfig.sidebarNav.filter(item => item.href !== ADMIN_OVERVIEW_PATH));
             } else {
@@ -260,6 +259,7 @@ function NavItem({ item, pathname }: { item: SidebarNavItem; pathname: string | 
               <SidebarMenuSubItem key={subItem.href}>
                 <Link href={subItem.href}>
                   <SidebarMenuSubButton
+                    asChild // Add asChild here
                     isActive={pathname === subItem.href}
                      className={cn(pathname === subItem.href && "bg-sidebar-accent text-sidebar-accent-foreground")}
                   >
@@ -409,3 +409,4 @@ function AppHeader() {
     </header>
   );
 }
+
