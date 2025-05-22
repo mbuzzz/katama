@@ -63,7 +63,7 @@ const calculateDuration = (startTime: string, endTime: string | null): string | 
 };
 
 const populateShiftNames = (shift: Shift): Shift => {
-  const users = getMockUsers(); 
+  const users = getMockUsers(shift.companyId); // Ambil pengguna dari perusahaan shift
   const user = users.find(u => u.id === shift.userId);
   const outlet = getMockOutletById(shift.outletId, shift.companyId); 
   
@@ -99,12 +99,12 @@ export const getMockShiftById = (id: string, companyId?: string): Shift | undefi
 
 export const addMockShift = (shiftData: ShiftFormData, companyId: string): Shift => {
   if (!companyId) throw new Error("companyId is required to add a shift.");
-  const users = getMockUsers(); 
+  const users = getMockUsers(companyId); // Ambil pengguna dari perusahaan ini
   const user = users.find(u => u.id === shiftData.userId);
   const outlet = getMockOutletById(shiftData.outletId, companyId); 
 
   if (!outlet) throw new Error(`Outlet dengan ID ${shiftData.outletId} tidak ditemukan untuk perusahaan ini.`);
-  if (!user) throw new Error(`Pengguna dengan ID ${shiftData.userId} tidak ditemukan.`);
+  if (!user) throw new Error(`Pengguna dengan ID ${shiftData.userId} tidak ditemukan di perusahaan ini.`);
 
 
   const newShift: Shift = {
@@ -136,16 +136,21 @@ export const endMockShift = (id: string, endShiftData: EndShiftData, companyId: 
   }
 
   const finalCash = endShiftData.finalCashInput;
-  const totalSales = finalCash - shiftToEnd.initialCash; 
+  // Simulate sales calculation based on cash difference for mock
+  // In a real app, totalSales would be accumulated from actual POS transactions during the shift
+  let calculatedSales = finalCash - shiftToEnd.initialCash;
+  if (calculatedSales < 0) calculatedSales = 0; // Sales cannot be negative
 
   mockShiftsStore[shiftIndex] = {
     ...shiftToEnd,
     endTime: new Date().toISOString(),
     finalCash,
-    totalSales, 
+    totalSales: calculatedSales, // Use calculated sales for mock
     notes: `${shiftToEnd.notes || ''}\nCatatan Akhir: ${endShiftData.endNotes || 'Tidak ada catatan.'}`.trim(),
     status: 'Selesai',
   };
+  // After ending shift, potentially award points based on totalSales
+  awardPointsToUser(shiftToEnd.userId, calculatedSales); 
   return populateShiftNames(mockShiftsStore[shiftIndex]);
 };
 
@@ -164,7 +169,10 @@ export const cancelMockShift = (id: string, companyId: string, notes?: string): 
 }
 
 
-export const getMockUsersForSelect = (): { value: string; label: string }[] => getMockUsers().map((u: User) => ({ value: u.id, label: u.name })); 
+export const getMockUsersForSelect = (companyId: string): { value: string; label: string }[] => {
+  if (!companyId) return [];
+  return getMockUsers(companyId).map((u: User) => ({ value: u.id, label: u.name })); 
+};
 
 export const getMockOutletsForSelect = (companyId: string): { value: string; label: string }[] => {
   return getMockOutlets(companyId).map(o => ({ value: o.id, label: o.name }));
@@ -177,3 +185,4 @@ export const getMockShiftsForSelect = (companyId?: string): {value: string; labe
     return { value: shift.id, label };
   });
 };
+

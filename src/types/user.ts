@@ -1,6 +1,7 @@
 
 export interface User {
   id: string;
+  companyId: string; // Added for SaaS multi-tenancy
   name: string;
   email: string;
   password?: string; // Ditambahkan untuk form, sebaiknya tidak disimpan langsung
@@ -20,3 +21,4 @@ export interface UserFormData {
   role: string;
   outletId: string; // Menggunakan outletId untuk referensi ke outlet
 }
+

@@ -52,23 +52,21 @@ export default function UsersPage() {
     if (storedCompanyId) {
       const companyDetails = getMockCompanyById(storedCompanyId);
       setActiveCompanyName(companyDetails?.name || null);
-      // TODO: Implement company-specific user fetching
-      // For now, getMockUsers returns all users. We need a way to associate users with companies.
-      // This might involve changing the User type to include companyId or a list of companyIds/roles.
-      setUsers(getMockUsers());
+      setUsers(getMockUsers(storedCompanyId)); // Ambil pengguna untuk perusahaan aktif
     } else {
       setUsers([]); 
+      setActiveCompanyName(null);
     }
     setIsLoading(false);
   }, []);
 
   const handleDeleteUser = () => {
     if (!userToDelete) return;
-    // TODO: If users become company-specific, deleteMockUser might need companyId.
-    // For now, it deletes globally.
+    // Saat ini, deleteMockUser masih global, tidak memerlukan companyId
     const success = deleteMockUser(userToDelete.id);
     if (success) {
-        setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+        // Perbarui daftar pengguna dengan memfilter berdasarkan companyId yang aktif
+        setUsers(prev => prev.filter(u => u.id !== userToDelete.id && u.companyId === activeCompanyId));
         toast({
             title: "Pengguna Dihapus",
             description: `Pengguna "${userToDelete.name}" telah berhasil dihapus.`,
@@ -85,6 +83,15 @@ export default function UsersPage() {
   };
 
   const openDeleteDialog = (user: User) => {
+    // Super Admin tidak bisa dihapus dari sini
+    if (user.role === "Super Admin") {
+       toast({
+            title: "Tindakan Tidak Diizinkan",
+            description: `Pengguna Super Admin tidak dapat dihapus dari manajemen pengguna perusahaan.`,
+            variant: "warning",
+        });
+      return;
+    }
     setUserToDelete(user);
     setShowDeleteDialog(true);
   };
@@ -142,7 +149,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Anda harus memilih perusahaan aktif terlebih dahulu dari menu dropdown di header (jika Anda Superadmin) untuk dapat mengelola pengguna.
+              Anda harus memilih perusahaan aktif terlebih dahulu (jika Anda Superadmin) untuk dapat mengelola pengguna.
             </p>
           </CardContent>
         </Card>
@@ -153,7 +160,7 @@ export default function UsersPage() {
           <CardHeader>
             <CardTitle>Daftar Pengguna {activeCompanyName ? `(${activeCompanyName})` : ''}</CardTitle>
             <CardDescription>
-              Total {users.length} pengguna ditemukan (saat ini daftar pengguna masih global, belum difilter per perusahaan).
+              Total {users.length} pengguna ditemukan untuk perusahaan {activeCompanyName || 'ini'}.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -176,7 +183,7 @@ export default function UsersPage() {
                 {users.length === 0 && (
                    <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
-                      Belum ada pengguna yang terdaftar (atau filter per perusahaan belum aktif).
+                      Belum ada pengguna yang terdaftar untuk perusahaan ini.
                     </TableCell>
                   </TableRow>
                 )}
@@ -236,7 +243,7 @@ export default function UsersPage() {
                           <DropdownMenuItem 
                             className="text-destructive focus:text-destructive focus:bg-destructive/10" 
                             onClick={() => openDeleteDialog(user)}
-                            disabled={user.email === "budi@katama.com"} // Contoh: nonaktifkan hapus untuk admin utama
+                            disabled={user.role === "Super Admin"} // Super Admin tidak bisa dihapus dari sini
                            > 
                             <Trash2 className="mr-2 h-4 w-4" /> Hapus Pengguna
                           </DropdownMenuItem>
@@ -256,7 +263,7 @@ export default function UsersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Anda yakin ingin menghapus pengguna ini?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat diurungkan. Pengguna "{userToDelete?.name}" akan dihapus secara permanen.
+              Tindakan ini tidak dapat diurungkan. Pengguna "{userToDelete?.name}" akan dihapus secara permanen dari perusahaan ini.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -270,3 +277,4 @@ export default function UsersPage() {
     </div>
   );
 }
+
