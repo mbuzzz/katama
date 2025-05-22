@@ -87,8 +87,8 @@ export default function UnitsPage() {
   return (
     <div>
       <PageHeader title="Satuan Barang" description="Kelola satuan untuk produk dan pembelanjaan perusahaan aktif.">
-        <Button asChild>
-          <Link href="/dashboard/units/add">
+        <Button asChild disabled={!activeCompanyId}>
+          <Link href={activeCompanyId ? "/dashboard/units/add" : "#"}>
             <PlusCircle className="mr-2 h-4 w-4" /> Tambah Satuan
           </Link>
         </Button>
