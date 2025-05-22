@@ -48,7 +48,7 @@ export default function LoginPage() {
     } else {
       toast({
         title: "Login Gagal",
-        description: "Email atau password salah. (Petunjuk: demo@tokolite.com / demo)",
+        description: "Email atau password salah.", // Petunjuk dihapus juga untuk konsistensi
         variant: "destructive",
       });
     }
@@ -114,7 +114,6 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex-col text-center text-sm">
           <p>Belum punya akun? <a href="#" className="text-accent hover:brightness-90 underline">Hubungi Admin</a></p>
-          <p className="mt-2 text-xs text-muted-foreground">Akun Demo: demo@tokolite.com / demo</p>
           <p className="mt-2 text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} KATAMA POS. Hak cipta dilindungi.
           </p>
